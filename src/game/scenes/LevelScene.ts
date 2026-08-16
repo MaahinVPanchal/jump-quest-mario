@@ -48,6 +48,13 @@ export class LevelScene extends Phaser.Scene {
   private airJumpPip?: Phaser.GameObjects.Text;
   private controlHint?: Phaser.GameObjects.Text;
 
+  private get theme(): StageTheme {
+    return themeById(this.level.themeId ?? "meadow");
+  }
+
+  /** True while a stage boss is still alive and sealing the flag. */
+  private bossAlive = false;
+
   private get starsRequired(): number {
     return this.level.starsRequired ?? 0;
   }
@@ -109,7 +116,10 @@ export class LevelScene extends Phaser.Scene {
     }
 
     this.enemies = this.physics.add.group();
-    for (const spawn of level.enemies) this.enemies.add(new Enemy(this, spawn));
+    for (const spawn of level.enemies) {
+      this.enemies.add(new Enemy(this, spawn));
+      if (spawn.type === "boss") this.bossAlive = true;
+    }
 
     this.fireballs = this.physics.add.group({ maxSize: COMBAT.maxProjectiles, runChildUpdate: false });
     this.dust = this.add.group();
@@ -230,11 +240,11 @@ export class LevelScene extends Phaser.Scene {
   // ---------------------------------------------------------------- build
 
   private buildParallax(worldW: number): void {
+    const t = this.theme.id;
     const layers: [string, number, number, number][] = [
-      ["bg_hills_far", 0.12, 250, 0.9],
-      ["bg_hills_near", 0.25, 320, 1],
-      ["bg_clouds", 0.18, 40, 1],
-      ["bg_trees", 0.45, 420, 1],
+      [themeKey(t, "far"), 0.12, 200, 0.95],
+      [themeKey(t, "near"), 0.25, 300, 1],
+      [themeKey(t, "decor"), 0.45, 400, 1],
     ];
     for (const [key, factor, y, alpha] of layers) {
       const strip = this.add
@@ -257,9 +267,19 @@ export class LevelScene extends Phaser.Scene {
     const surfaceRow = tiles.findIndex((row) => row.filter((v) => v > 0).length > widthTiles * 0.5);
     const voidTop = (surfaceRow < 0 ? heightTiles - 5 : surfaceRow) * TILE;
     const voidHeight = heightTiles * TILE - voidTop;
-    for (let x = 0; x < widthTiles * TILE; x += 1024) {
-      const w = Math.min(1024, widthTiles * TILE - x);
-      this.add.rectangle(x, voidTop, w, voidHeight, 0x0b0b12).setOrigin(0, 0).setDepth(4);
+    const theme = this.theme;
+    if (theme.liquid === "void") {
+      for (let x = 0; x < widthTiles * TILE; x += 1024) {
+        const w = Math.min(1024, widthTiles * TILE - x);
+        this.add.rectangle(x, voidTop, w, voidHeight, theme.liquidColors[0]).setOrigin(0, 0).setDepth(4);
+      }
+    } else {
+      // Lava / water / gold / plasma floods the pits with a scrolling surface.
+      const liquid = this.add
+        .tileSprite(0, voidTop, widthTiles * TILE, voidHeight, themeKey(theme.id, "liquid"))
+        .setOrigin(0, 0)
+        .setDepth(4);
+      this.tweens.add({ targets: liquid, tilePositionX: 128, duration: 2400, repeat: -1 });
     }
     for (let y = 0; y < heightTiles; y++) {
       const row = tiles[y]!;
@@ -268,7 +288,8 @@ export class LevelScene extends Phaser.Scene {
         const index = x < widthTiles ? row[x]! : 0;
         if (index > 0) {
           if (runStart < 0) runStart = x;
-          const key = index === 1 ? "tile_top" : index === 2 ? "tile_dirt" : "tile_stone";
+          const t = this.theme.id;
+          const key = themeKey(t, index === 1 ? "top" : index === 2 ? "dirt" : "stone");
           visual.add(this.add.image(x * TILE, y * TILE, key).setOrigin(0, 0));
         } else if (runStart >= 0) {
           const w = (x - runStart) * TILE;
@@ -291,7 +312,7 @@ export class LevelScene extends Phaser.Scene {
     const sprite = this.physics.add.staticImage(
       spec.x * TILE + width / 2,
       spec.y * TILE,
-      "tile_platform",
+      themeKey(this.theme.id, "platform"),
     );
     sprite.setDisplaySize(width, 16).refreshBody();
     sprite.setDepth(9);
@@ -555,6 +576,12 @@ export class LevelScene extends Phaser.Scene {
       const removed = enemy.hit(source);
       if (!removed) return;
     }
+    if (enemy.kind === "boss") {
+      this.bossAlive = false;
+      this.cameras.main.shake(280, 0.008);
+      this.toast(`${this.theme.boss.name} defeated — the goal is open!`);
+      this.unsealGoal();
+    }
     gameState.enemiesDefeated += 1;
     const multiplier = gameState.bumpCombo(this.time.now);
     const points = enemy.stats.score * multiplier;
@@ -745,6 +772,14 @@ export class LevelScene extends Phaser.Scene {
 
   private completeLevel(): void {
     if (this.finished) return;
+    if (this.level.bossRequired && this.bossAlive) {
+      if (!this.goalLocked) {
+        this.goalLocked = true;
+        this.toast(`${this.theme.boss.name} still guards the flag!`);
+        this.time.delayedCall(1400, () => (this.goalLocked = false));
+      }
+      return;
+    }
     if (this.starsRequired > 0 && this.starsCollected < this.starsRequired) {
       if (!this.goalLocked) {
         this.goalLocked = true;
