@@ -548,6 +548,127 @@ export function buildTextures(scene: Phaser.Scene): void {
         ctx.fill();
       }
     });
+  // ---- signature projectiles (one readable look per hero) ----
+  const P: Record<string, string> = {
+    K: "#101018",
+    W: "#ffffff",
+    O: "#ff9c20",
+    R: "#e82820",
+    G: "#3cf83c",
+    g: "#0c8c1c",
+    M: "#fc8cd8",
+    m: "#c03c98",
+    Y: "#fcec48",
+    C: "#5cfc48",
+    T: "#106878",
+    A: "#d8dcec",
+    a: "#7c8298",
+    B: "#2848c8",
+  };
+  const shape = (key: string, rows: readonly string[], w = 16, h = 16) =>
+    make(scene, key, w, h, (ctx) => paint(ctx, rows, 2, 0, 0, P), false);
+
+  shape("shot_fireball", [
+    "..KKKK..",
+    ".KOOOOK.",
+    "KOWWOOOK",
+    "KOWWOOOK",
+    "KOOOOOOK",
+    "KROOOORK",
+    ".KRRRRK.",
+    "..KKKK..",
+  ]);
+  shape("shot_ember", [
+    "..KKKK..",
+    ".KOOOOK.",
+    "KOWWOOOK",
+    "KOWWOOOK",
+    "KOOOOOOK",
+    "KROOOORK",
+    ".KRRRRK.",
+    "..KKKK..",
+  ]);
+  shape("shot_greenbolt", [
+    "...KK...",
+    "..KGGK..",
+    ".KGWWGK.",
+    "KGGWWGGK",
+    "KGGGGGGK",
+    ".KgGGgK.",
+    "..KggK..",
+    "...KK...",
+  ]);
+  shape("shot_heart", [
+    ".KK..KK.",
+    "KMMKKMMK",
+    "KMWMMMMK",
+    "KMWMMMMK",
+    ".KMMMMK.",
+    "..KMMK..",
+    "...KK...",
+    "........",
+  ]);
+  shape("shot_flame", [
+    "....KKKK",
+    "..KKOOOK",
+    ".KOOYYOK",
+    "KOYYWYOK",
+    "KOYYWYOK",
+    ".KOOYYOK",
+    "..KKOOOK",
+    "....KKKK",
+  ]);
+  shape("shot_pellet", [
+    "........",
+    "..KKKK..",
+    ".KYWWYK.",
+    ".KYYYYK.",
+    ".KRRRRK.",
+    "..KKKK..",
+    "........",
+    "........",
+  ]);
+  shape("shot_slash", [
+    "......KK",
+    ".....KWK",
+    "....KWAK",
+    "...KWAAK",
+    "..KWAAK.",
+    ".KWAAK..",
+    "KWAAK...",
+    "KaaK....",
+  ]);
+  shape("shot_plasma", [
+    "...KK...",
+    "..KCCK..",
+    ".KCWWCK.",
+    "KCWWWWCK",
+    "KCWWWWCK",
+    ".KCWWCK.",
+    "..KTTK..",
+    "...KK...",
+  ]);
+  shape("shot_axe", [
+    ".KKKK...",
+    "KAAAAK..",
+    "KAWAAK..",
+    "KAAAAK..",
+    ".KAAK...",
+    "..KaK...",
+    "..KaK...",
+    "..KKK...",
+  ]);
+  shape("shot_kunai", [
+    "KKK.....",
+    "KAAK....",
+    ".KAAK...",
+    "..KAAK..",
+    "...KAAK.",
+    "....KBBK",
+    ".....KRK",
+    "......KK",
+  ]);
+
   shot("shot_banana", 0xfcd83c, 0x8a5a00);
   shot("shot_claw", 0xfcfcfc, 0x00b8f8);
   shot("shot_hammer", 0xa8a8a8, 0x502000, true);
