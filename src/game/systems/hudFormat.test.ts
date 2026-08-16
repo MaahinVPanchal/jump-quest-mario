@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatCoins, formatCombo, formatLives, formatScore, formatTime, formatWorld } from "./hudFormat";
+import { formatCoins, formatCombo, formatStars, formatLives, formatScore, formatTime, formatWorld } from "./hudFormat";
 
 describe("HUD formatting", () => {
   it("zero-pads the score across every range", () => {
