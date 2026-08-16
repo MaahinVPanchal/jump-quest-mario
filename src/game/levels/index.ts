@@ -19,7 +19,8 @@ function buildCampaign(): LevelData[] {
   // Chain each stage to the next so completing one unlocks the following one.
   out.forEach((level, i) => {
     const next = out[i + 1];
-    level.next = next ? next.id : undefined;
+    if (next) level.next = next.id;
+    else delete level.next;
   });
   return out;
 }
