@@ -324,39 +324,52 @@ export default function GameShell() {
               </div>
             </div>
 
-            {/* Level select */}
+            {/* Level select - the full 50-stage campaign, unlocked in order */}
             <div className="border-4 border-nes-ink bg-nes-paper p-5 shadow-[6px_6px_0_0_var(--nes-ink)]">
-              <h2 className="text-center text-xs uppercase tracking-widest text-nes-ink">Choose a level</h2>
-              <div className="mt-5 grid gap-4 sm:grid-cols-2">
-                {LEVELS.map((level, i) => {
-                  const prev = LEVELS[i - 1];
-                  const locked = !!prev && !completedLevels.has(prev.id);
-                  const selected = levelId === level.id;
+              <h2 className="text-center text-xs uppercase tracking-widest text-nes-ink">
+                Choose a level · {completedLevels.length}/{LEVELS.length} cleared
+              </h2>
+              <div className="mt-5 space-y-6">
+                {WORLD_THEMES.map((theme) => {
+                  const stages = LEVELS.filter((l) => l.world === theme.world);
                   return (
-                    <button
-                      key={level.id}
-                      type="button"
-                      disabled={locked}
-                      onClick={() => setLevelId(level.id)}
-                      className={`border-4 border-nes-ink p-3 text-left transition ${
-                        selected ? "bg-nes-coin" : "bg-nes-paper"
-                      } ${locked ? "opacity-50" : "active:translate-y-[2px]"}`}
-                    >
+                    <div key={theme.world}>
                       <p className="text-[9px] uppercase tracking-widest text-nes-brick-dark">
-                        World {level.world}-{level.level} · {level.name}
+                        World {theme.world} · {theme.name} · {theme.buildSet}
                       </p>
-                      <p className="mt-2 text-[9px] leading-5">
-                        {level.starsRequired
-                          ? `Collect all ${level.starsRequired} Sky Stars before the goal flag will open.`
-                          : "Reach the goal flag before the timer runs out."}
-                      </p>
-                      <div className="mt-2 flex items-center gap-2">
-                        {level.starsRequired ? <PixelSprite id="star" px={3} /> : <PixelSprite id="coin" px={3} />}
-                        <span className="text-[8px] uppercase tracking-widest opacity-70">
-                          {locked ? `Clear ${prev?.id} first` : `${level.timeLimit}s · ${level.enemies.length} enemies`}
-                        </span>
+                      <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+                        {stages.map((level) => {
+                          const locked = !isLevelUnlocked(level.id, completedLevels);
+                          const selected = levelId === level.id;
+                          const cleared = completedLevels.includes(level.id);
+                          const stars = slotSave?.levelStars?.[level.id] ?? 0;
+                          return (
+                            <button
+                              key={level.id}
+                              type="button"
+                              disabled={locked}
+                              onClick={() => setLevelId(level.id)}
+                              className={`border-4 border-nes-ink p-2 text-left transition ${
+                                selected ? "bg-nes-coin" : cleared ? "bg-nes-paper" : "bg-nes-paper"
+                              } ${locked ? "opacity-40" : "active:translate-y-[2px]"}`}
+                            >
+                              <p className="text-[8px] uppercase tracking-widest text-nes-brick-dark">
+                                {level.world}-{level.level} {locked ? "· locked" : cleared ? "· cleared" : ""}
+                              </p>
+                              <p className="mt-1 truncate text-[9px] leading-4">{level.name}</p>
+                              <div className="mt-2 flex items-center gap-2">
+                                {level.starsRequired ? <PixelSprite id="star" px={2} /> : <PixelSprite id="coin" px={2} />}
+                                <span className="text-[8px] uppercase opacity-70">
+                                  {level.starsRequired
+                                    ? `${stars}/${level.starsRequired} stars`
+                                    : `${level.timeLimit}s`}
+                                </span>
+                              </div>
+                            </button>
+                          );
+                        })}
                       </div>
-                    </button>
+                    </div>
                   );
                 })}
               </div>
@@ -365,20 +378,26 @@ export default function GameShell() {
             <h2 className="text-center text-xs uppercase tracking-widest text-nes-ink">Choose a save slot</h2>
             {Array.from({ length: SLOT_COUNT }, (_, i) => i + 1).map((slot) => {
               const save = slots[slot - 1] ?? null;
+              const active = activeSlot === slot;
               return (
                 <div
                   key={slot}
-                  className="flex flex-wrap items-center justify-between gap-4 border-4 border-nes-ink bg-nes-paper px-5 py-4 shadow-[6px_6px_0_0_var(--nes-ink)]"
+                  className={`flex flex-wrap items-center justify-between gap-4 border-4 border-nes-ink px-5 py-4 shadow-[6px_6px_0_0_var(--nes-ink)] ${
+                    active ? "bg-nes-coin" : "bg-nes-paper"
+                  }`}
                 >
-                  <div>
-                    <p className="text-[9px] uppercase tracking-widest text-nes-brick-dark">Slot {slot}</p>
+                  <button type="button" onClick={() => setActiveSlot(slot)} className="text-left">
+                    <p className="text-[9px] uppercase tracking-widest text-nes-brick-dark">
+                      Slot {slot}
+                      {active ? " · selected" : ""}
+                    </p>
                     <p className="mt-2 text-[10px] leading-5">{slotSummary(save)}</p>
-                  </div>
+                  </button>
                   <div className="flex gap-2">
                     <button
                       type="button"
                       onClick={() => play(slot)}
-                      className="border-4 border-nes-ink bg-nes-coin px-4 py-2 text-[10px] uppercase text-nes-ink transition active:translate-y-[2px]"
+                      className="border-4 border-nes-ink bg-nes-paper px-4 py-2 text-[10px] uppercase text-nes-ink transition active:translate-y-[2px]"
                     >
                       {save ? "Continue" : "New game"}
                     </button>
@@ -398,6 +417,10 @@ export default function GameShell() {
                 </div>
               );
             })}
+
+            <MenuButton primary onClick={() => play(activeSlot)}>
+              Start {CHARACTERS[characterId]?.name} · {levelId}
+            </MenuButton>
             <MenuButton onClick={() => setScreen("menu")}>Back</MenuButton>
           </section>
         )}
