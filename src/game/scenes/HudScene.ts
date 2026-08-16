@@ -1,7 +1,15 @@
 import Phaser from "phaser";
 import { VIEW } from "../config";
 import { GameEvent } from "../systems/events";
-import { formatCoins, formatCombo, formatLives, formatScore, formatTime, formatWorld } from "../systems/hudFormat";
+import {
+  formatCoins,
+  formatCombo,
+  formatLives,
+  formatScore,
+  formatStars,
+  formatTime,
+  formatWorld,
+} from "../systems/hudFormat";
 
 interface HudPayload {
   coins: number;
@@ -12,6 +20,8 @@ interface HudPayload {
   combo: number;
   world: string;
   relics: number;
+  stars: number;
+  starsRequired: number;
 }
 
 // Arcade-era HUD: monospace caps, hard black shadow, no chrome.
@@ -38,6 +48,8 @@ export class HudScene extends Phaser.Scene {
   private timeText!: Phaser.GameObjects.Text;
   private lives!: Phaser.GameObjects.Text;
   private world!: Phaser.GameObjects.Text;
+  private stars!: Phaser.GameObjects.Text;
+  private starsLabel!: Phaser.GameObjects.Text;
   private combo!: Phaser.GameObjects.Text;
   private toast!: Phaser.GameObjects.Text;
   private displayedScore = 0;
@@ -49,20 +61,24 @@ export class HudScene extends Phaser.Scene {
 
   create(): void {
     // Five evenly spaced columns across the viewport.
+    const columns = 6;
     const col = (index: number, label: string): Phaser.GameObjects.Text => {
-      const x = Math.round((VIEW.width / 5) * (index + 0.5));
+      const x = Math.round((VIEW.width / columns) * (index + 0.5));
       const l = this.add.text(x, 20, label, LABEL).setOrigin(0.5, 0);
       const v = this.add.text(x, 48, "", VALUE).setOrigin(0.5, 0);
       for (const t of [l, v]) t.setShadow(3, 3, "#000000", 0, true, true);
+      if (label === "STARS") this.starsLabel = l;
       return v;
     };
 
     this.score = col(0, "SCORE");
     this.score.setText(formatScore(0));
     this.coins = col(1, "COINS");
-    this.world = col(2, "WORLD");
-    this.timeText = col(3, "TIME");
-    this.lives = col(4, "LIVES");
+    this.stars = col(2, "STARS");
+    this.stars.setColor("#fcd83c");
+    this.world = col(3, "WORLD");
+    this.timeText = col(4, "TIME");
+    this.lives = col(5, "LIVES");
 
     this.combo = this.add.text(VIEW.width / 2, 84, "", { ...VALUE, color: "#fcd83c" }).setOrigin(0.5, 0);
     this.combo.setShadow(3, 3, "#000000", 0, true, true);
@@ -92,6 +108,9 @@ export class HudScene extends Phaser.Scene {
     this.lives.setText(formatLives(data.lives));
     this.world.setText(formatWorld(data.world));
     this.combo.setText(formatCombo(data.combo));
+    const showStars = data.starsRequired > 0;
+    this.stars.setVisible(showStars).setText(formatStars(data.stars, data.starsRequired));
+    this.starsLabel?.setVisible(showStars);
   }
 
   private showToast(message: string): void {
