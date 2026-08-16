@@ -23,7 +23,7 @@ export interface BossSpec {
   extraHits: number;
   score: number;
   /** Silhouette variant used by the boss sprite generator. */
-  shape: "brute" | "fish" | "bird" | "block" | "ape" | "ship" | "rocket" | "alien";
+  shape: "brute" | "ogre" | "fish" | "bird" | "block" | "ape" | "ship" | "rocket" | "alien";
   body: number;
   bodyDark: number;
   trim: number;
@@ -239,7 +239,7 @@ export const STAGE_THEMES: StageTheme[] = [
     near: 0x1c1438,
     liquidColors: [0x8c3cfc, 0x3c1078],
     enemies: ["ogre", "spiker", "piranha", "shell", "walker"],
-    boss: { id: "space", name: "Nebula Overmind", extraHits: 4, score: 5000, shape: "alien", body: 0x38c05c, bodyDark: 0x145c28, trim: 0xfc3830 },
+    boss: { id: "space", name: "Grimtusk Warlord", extraHits: 5, score: 5400, shape: "ogre", body: 0x3ca03c, bodyDark: 0x1c601c, trim: 0xd8b83c },
   },
 ];
 

@@ -58,7 +58,7 @@ const PANELS: { title: string; keys: [string, string][] }[] = [
     keys: [
       ["walker_0", "Walker"],
       ["shell_0", "Shell"],
-      ["ogre_0", "Flyer"],
+      ["ogre_0", "Ogre"],
       ["piranha_0", "Piranha"],
       ["spiker_0", "Spiker"],
       ["particle", "Particle"],
