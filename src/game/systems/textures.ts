@@ -204,39 +204,67 @@ export function buildTextures(scene: Phaser.Scene): void {
   });
 
   // ---- hero ----
-  make(scene, "hero_idle", 32, 48, (ctx) => heroBody(ctx, { legOffset: 0, arm: 0 }), false);
-  make(scene, "hero_walk_0", 32, 48, (ctx) => heroBody(ctx, { legOffset: 3, arm: 2 }), false);
-  make(scene, "hero_walk_1", 32, 48, (ctx) => heroBody(ctx, { legOffset: -3, arm: -2 }), false);
-  make(scene, "hero_jump", 32, 48, (ctx) => heroBody(ctx, { legOffset: 2, arm: 4, squash: 1.08 }), false);
-  make(scene, "hero_fall", 32, 48, (ctx) => heroBody(ctx, { legOffset: -2, arm: -4, squash: 0.94 }), false);
-  make(scene, "hero_hurt", 32, 48, (ctx) => heroBody(ctx, { legOffset: 4, arm: -3, hurt: true }), false);
+  const hero = (key: string, pose: Parameters<typeof heroPixels>[0]): void =>
+    make(scene, key, 32, 48, (ctx) => paint(ctx, heroPixels(pose), 2, 0, 16), false);
+  hero("hero_idle", "idle");
+  hero("hero_walk_0", "walk0");
+  hero("hero_walk_1", "walk1");
+  hero("hero_jump", "jump");
+  hero("hero_fall", "fall");
+  hero("hero_hurt", "hurt");
 
   // ---- enemies ----
-  const walker = (ctx: Ctx, step: number): void => {
-    ctx.fillStyle = hex(0x35622a);
-    roundRect(ctx, 5 + step, 24, 7, 6, 3);
-    roundRect(ctx, 18 - step, 24, 7, 6, 3);
-    ctx.fillStyle = hex(COLORS.walker);
-    roundRect(ctx, 3, 8, 26, 18, 9);
-    ctx.fillStyle = hex(0xb7ea7c);
-    roundRect(ctx, 7, 11, 18, 6, 3);
-    // leaf sprout
-    ctx.fillStyle = hex(0x3f8f36);
-    ctx.beginPath();
-    ctx.ellipse(16, 6, 7, 4, -0.5, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = hex(0x1d2430);
-    ctx.beginPath();
-    ctx.arc(11, 17, 2.6, 0, Math.PI * 2);
-    ctx.arc(21, 17, 2.6, 0, Math.PI * 2);
-    ctx.fill();
-  };
-  make(scene, "walker_0", 32, 32, (ctx) => walker(ctx, 2));
-  make(scene, "walker_1", 32, 32, (ctx) => walker(ctx, -2));
-  make(scene, "walker_flat", 32, 32, (ctx) => {
-    ctx.fillStyle = hex(COLORS.walker);
-    roundRect(ctx, 3, 22, 26, 9, 4);
-  });
+  // Mushroom-shaped stomper: brown dome, white eyes with hard pupils, two dark feet.
+  const walkerBody: readonly string[] = [
+    ".....KKKKKK.....",
+    "...KKBBBBBBKK...",
+    "..KBBBBBBBBBBK..",
+    "..KBBBBBBBBBBK..",
+    ".KBWWKBBBBKWWBK.",
+    ".KBWKKBBBBKKWBK.",
+    ".KBWKKBBBBKKWBK.",
+    ".KBBBBBBBBBBBBK.",
+    "KBBBBBBBBBBBBBBK",
+    "KBbbbbbbbbbbbbBK",
+    "KBbbbbbbbbbbbbBK",
+    "KWWWWWKKKKWWWWWK",
+  ];
+  const walkerFeet = (swap: boolean): readonly string[] =>
+    swap
+      ? [".KKKKK.....KKKK.", "KKKKK.......KKK.", "................", "................"]
+      : [".KKKK.....KKKKK.", ".KKK.......KKKKK", "................", "................"];
+  make(scene, "walker_0", 32, 32, (ctx) => paint(ctx, [...walkerBody, ...walkerFeet(false)], 2), false);
+  make(scene, "walker_1", 32, 32, (ctx) => paint(ctx, [...walkerBody, ...walkerFeet(true)], 2), false);
+  make(
+    scene,
+    "walker_flat",
+    32,
+    32,
+    (ctx) =>
+      paint(
+        ctx,
+        [
+          "................",
+          "................",
+          "................",
+          "................",
+          "................",
+          "................",
+          "................",
+          "................",
+          "................",
+          "................",
+          "..KKKKKKKKKKKK..",
+          ".KBBBBBBBBBBBBK.",
+          "KWWWWWKKKKWWWWWK",
+          "KKKKKKKKKKKKKKKK",
+          "................",
+          "................",
+        ],
+        2,
+      ),
+    false,
+  );
 
   const shell = (ctx: Ctx, step: number): void => {
     ctx.fillStyle = hex(0x8a3a2a);
