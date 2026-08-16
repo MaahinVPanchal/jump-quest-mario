@@ -45,6 +45,30 @@ describe("HUD formatting", () => {
     expect(formatLives(12)).toBe("x12");
   });
 
+  it("keeps lives width stable across every range", () => {
+    for (let l = -5; l <= 120; l += 1) expect(formatLives(l).length).toBe(3);
+    expect(formatLives(999)).toBe("x99");
+    expect(formatLives(Number.NaN)).toBe("x00");
+    expect(formatLives(4.8)).toBe("x04");
+  });
+
+  it("keeps every HUD column aligned for mixed extreme values", () => {
+    const cases: [number, number, number, number][] = [
+      [0, 0, 0, 0],
+      [5, 1, 9, 1],
+      [12345, 42, 400, 3],
+      [999999, 99, 999, 99],
+      [-1, -1, -1, -1],
+      [Number.NaN, Number.NaN, Number.NaN, Number.NaN],
+    ];
+    for (const [score, coins, time, lives] of cases) {
+      const row = [formatScore(score), formatCoins(coins), formatWorld("1-1"), formatTime(time), formatLives(lives)];
+      expect(row.map((cell) => cell.length)).toEqual([6, 3, 3, 3, 3]);
+      expect(row.every((cell) => /^(x\d{2}|\d+|[\dA-Z-]+)$/.test(cell))).toBe(true);
+      expect(row.some((cell) => cell.includes(" "))).toBe(false);
+    }
+  });
+
   it("uppercases the world label", () => {
     expect(formatWorld("1-1")).toBe("1-1");
     expect(formatWorld("emberleaf")).toBe("EMBERLEAF");

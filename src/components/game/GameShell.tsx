@@ -34,11 +34,63 @@ const POWER_UPS: { id: SpriteId; name: string; text: string }[] = [
   { id: "relic", name: "Golden Relic", text: "Three per level, tucked into secret routes." },
 ];
 
-const ENEMY_CARDS: { id: SpriteId; key: keyof typeof ENEMIES; text: string }[] = [
-  { id: "walker", key: "walker", text: "Marches in a straight line. Stomp it flat." },
-  { id: "shell", key: "shell", text: "Shelled patroller. Stomp once to shell it, then kick it into a crowd." },
-  { id: "flyer", key: "flyer", text: "Hovers in a wave pattern. Time your jump or use fire." },
-  { id: "piranha", key: "piranha", text: "Bites out of pipes on a cycle. Cannot be stomped — fire only." },
+type EnemyCard = {
+  id: SpriteId;
+  key: keyof typeof ENEMIES;
+  text: string;
+  behaviour: string;
+  counters: string[];
+  danger: string;
+  tip: string;
+};
+
+const ENEMY_CARDS: EnemyCard[] = [
+  {
+    id: "walker",
+    key: "walker",
+    text: "Marches in a straight line. Stomp it flat.",
+    behaviour:
+      "Walks at a steady 55 px/s, turns only at ledges and walls, and never chases. Falls off platforms it walks past.",
+    counters: ["Stomp — flattens instantly", "Fire ember — one hit", "Sliding shell — knocked away"],
+    danger: "Side contact costs one power stage. Small Riko dies.",
+    tip: "Chain stomps without touching the ground to build the 100 / 200 / 400 combo ladder.",
+  },
+  {
+    id: "shell",
+    key: "shell",
+    text: "Shelled patroller. Stomp once to shell it, then kick it into a crowd.",
+    behaviour:
+      "Patrols at 52 px/s across a 128 px beat. First stomp tucks it into a dormant shell for 5.2 s — the shell wobbles for the last 1.5 s, then it wakes up and walks again.",
+    counters: [
+      "Stomp 1 — becomes a shell",
+      "Stomp/side nudge on a shell — kicks it at 400 px/s",
+      "Stomp a sliding shell — stops it dead",
+      "Fire ember — defeats it outright",
+    ],
+    danger:
+      "A sliding shell hurts Riko too, but you get a 140 ms grace window right after kicking. Shells bounce off walls and can come back at you.",
+    tip: "Kick a shell down a lane of Sprout Walkers for a rapid score chain — it also clears Emberjaw Blooms.",
+  },
+  {
+    id: "flyer",
+    key: "flyer",
+    text: "Hovers in a wave pattern. Time your jump or use fire.",
+    behaviour:
+      "Drifts at 60 px/s along a 160 px sine wave, ignoring the ground entirely, so it crosses gaps and pits.",
+    counters: ["Stomp at the top of its dip", "Fire ember — safest option"],
+    danger: "It can drift into you mid-jump, over pits where a knockback means a fall.",
+    tip: "Wait for the low point of the wave and stomp; the bounce carries you over the following gap.",
+  },
+  {
+    id: "piranha",
+    key: "piranha",
+    text: "Bites out of pipes on a cycle. Cannot be stomped — fire only.",
+    behaviour:
+      "Lives inside a pipe on a fixed NES cadence: 1.4 s hidden, 0.48 s rise, 2.0 s exposed with a snapping bite, 0.48 s retract. It stays tucked away while Riko stands on or beside its pipe rim, and while he is entering or exiting any pipe.",
+    counters: ["Fire ember — the only direct answer", "A sliding shell that hits the pipe"],
+    danger: "The head has no weak point — stomping it always hurts. Jumping over the pipe during the bite is the most common death.",
+    tip: "Stand on the rim to keep it down, or walk past exactly during the retract beat.",
+  },
 ];
 
 export default function GameShell() {
@@ -158,17 +210,38 @@ export default function GameShell() {
             {/* Enemies */}
             <div className="border-4 border-nes-ink bg-nes-paper p-5 shadow-[6px_6px_0_0_var(--nes-ink)]">
               <h2 className="text-center text-xs uppercase tracking-widest text-nes-ink">Enemies in 1-1</h2>
-              <ul className="mt-4 grid gap-4 sm:grid-cols-2">
+              <ul className="mt-4 grid gap-5 sm:grid-cols-2">
                 {ENEMY_CARDS.map((e) => {
                   const data = ENEMIES[e.key];
                   return (
-                    <li key={e.id} className="flex items-start gap-3">
+                    <li key={e.id} className="flex items-start gap-3 border-4 border-nes-ink bg-nes-paper p-3">
                       <PixelSprite id={e.id} px={3} />
-                      <div>
+                      <div className="min-w-0">
                         <p className="text-[9px] uppercase tracking-widest text-nes-brick-dark">
                           {data.name} · {data.score} pts
                         </p>
                         <p className="mt-1 text-[9px] leading-5">{e.text}</p>
+                        <p className="mt-2 text-[8px] leading-5 opacity-80">{e.behaviour}</p>
+                        <p className="mt-2 text-[8px] uppercase tracking-widest text-nes-brick-dark">How to beat it</p>
+                        <ul className="mt-1 list-none space-y-1">
+                          {e.counters.map((c) => (
+                            <li key={c} className="text-[8px] leading-5">
+                              &gt; {c}
+                            </li>
+                          ))}
+                        </ul>
+                        <p className="mt-2 text-[8px] leading-5">
+                          <span className="text-nes-brick-dark">DANGER: </span>
+                          {e.danger}
+                        </p>
+                        <p className="mt-1 text-[8px] leading-5">
+                          <span className="text-nes-brick-dark">TIP: </span>
+                          {e.tip}
+                        </p>
+                        <p className="mt-2 text-[8px] uppercase tracking-widest opacity-70">
+                          SPD {data.speed} · RANGE {data.patrolRange}PX · STOMP {data.stompable ? "YES" : "NO"} · WEAK{" "}
+                          {data.weakness.join("/")}
+                        </p>
                       </div>
                     </li>
                   );
