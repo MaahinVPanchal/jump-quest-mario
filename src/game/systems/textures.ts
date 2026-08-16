@@ -5,7 +5,17 @@ type Ctx = CanvasRenderingContext2D;
 
 const hex = (c: number): string => `#${c.toString(16).padStart(6, "0")}`;
 
-function make(scene: Phaser.Scene, key: string, w: number, h: number, draw: (ctx: Ctx) => void): void {
+/** Chunky pixel size: art is drawn full size, crushed down, then blown back up. */
+const PX = 2;
+
+function make(
+  scene: Phaser.Scene,
+  key: string,
+  w: number,
+  h: number,
+  draw: (ctx: Ctx) => void,
+  pixelate = true,
+): void {
   if (scene.textures.exists(key)) return;
   const canvas = document.createElement("canvas");
   canvas.width = w;
@@ -13,7 +23,31 @@ function make(scene: Phaser.Scene, key: string, w: number, h: number, draw: (ctx
   const ctx = canvas.getContext("2d");
   if (!ctx) return;
   draw(ctx);
+
+  if (pixelate) {
+    const small = document.createElement("canvas");
+    small.width = Math.max(1, Math.round(w / PX));
+    small.height = Math.max(1, Math.round(h / PX));
+    const sctx = small.getContext("2d");
+    if (sctx) {
+      sctx.imageSmoothingEnabled = false;
+      sctx.drawImage(canvas, 0, 0, small.width, small.height);
+      ctx.clearRect(0, 0, w, h);
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(small, 0, 0, w, h);
+    }
+  }
+
   scene.textures.addCanvas(key, canvas);
+}
+
+/** Hard 1px-style outline used by the console-era sprites. */
+function outline(ctx: Ctx, x: number, y: number, w: number, h: number, color: string): void {
+  ctx.fillStyle = color;
+  ctx.fillRect(x, y, w, 2);
+  ctx.fillRect(x, y + h - 2, w, 2);
+  ctx.fillRect(x, y, 2, h);
+  ctx.fillRect(x + w - 2, y, 2, h);
 }
 
 function roundRect(ctx: Ctx, x: number, y: number, w: number, h: number, r: number): void {
@@ -88,38 +122,39 @@ function heroBody(ctx: Ctx, opts: { legOffset: number; arm: number; squash?: num
 /** All artwork is drawn procedurally here - the build ships no external art. */
 export function buildTextures(scene: Phaser.Scene): void {
   // ---- terrain ----
-  make(scene, "tile_top", TILE, TILE, (ctx) => {
-    ctx.fillStyle = hex(COLORS.grassBody);
-    ctx.fillRect(0, 0, TILE, TILE);
-    ctx.fillStyle = hex(COLORS.grassTop);
-    ctx.fillRect(0, 0, TILE, 11);
-    ctx.fillStyle = "rgba(255,255,255,0.16)";
-    ctx.fillRect(0, 0, TILE, 3);
+  // Ground is a bricked slab, like the classic overworld floor.
+  const groundBricks = (ctx: Ctx, top: boolean): void => {
     ctx.fillStyle = hex(COLORS.grassBodyDark);
-    ctx.fillRect(4, 18, 5, 4);
-    ctx.fillRect(20, 24, 6, 4);
-  });
-  make(scene, "tile_dirt", TILE, TILE, (ctx) => {
-    ctx.fillStyle = hex(COLORS.grassBody);
     ctx.fillRect(0, 0, TILE, TILE);
-    ctx.fillStyle = hex(COLORS.grassBodyDark);
-    ctx.fillRect(3, 6, 6, 4);
-    ctx.fillRect(18, 14, 7, 4);
-    ctx.fillRect(9, 23, 5, 4);
-  });
+    ctx.fillStyle = hex(COLORS.grassBody);
+    const rows = 2;
+    for (let row = 0; row < rows; row++) {
+      const off = row % 2 === 0 ? 0 : 8;
+      for (let x = -16; x < TILE; x += 16) {
+        ctx.fillRect(x + off + 2, row * 16 + 2, 14, 12);
+      }
+    }
+    if (top) {
+      ctx.fillStyle = hex(0xfcbc90);
+      for (let x = -16; x < TILE; x += 16) ctx.fillRect(x + 2, 2, 14, 3);
+    }
+  };
+  make(scene, "tile_top", TILE, TILE, (ctx) => groundBricks(ctx, true));
+  make(scene, "tile_dirt", TILE, TILE, (ctx) => groundBricks(ctx, false));
   make(scene, "tile_stone", TILE, TILE, (ctx) => {
-    ctx.fillStyle = hex(0x7d8796);
+    ctx.fillStyle = hex(0x9c4a00);
     ctx.fillRect(0, 0, TILE, TILE);
-    ctx.fillStyle = hex(0x99a3b1);
-    ctx.fillRect(1, 1, TILE - 2, 6);
-    ctx.fillStyle = hex(0x5f6875);
-    ctx.fillRect(2, 20, 12, 6);
+    ctx.fillStyle = hex(0xd07030);
+    ctx.fillRect(2, 2, TILE - 4, TILE - 4);
+    ctx.fillStyle = hex(0xfcbc90);
+    ctx.fillRect(2, 2, TILE - 4, 4);
   });
   make(scene, "tile_platform", TILE, 16, (ctx) => {
-    ctx.fillStyle = hex(0xb1793f);
+    ctx.fillStyle = hex(0x902800);
     ctx.fillRect(0, 0, TILE, 16);
-    ctx.fillStyle = hex(0xd79a58);
-    ctx.fillRect(0, 0, TILE, 5);
+    ctx.fillStyle = hex(COLORS.brick);
+    ctx.fillRect(2, 2, 12, 12);
+    ctx.fillRect(18, 2, 12, 12);
   });
 
   // ---- blocks ----
@@ -133,23 +168,27 @@ export function buildTextures(scene: Phaser.Scene): void {
     }
   });
   make(scene, "block_question", TILE, TILE, (ctx) => {
-    ctx.fillStyle = hex(COLORS.questionDark);
+    ctx.fillStyle = hex(0x000000);
     ctx.fillRect(0, 0, TILE, TILE);
-    ctx.fillStyle = hex(COLORS.question);
+    ctx.fillStyle = hex(COLORS.questionDark);
     ctx.fillRect(2, 2, TILE - 4, TILE - 4);
-    ctx.fillStyle = "rgba(255,255,255,0.35)";
-    ctx.fillRect(2, 2, TILE - 4, 4);
-    ctx.fillStyle = hex(0x6b4a12);
-    ctx.font = "bold 20px system-ui, sans-serif";
+    ctx.fillStyle = hex(COLORS.question);
+    ctx.fillRect(4, 4, TILE - 8, TILE - 8);
+    ctx.fillStyle = hex(0xffffff);
+    for (const [x, y] of [[5, 5], [24, 5], [5, 24], [24, 24]] as const) ctx.fillRect(x, y, 3, 3);
+    ctx.fillStyle = hex(0x000000);
+    ctx.font = "bold 22px 'Courier New', monospace";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillText("?", 16, 18);
   });
   make(scene, "block_empty", TILE, TILE, (ctx) => {
-    ctx.fillStyle = hex(0x8a6a37);
+    ctx.fillStyle = hex(0x000000);
     ctx.fillRect(0, 0, TILE, TILE);
-    ctx.fillStyle = hex(0xa98545);
-    ctx.fillRect(3, 3, TILE - 6, TILE - 6);
+    ctx.fillStyle = hex(0x7c4c00);
+    ctx.fillRect(2, 2, TILE - 4, TILE - 4);
+    ctx.fillStyle = hex(0xac7c00);
+    ctx.fillRect(4, 4, TILE - 8, TILE - 8);
   });
   make(scene, "block_metal", TILE, TILE, (ctx) => {
     ctx.fillStyle = hex(0x6f7887);
@@ -398,16 +437,22 @@ export function buildTextures(scene: Phaser.Scene): void {
     ctx.fill();
   });
   make(scene, "pipe", 64, 64, (ctx) => {
-    ctx.fillStyle = hex(0x2c7c48);
-    ctx.fillRect(4, 14, 56, 50);
-    ctx.fillStyle = hex(COLORS.pipe);
-    ctx.fillRect(8, 14, 48, 50);
-    ctx.fillStyle = hex(0x2c7c48);
+    // Rim
+    ctx.fillStyle = hex(0x005000);
     ctx.fillRect(0, 0, 64, 16);
-    ctx.fillStyle = hex(0x66d18a);
-    ctx.fillRect(4, 2, 56, 6);
-    ctx.fillStyle = "rgba(0,0,0,0.18)";
-    ctx.fillRect(40, 16, 10, 48);
+    ctx.fillStyle = hex(COLORS.pipe);
+    ctx.fillRect(2, 2, 60, 12);
+    ctx.fillStyle = hex(0xa0f0a0);
+    ctx.fillRect(6, 4, 8, 8);
+    // Shaft
+    ctx.fillStyle = hex(0x005000);
+    ctx.fillRect(6, 16, 52, 48);
+    ctx.fillStyle = hex(COLORS.pipe);
+    ctx.fillRect(8, 16, 48, 48);
+    ctx.fillStyle = hex(0xa0f0a0);
+    ctx.fillRect(12, 16, 8, 48);
+    ctx.fillStyle = hex(0x007800);
+    ctx.fillRect(44, 16, 10, 48);
   });
   make(scene, "spike", TILE, 16, (ctx) => {
     ctx.fillStyle = hex(0x9aa4b2);
@@ -422,50 +467,42 @@ export function buildTextures(scene: Phaser.Scene): void {
   });
 
   // ---- parallax ----
+  // Stepped, flat-shaded scenery in the console-era style.
+  const lumps = (ctx: Ctx, x: number, y: number, s: number, color: string, cap: string | null): void => {
+    ctx.fillStyle = color;
+    const w = 28 * s;
+    ctx.fillRect(x - w * 1.5, y - 14 * s, w * 3, 14 * s);
+    ctx.fillRect(x - w, y - 26 * s, w * 2, 12 * s);
+    ctx.fillRect(x - w * 0.5, y - 36 * s, w, 10 * s);
+    if (cap) {
+      ctx.fillStyle = cap;
+      ctx.fillRect(x - w * 0.5, y - 36 * s, w * 0.5, 4 * s);
+      ctx.fillRect(x - w, y - 22 * s, w * 0.4, 4 * s);
+    }
+  };
+
   make(scene, "bg_clouds", 640, 260, (ctx) => {
-    ctx.fillStyle = "rgba(255,255,255,0.85)";
-    const puff = (x: number, y: number, s: number): void => {
-      ctx.beginPath();
-      ctx.arc(x, y, 22 * s, 0, Math.PI * 2);
-      ctx.arc(x + 24 * s, y + 6 * s, 17 * s, 0, Math.PI * 2);
-      ctx.arc(x - 24 * s, y + 8 * s, 15 * s, 0, Math.PI * 2);
-      ctx.fill();
+    const cloud = (x: number, y: number, s: number): void => {
+      lumps(ctx, x, y, s, "#ffffff", null);
+      ctx.fillStyle = hex(0xb8d8ff);
+      ctx.fillRect(x - 42 * s, y - 6 * s, 84 * s, 6 * s);
     };
-    puff(90, 70, 1);
-    puff(320, 40, 0.75);
-    puff(520, 100, 1.15);
-    puff(210, 170, 0.6);
+    cloud(110, 90, 1);
+    cloud(340, 56, 0.8);
+    cloud(540, 120, 1.1);
+    cloud(230, 200, 0.7);
   });
   make(scene, "bg_hills_far", 640, 260, (ctx) => {
     ctx.fillStyle = hex(COLORS.hillFar);
-    for (let i = 0; i < 5; i++) {
-      ctx.beginPath();
-      ctx.arc(i * 150 + 40, 260, 120, Math.PI, 0);
-      ctx.fill();
-    }
+    for (let i = 0; i < 4; i++) lumps(ctx, i * 180 + 80, 260, 1.6, hex(COLORS.hillFar), hex(0x006000));
   });
   make(scene, "bg_hills_near", 640, 220, (ctx) => {
-    ctx.fillStyle = hex(COLORS.hillNear);
-    for (let i = 0; i < 6; i++) {
-      ctx.beginPath();
-      ctx.arc(i * 120 + 30, 220, 92, Math.PI, 0);
-      ctx.fill();
-    }
+    for (let i = 0; i < 5; i++) lumps(ctx, i * 140 + 60, 220, 1.15, hex(COLORS.hillNear), hex(0x006000));
   });
   make(scene, "bg_trees", 640, 180, (ctx) => {
-    for (let i = 0; i < 9; i++) {
-      const x = i * 72 + 24;
-      const h = 70 + ((i * 37) % 40);
-      ctx.fillStyle = hex(0x5b3a22);
-      ctx.fillRect(x - 5, 180 - h * 0.45, 10, h * 0.45);
-      ctx.fillStyle = hex(COLORS.treeline);
-      ctx.beginPath();
-      ctx.arc(x, 180 - h * 0.55, 30, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = "rgba(255,255,255,0.08)";
-      ctx.beginPath();
-      ctx.arc(x - 8, 180 - h * 0.62, 12, 0, Math.PI * 2);
-      ctx.fill();
+    // Low bush hedge, flat green, hard silhouette.
+    for (let i = 0; i < 8; i++) {
+      lumps(ctx, i * 82 + 40, 180, 0.8 + ((i * 13) % 5) / 10, hex(COLORS.treeline), hex(0x00c000));
     }
   });
 }
