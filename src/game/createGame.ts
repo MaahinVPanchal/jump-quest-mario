@@ -31,7 +31,9 @@ export function createGame({ parent, slot, save, onExit }: StartOptions): Phaser
     parent,
     width: VIEW.width,
     height: VIEW.height,
-    backgroundColor: "#8fd7ff",
+    backgroundColor: "#5c94fc",
+    pixelArt: true,
+    roundPixels: true,
     scale: {
       mode: Phaser.Scale.FIT,
       autoCenter: Phaser.Scale.CENTER_BOTH,
