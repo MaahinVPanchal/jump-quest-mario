@@ -319,11 +319,23 @@ export default function GameShell() {
               <ul className="mt-4 grid gap-2 sm:grid-cols-2">
                 {STAGE_THEMES.map((t) => {
                   const cleared = completedLevels.includes(`${t.world}-1`);
+                  const id = `${t.world}-1`;
+                  const unlocked = isLevelUnlocked(id, completedLevels);
+                  const picked = startLevel.id === id;
                   return (
-                    <li
-                      key={t.id}
-                      className="flex items-start gap-3 border-2 border-nes-ink/20 bg-white/60 p-2"
-                    >
+                    <li key={t.id}>
+                     <button
+                      type="button"
+                      disabled={!unlocked}
+                      onClick={() => setPickedLevelId(id)}
+                      className={`flex w-full items-start gap-3 border-2 p-2 text-left ${
+                        picked
+                          ? "border-nes-ink bg-nes-coin"
+                          : unlocked
+                            ? "border-nes-ink/20 bg-white/60 hover:border-nes-ink"
+                            : "border-nes-ink/10 bg-white/30 opacity-50"
+                      }`}
+                     >
                       <span
                         aria-hidden
                         className="mt-[2px] h-5 w-5 shrink-0 border-2 border-nes-ink"
@@ -331,13 +343,15 @@ export default function GameShell() {
                       />
                       <div className="min-w-0">
                         <p className="text-[9px] uppercase tracking-widest text-nes-ink">
-                          {t.world}-1 {t.name} {cleared ? "· CLEAR" : ""}
+                          {t.world}-1 {t.name}{" "}
+                          {cleared ? "· CLEAR · REPLAY" : unlocked ? "· OPEN" : "· LOCKED"}
                         </p>
                         <p className="mt-1 text-[8px] leading-4 text-nes-brick-dark">{t.blurb}</p>
                         <p className="mt-1 text-[8px] uppercase tracking-widest text-nes-brick">
                           Boss: {t.boss.name}
                         </p>
                       </div>
+                     </button>
                     </li>
                   );
                 })}
@@ -346,10 +360,11 @@ export default function GameShell() {
 
             <div className="flex flex-col items-center gap-3">
               <MenuButton primary onClick={play}>
-                Start {hero.name} · {nextLevel.world}-{nextLevel.level}
+                Start {hero.name} · {startLevel.world}-{startLevel.level}
               </MenuButton>
               <p className="text-center text-[9px] leading-5 text-nes-brick-dark">
-                {completedLevels.length}/{LEVELS.length} stages cleared · next up {nextLevel.name}
+                {completedLevels.length}/{LEVELS.length} stages cleared · selected {startLevel.name}
+                {" "}· tap any unlocked stage above to replay it
               </p>
               <MenuButton onClick={() => setScreen("menu")}>Back</MenuButton>
             </div>
