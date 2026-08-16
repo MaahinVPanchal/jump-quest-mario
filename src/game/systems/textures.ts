@@ -119,9 +119,26 @@ const HERO_HEAD: readonly string[] = [
 /** Distinct silhouettes so every hero reads as its own character in-game. */
 export type HeroRig = "riko" | "princess" | "ninja" | "hunter" | "whip" | "ranger";
 
-const HEADS: Record<HeroRig, readonly string[]> = {
-  riko: HERO_HEAD,
-  princess: [
+interface RigArt {
+  head: readonly string[];
+  /** Four torso rows drawn under the head. */
+  torso: readonly string[];
+  /** Palette chars swapped into the shared leg templates. */
+  legBody: string;
+  legBoot: string;
+}
+
+const RIKO_TORSO: readonly string[] = [
+  "..HHHRRHRRHHH...",
+  ".HHHHRRRRRRHHHH.",
+  "SSHHRYRRRRYRHHSS",
+  "SSHRRRRRRRRRRHSS",
+];
+
+const RIGS: Record<HeroRig, RigArt> = {
+  riko: { head: HERO_HEAD, torso: RIKO_TORSO, legBody: "R", legBoot: "H" },
+  princess: {
+    head: [
     ".....Y.Y.Y......",
     "....YYYYYYY.....",
     "...HHHSSSSHH....",
@@ -130,47 +147,95 @@ const HEADS: Record<HeroRig, readonly string[]> = {
     "..HHSSSSSSSSH...",
     "...HSSSSSSSH....",
     "...HHRRRRHH.....",
-  ],
-  ninja: [
-    "....RRRRRRR.....",
-    "...RRRRRRRRR....",
-    "...RRRRRRRRR....",
-    "..RRSSKSSKSSR...",
-    "..RRSSSSSSSSR...",
-    "..RRRRRRRRRRR...",
-    "....RRRRRRR.....",
-    "...HHRRRRHH.....",
-  ],
-  hunter: [
-    "....YYYYYYY.....",
-    "...YYYYYYYYY....",
-    "..YYRRRRRRRYY...",
-    "..YYRWWWWWRYY...",
-    "..YYRRRRRRRYY...",
-    "...YYYYYYYYY....",
-    "....YY...YY.....",
-    "...HHRRRRHH.....",
-  ],
-  whip: [
-    "....YYYYYY......",
-    "...YYYYYYYYY....",
-    "...RRRRRRRRR....",
-    "..YYSSKSSKSSY...",
-    "..YSSSSSSSSY....",
-    "...SSSSSSSS.....",
-    "....SSSSSS......",
-    "...HHRRRRHH.....",
-  ],
-  ranger: [
-    ".....RRR........",
-    "....RRRRRR......",
-    "...RRRRRRRRR....",
-    "..RRRSSKSSKR....",
-    "..RRSSSSSSSR....",
-    "...RSSSSSSR.....",
-    "....SSSSSS......",
-    "...HHRRRRHH.....",
-  ],
+    ],
+    torso: RIKO_TORSO,
+    legBody: "R",
+    legBoot: "H",
+  },
+  /* Night ninja: masked hood, sash, back-slung blade. */
+  ninja: {
+    head: [
+      "....DDDDDD......",
+      "...DddddddD.....",
+      "...DdddddddD....",
+      "..DDTTKTTKTDD...",
+      "..DDTTTTTTTDD...",
+      "..DDddddddddD...",
+      "....DDDDDDD.....",
+      "...DDddddDD.....",
+    ],
+    torso: [
+      "..DDDdddddDDD...",
+      ".DDdddddddddDD.y",
+      "TDDdddRRRdddDDT.",
+      "..DDdddddddDD...",
+    ],
+    legBody: "d",
+    legBoot: "D",
+  },
+  /* Armoured hunter: visored helm, shoulder plates, arm cannon. */
+  hunter: {
+    head: [
+      "....AAAAAA......",
+      "...ARRRRRRA.....",
+      "...ARWWWWRA.....",
+      "...ARRRRRRA.....",
+      "...AAAAAAAA.....",
+      "..FFAAAAAAFF....",
+      "...FFFFFFFF.....",
+      "...AFFFFFFA.....",
+    ],
+    torso: [
+      ".AAFFFFFFFFAA...",
+      "AAFFEEEEEEFFAA..",
+      "AFFEEAAAAEEFFA..",
+      ".AFFFFFFFFFFA...",
+    ],
+    legBody: "F",
+    legBoot: "A",
+  },
+  /* Whip ranger: long blonde hair, leather harness, coiled lash. */
+  whip: {
+    head: [
+      "....YYYYYY......",
+      "...YYYYYYYY.....",
+      "...YTTTTTKY.....",
+      "...YTKTTTTY.....",
+      "....TTTTTT......",
+      "....TTTTTT......",
+      "...HHTTTTHH.....",
+      "..THHHHHHHHT....",
+    ],
+    torso: [
+      "..SSHHHHHHHHSS..",
+      ".SSHHtttttHHSS..",
+      ".SHHtttttttHHS.y",
+      "..HHtttttttHH...",
+    ],
+    legBody: "t",
+    legBoot: "A",
+  },
+  /* Hooded blade scout: pointed cap, tunic, drawn shortsword. */
+  ranger: {
+    head: [
+      ".....GGG........",
+      "....GLLGG.......",
+      "...GLLLLGG......",
+      "...GTTTTKG......",
+      "...GTKTTKT......",
+      "....TTTTTT......",
+      "...GGLLLLGG.....",
+      "..GLLLGLLLG..A..",
+    ],
+    torso: [
+      ".GGGLLLLLLGGG.A.",
+      "GGLLLLLLLLLLGGA.",
+      "tGLLyyyyyyLLGtA.",
+      ".GLLLLLLLLLLLG..",
+    ],
+    legBody: "L",
+    legBoot: "t",
+  },
 };
 
 export function rigForCharacter(c: {
