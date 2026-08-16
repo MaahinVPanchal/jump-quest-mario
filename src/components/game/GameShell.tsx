@@ -3,6 +3,8 @@ import { ClientOnly } from "@tanstack/react-router";
 import { lazy, Suspense } from "react";
 import { emptySave, listSlots, loadSlot, saveSlot, deleteSlot, SLOT_COUNT } from "@/game/save-facade";
 import type { SaveData } from "@/game/types";
+import PixelSprite, { type SpriteId } from "./PixelSprite";
+import { ENEMIES } from "@/game/data/enemies";
 
 const PhaserMount = lazy(() => import("./PhaserMount"));
 
@@ -24,6 +26,20 @@ function slotSummary(save: SaveData | null): string {
   const done = save.completedLevels.length;
   return `${save.name} · ${done} level${done === 1 ? "" : "s"} · ${save.relics.length}/3 relics · ${save.coins} coins`;
 }
+
+const POWER_UPS: { id: SpriteId; name: string; text: string }[] = [
+  { id: "growthOrb", name: "Growth Orb", text: "Riko grows big — takes one extra hit and smashes bricks." },
+  { id: "fireCrystal", name: "Fire Crystal", text: "Throw embers with X to burn any enemy from range." },
+  { id: "oneUp", name: "Ember Heart", text: "Hidden 1-Up. Adds a life to your run." },
+  { id: "relic", name: "Golden Relic", text: "Three per level, tucked into secret routes." },
+];
+
+const ENEMY_CARDS: { id: SpriteId; key: keyof typeof ENEMIES; text: string }[] = [
+  { id: "walker", key: "walker", text: "Marches in a straight line. Stomp it flat." },
+  { id: "shell", key: "shell", text: "Shelled patroller. Stomp once to shell it, then kick it into a crowd." },
+  { id: "flyer", key: "flyer", text: "Hovers in a wave pattern. Time your jump or use fire." },
+  { id: "piranha", key: "piranha", text: "Bites out of pipes on a cycle. Cannot be stomped — fire only." },
+];
 
 export default function GameShell() {
   const [screen, setScreen] = useState<Screen>("menu");
