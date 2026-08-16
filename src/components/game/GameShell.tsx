@@ -7,7 +7,7 @@ import PixelSprite, { HeroSprite, type SpriteId } from "./PixelSprite";
 import { ENEMIES } from "@/game/data/enemies";
 import { CHARACTERS, ROSTER } from "@/game/data/characters";
 import { STAGE_THEMES } from "@/game/levels/themes";
-import { LEVELS } from "@/game/levels";
+import { LEVELS, isLevelUnlocked } from "@/game/levels";
 
 const PhaserMount = lazy(() => import("./PhaserMount"));
 
@@ -136,6 +136,7 @@ export default function GameShell() {
   const [save, setSave] = useState<SaveData | null>(null);
   const [activeSave, setActiveSave] = useState<SaveData | null>(null);
   const [characterId, setCharacterId] = useState("riko");
+  const [pickedLevelId, setPickedLevelId] = useState<string | null>(null);
 
   useEffect(() => {
     setSave(loadSlot(SAVE_SLOT));
@@ -144,6 +145,8 @@ export default function GameShell() {
   const completedLevels = save?.completedLevels ?? [];
   // Campaign flows automatically: drop straight into the first unfinished stage.
   const nextLevel = LEVELS.find((l) => !completedLevels.includes(l.id)) ?? LEVELS[0]!;
+  const startLevel =
+    (pickedLevelId && LEVELS.find((l) => l.id === pickedLevelId)) || nextLevel;
 
   const play = useCallback(() => {
     const existing = loadSlot(SAVE_SLOT) ?? emptySave("Riko");
@@ -166,7 +169,7 @@ export default function GameShell() {
               slot={SAVE_SLOT}
               save={activeSave}
               characterId={characterId}
-              levelId={nextLevel.id}
+              levelId={startLevel.id}
               onExit={exit}
             />
           </Suspense>
