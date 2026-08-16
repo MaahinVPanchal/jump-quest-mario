@@ -52,10 +52,10 @@ export const SCORE = {
 } as const;
 
 export const CAMERA = {
-  lerp: 0.12,
+  lerp: 0.2,
   lookAhead: 0.25,
-  deadzoneWidth: 260,
-  deadzoneHeight: 200,
+  deadzoneWidth: 140,
+  deadzoneHeight: 130,
   shakeSmall: 0.004,
   shakeBig: 0.010,
 } as const;
