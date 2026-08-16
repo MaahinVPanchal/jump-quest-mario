@@ -18,6 +18,8 @@ export function emptySave(name = "Player"): SaveData {
     completedLevels: [],
     bestScores: {},
     bestTimes: {},
+    levelStars: {},
+    starIds: [],
     relics: [],
     unlockedCharacters: ["riko"],
     settings: { master: 0.8, music: 0.5, sfx: 0.8, screenShake: true, pixelPerfect: true },
@@ -31,6 +33,8 @@ function migrate(raw: Partial<SaveData> & { save_version?: number }): SaveData {
     ...base,
     ...raw,
     settings: { ...base.settings, ...(raw.settings ?? {}) },
+    levelStars: { ...base.levelStars, ...(raw.levelStars ?? {}) },
+    starIds: raw.starIds ?? [],
     save_version: SAVE_VERSION,
   };
 }
@@ -92,6 +96,10 @@ export function applyResult(save: SaveData, result: LevelResult): SaveData {
       ),
     },
     relics: Array.from(new Set([...save.relics, ...result.relicIds])),
+    levelStars: {
+      ...save.levelStars,
+      [result.levelId]: Math.max(save.levelStars[result.levelId] ?? 0, result.stars),
+    },
   };
   return next;
 }
