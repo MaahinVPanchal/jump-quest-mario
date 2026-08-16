@@ -3,7 +3,7 @@ import { CAMERA, COLORS, COMBAT, PHYSICS, SCORE, TILE, VIEW } from "../config";
 import { LEVEL_1 } from "../levels/level1";
 import { getLevel } from "../levels";
 import { CHARACTERS, DEFAULT_CHARACTER } from "../data/characters";
-import type { LevelData, LevelResult, MovingPlatformSpawn } from "../types";
+import type { LevelData, LevelResult, MovingPlatformSpawn, ThrowKind } from "../types";
 import { InputManager } from "../systems/input";
 import { audio } from "../systems/audio";
 import { gameState } from "../systems/state";
@@ -137,7 +137,7 @@ export class LevelScene extends Phaser.Scene {
       start.y,
       this.controls,
       {
-        onFire: (x, y, dir) => this.spawnFireball(x, y, dir),
+        onFire: (x, y, dir, kind) => this.spawnFireball(x, y, dir, kind),
         onDeath: () => this.handleDeath(),
         onDamage: () => {
           gameState.damageTaken += 1;
@@ -149,6 +149,8 @@ export class LevelScene extends Phaser.Scene {
     );
     if (start.power === "big") this.player.grow();
     if (start.power === "fire") this.player.giveFire();
+    if (start.power === "monkey") this.player.giveMonkey();
+    if (start.power === "cat") this.player.giveCat();
 
     this.setupCollisions();
     this.setupCamera();
@@ -498,6 +500,16 @@ export class LevelScene extends Phaser.Scene {
         this.addScore(SCORE.powerUp, x, y);
         this.toast("Fire Crystal - press X to throw embers");
         break;
+      case "banana":
+        this.player.giveMonkey();
+        this.addScore(SCORE.powerUp, x, y);
+        this.toast("Banana! Monkey form - higher jumps, press X to hurl bananas");
+        break;
+      case "catBell":
+        this.player.giveCat();
+        this.addScore(SCORE.powerUp, x, y);
+        this.toast("Cat Bell! Claw form - air jump and rapid claw slashes");
+        break;
       case "oneUp":
         gameState.lives += 1;
         audio.play("life");
@@ -639,17 +651,27 @@ export class LevelScene extends Phaser.Scene {
 
   // ------------------------------------------------------------ fireball
 
-  private spawnFireball(x: number, y: number, dir: number): void {
+  private spawnFireball(x: number, y: number, dir: number, kind: ThrowKind = "ember"): void {
     if (this.fireballs.countActive(true) >= COMBAT.maxProjectiles) return;
-    const ball = this.physics.add.image(x, y, "fireball");
+    const texture = kind === "ember" ? "fireball" : `shot_${kind}`;
+    const ball = this.physics.add.image(x, y, texture);
     this.fireballs.add(ball);
     ball.setDepth(18);
     const body = ball.body as Phaser.Physics.Arcade.Body;
     body.setCircle(8);
-    body.setVelocity(dir * COMBAT.projectileSpeed, 120);
-    body.setBounce(1, 0.85);
+    // Each throwable flies its own way: arcing bananas / hammers, flat beams and claws.
+    const arcing = kind === "banana" || kind === "hammer" || kind === "egg";
+    const flat = kind === "beam" || kind === "claw" || kind === "ice";
+    const speed = COMBAT.projectileSpeed * (flat ? 1.3 : kind === "star" ? 1.15 : 1);
+    body.setVelocity(dir * speed, arcing ? -260 : flat ? 0 : 120);
+    body.setAllowGravity(!flat);
+    body.setBounce(1, arcing ? 0.95 : 0.85);
     body.setCollideWorldBounds(false);
     ball.setData("dir", dir);
+    ball.setData("flat", flat);
+    if (kind === "shell" || kind === "star" || kind === "vine") {
+      this.tweens.add({ targets: ball, angle: 360, duration: 400, repeat: -1 });
+    }
     this.time.delayedCall(COMBAT.projectileLifeMs, () => {
       if (ball.active) {
         this.burst(ball.x, ball.y, COLORS.crystal, 5);
@@ -660,7 +682,7 @@ export class LevelScene extends Phaser.Scene {
 
   private bounceFireball(ball: Phaser.Physics.Arcade.Image): void {
     const body = ball.body as Phaser.Physics.Arcade.Body;
-    if (body.blocked.left || body.blocked.right) {
+    if (body.blocked.left || body.blocked.right || ball.getData("flat")) {
       this.burst(ball.x, ball.y, COLORS.crystal, 6);
       ball.destroy();
       return;

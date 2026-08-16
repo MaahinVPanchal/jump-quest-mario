@@ -25,7 +25,21 @@ const CONTROLS: [string, string][] = [
 
 const POWER_UPS: { id: SpriteId; name: string; text: string }[] = [
   { id: "growthOrb", name: "Growth Orb", text: "Riko grows big — takes one extra hit and smashes bricks." },
-  { id: "fireCrystal", name: "Fire Crystal", text: "Throw embers with X to burn any enemy from range." },
+  {
+    id: "fireCrystal",
+    name: "Fire Crystal",
+    text: "Every hero can throw with X — the shot matches their signature (embers, hammers, eggs, beams, stars…).",
+  },
+  {
+    id: "banana",
+    name: "Banana",
+    text: "Monkey form: higher jumps and arcing bananas that bounce along the floor.",
+  },
+  {
+    id: "catBell",
+    name: "Cat Bell",
+    text: "Cat form: claws, the highest leap and a bonus air jump for every hero.",
+  },
   { id: "oneUp", name: "Ember Heart", text: "Hidden 1-Up. Adds a life to your run." },
   { id: "relic", name: "Golden Relic", text: "Three per level, tucked into secret routes." },
 ];
@@ -231,6 +245,9 @@ export default function GameShell() {
                           SPD {c.speed} · JMP {c.jumpForce} · HP {c.maxHealth}
                           {c.canDoubleJump ? " · Double jump" : ""}
                           {c.canDash ? " · Dash" : ""}
+                        </p>
+                        <p className="mt-1 text-[8px] uppercase tracking-widest text-nes-ink/70">
+                          Throws: {c.throwable ?? "ember"} · banana → monkey · bell → cat
                         </p>
                         <p className="mt-2 inline-block border-2 border-nes-ink bg-nes-ink px-2 py-1 text-[8px] uppercase tracking-widest text-nes-coin">
                           Special: {c.special ?? abilityLabel(c.specialAbility)}

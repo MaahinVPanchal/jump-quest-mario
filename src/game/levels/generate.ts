@@ -163,6 +163,8 @@ export function buildLevel(world: number, level: number): LevelData {
       blocks.push({ kind: "brick", x: shelfX + 2, y: shelfY - 4 });
     }
     if (i === 1) blocks.push({ kind: "question", x: sx + 6, y: SURFACE - 4, contains: "fireCrystal" });
+    if (i === 2) blocks.push({ kind: "question", x: sx + 6, y: SURFACE - 4, contains: "banana" });
+    if (i === 3) blocks.push({ kind: "question", x: sx + 6, y: SURFACE - 4, contains: "catBell" });
     if (i === 3) blocks.push({ kind: "hidden", x: sx + 5, y: SURFACE - 5, contains: "oneUp" });
 
     const count = Math.min(4, 1 + Math.floor(rand() * (1 + enemyDensity / segments.length)));

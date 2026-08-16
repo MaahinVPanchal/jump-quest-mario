@@ -17,6 +17,8 @@ export interface CharacterData {
   canDoubleJump: boolean;
   canDash: boolean;
   specialAbility: string;
+  /** Signature projectile thrown while powered up. */
+  throwable?: ThrowKind;
   /** Level id that must be cleared before this character is playable. */
   unlockedBy?: string;
   /** Palette overrides applied to the shared pixel rig. */
@@ -38,12 +40,29 @@ export interface EnemyData {
   weakness: string[];
 }
 
+export type ThrowKind =
+  | "ember"
+  | "banana"
+  | "claw"
+  | "hammer"
+  | "egg"
+  | "star"
+  | "pellet"
+  | "beam"
+  | "bubble"
+  | "shell"
+  | "shadow"
+  | "vine"
+  | "ice";
+
 export type ItemKind =
   | "coin"
   | "relic"
   | "star"
   | "growthOrb"
   | "fireCrystal"
+  | "banana"
+  | "catBell"
   | "oneUp";
 
 export type BlockKind = "question" | "brick" | "hidden" | "metal";

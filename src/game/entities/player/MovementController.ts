@@ -20,6 +20,8 @@ export class MovementController {
   private jumping = false;
   /** Granted by characters with an air jump (e.g. Mira). */
   canDoubleJump = false;
+  /** Form multiplier for jump height (monkey / cat forms jump higher). */
+  jumpScale = 1;
   private airJumpUsed = false;
   controlsLocked = false;
   knockbackUntil = 0;
@@ -76,7 +78,7 @@ export class MovementController {
 
     if (this.buffer > 0 && this.coyote > 0 && !this.controlsLocked) {
       const bonus = Math.abs(body.velocity.x) > MOVE.walkSpeed ? JUMP.runBonus : 0;
-      body.velocity.y = JUMP.velocity + bonus;
+      body.velocity.y = (JUMP.velocity + bonus) * this.jumpScale;
       this.buffer = 0;
       this.coyote = 0;
       this.jumping = true;
@@ -88,7 +90,7 @@ export class MovementController {
       !grounded &&
       !this.controlsLocked
     ) {
-      body.velocity.y = JUMP.velocity * 0.86;
+      body.velocity.y = JUMP.velocity * 0.86 * this.jumpScale;
       this.buffer = 0;
       this.airJumpUsed = true;
       this.jumping = true;

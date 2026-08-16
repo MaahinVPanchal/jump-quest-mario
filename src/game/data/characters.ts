@@ -21,6 +21,7 @@ export const CHARACTERS: Record<string, CharacterData> = {
     canDoubleJump: false,
     canDash: false,
     specialAbility: "emberFlare",
+    throwable: "ember",
   },
   mira: {
     id: "mira",
@@ -38,6 +39,7 @@ export const CHARACTERS: Record<string, CharacterData> = {
     canDoubleJump: true,
     canDash: false,
     specialAbility: "featherLift",
+    throwable: "ember",
     unlockedBy: "1-1",
     tint: { R: "#3cbcfc", r: "#0058f8", H: "#203890", Y: "#f8f8f8" },
   },
@@ -57,6 +59,7 @@ export const CHARACTERS: Record<string, CharacterData> = {
     canDoubleJump: false,
     canDash: false,
     specialAbility: "groundPound",
+    throwable: "hammer",
     unlockedBy: "2-1",
     tint: { R: "#00a844", r: "#006810", H: "#003800", Y: "#fcd83c" },
   },
@@ -76,6 +79,7 @@ export const CHARACTERS: Record<string, CharacterData> = {
     canDoubleJump: false,
     canDash: true,
     specialAbility: "sandDash",
+    throwable: "ember",
     unlockedBy: "3-2",
     tint: { R: "#fc9838", r: "#a44400", H: "#502000", Y: "#fcfcfc" },
   },
@@ -95,6 +99,7 @@ export const CHARACTERS: Record<string, CharacterData> = {
     canDoubleJump: true,
     canDash: false,
     specialAbility: "frostStep",
+    throwable: "ice",
     unlockedBy: "4-2",
     tint: { R: "#b8f8f8", r: "#3cbcfc", H: "#2038a0", Y: "#fcfcfc" },
   },
@@ -114,6 +119,7 @@ export const CHARACTERS: Record<string, CharacterData> = {
     canDoubleJump: true,
     canDash: true,
     specialAbility: "vineHook",
+    throwable: "vine",
     unlockedBy: "5-3",
     tint: { R: "#a8f800", r: "#008000", H: "#204000", Y: "#fcd83c" },
   },
@@ -133,6 +139,7 @@ export const CHARACTERS: Record<string, CharacterData> = {
     canDoubleJump: true,
     canDash: true,
     specialAbility: "updraft",
+    throwable: "bubble",
     unlockedBy: "6-3",
     tint: { R: "#f8b8f8", r: "#c028c0", H: "#600060", Y: "#fcfcfc" },
   },
@@ -152,6 +159,7 @@ export const CHARACTERS: Record<string, CharacterData> = {
     canDoubleJump: true,
     canDash: true,
     specialAbility: "emberStorm",
+    throwable: "ember",
     unlockedBy: "7-4",
     tint: { R: "#f83800", r: "#800000", H: "#300000", Y: "#fcd83c" },
   },
@@ -171,6 +179,7 @@ export const CHARACTERS: Record<string, CharacterData> = {
     canDoubleJump: false,
     canDash: true,
     specialAbility: "quickStep",
+    throwable: "pellet",
     tint: { R: "#fcfcfc", r: "#d82800", H: "#a01000", Y: "#f8b8f8" },
   },
   lyra: {
@@ -189,6 +198,7 @@ export const CHARACTERS: Record<string, CharacterData> = {
     canDoubleJump: true,
     canDash: false,
     specialAbility: "spinAttack",
+    throwable: "star",
     tint: { R: "#b8b8f8", r: "#5c5cd8", H: "#2c2c78", Y: "#fcfcfc" },
   },
   karl: {
@@ -207,6 +217,7 @@ export const CHARACTERS: Record<string, CharacterData> = {
     canDoubleJump: false,
     canDash: true,
     specialAbility: "shellSpin",
+    throwable: "shell",
     tint: { R: "#00a844", r: "#006810", H: "#f8d878", Y: "#fcfcfc" },
   },
   dax: {
@@ -225,6 +236,7 @@ export const CHARACTERS: Record<string, CharacterData> = {
     canDoubleJump: true,
     canDash: true,
     specialAbility: "popgunShot",
+    throwable: "pellet",
     tint: { R: "#a44400", r: "#682000", H: "#fc9838", Y: "#f83800" },
   },
   surge: {
@@ -243,6 +255,7 @@ export const CHARACTERS: Record<string, CharacterData> = {
     canDoubleJump: false,
     canDash: true,
     specialAbility: "waveRide",
+    throwable: "bubble",
     tint: { R: "#00b8f8", r: "#0058f8", H: "#203890", Y: "#fcd83c" },
   },
   plume: {
@@ -261,6 +274,7 @@ export const CHARACTERS: Record<string, CharacterData> = {
     canDoubleJump: true,
     canDash: false,
     specialAbility: "wingedKick",
+    throwable: "shell",
     tint: { R: "#fcfcfc", r: "#a8a8a8", H: "#00a844", Y: "#f8d878" },
   },
   gobo: {
@@ -279,6 +293,7 @@ export const CHARACTERS: Record<string, CharacterData> = {
     canDoubleJump: false,
     canDash: false,
     specialAbility: "eggThrow",
+    throwable: "egg",
     tint: { R: "#00a844", r: "#006810", H: "#fcfcfc", Y: "#f83800" },
   },
   wisp: {
@@ -297,6 +312,7 @@ export const CHARACTERS: Record<string, CharacterData> = {
     canDoubleJump: true,
     canDash: false,
     specialAbility: "ghostForm",
+    throwable: "shadow",
     tint: { R: "#fcfcfc", r: "#b8b8d0", H: "#585868", Y: "#d82800" },
   },
   mask: {
@@ -315,6 +331,7 @@ export const CHARACTERS: Record<string, CharacterData> = {
     canDoubleJump: false,
     canDash: true,
     specialAbility: "maskEffect",
+    throwable: "shadow",
     tint: { R: "#d82800", r: "#801000", H: "#f8b8f8", Y: "#fcfcfc" },
   },
   zog: {
@@ -333,6 +350,7 @@ export const CHARACTERS: Record<string, CharacterData> = {
     canDoubleJump: true,
     canDash: true,
     specialAbility: "microgame",
+    throwable: "star",
     tint: { R: "#fcd83c", r: "#c88000", H: "#7c3cfc", Y: "#fcfcfc" },
   },
   bram: {
@@ -351,6 +369,7 @@ export const CHARACTERS: Record<string, CharacterData> = {
     canDoubleJump: false,
     canDash: false,
     specialAbility: "caneBlock",
+    throwable: "hammer",
     tint: { R: "#e0d8c0", r: "#a09070", H: "#585040", Y: "#fcd83c" },
   },
   nix: {
@@ -369,6 +388,7 @@ export const CHARACTERS: Record<string, CharacterData> = {
     canDoubleJump: true,
     canDash: true,
     specialAbility: "lootSnatch",
+    throwable: "shadow",
     tint: { R: "#585868", r: "#282838", H: "#00b8f8", Y: "#fcd83c" },
   },
   posy: {
@@ -387,6 +407,7 @@ export const CHARACTERS: Record<string, CharacterData> = {
     canDoubleJump: true,
     canDash: false,
     specialAbility: "tripleJump",
+    throwable: "ember",
     tint: { R: "#f8b8f8", r: "#c028c0", H: "#fcd83c", Y: "#fcfcfc" },
   },
   brack: {
@@ -405,6 +426,7 @@ export const CHARACTERS: Record<string, CharacterData> = {
     canDoubleJump: false,
     canDash: true,
     specialAbility: "bashAttack",
+    throwable: "hammer",
     tint: { R: "#fcd83c", r: "#c88000", H: "#7c3cfc", Y: "#fcfcfc" },
   },
   thorn: {
@@ -423,6 +445,7 @@ export const CHARACTERS: Record<string, CharacterData> = {
     canDoubleJump: false,
     canDash: false,
     specialAbility: "fireSpit",
+    throwable: "ember",
     tint: { R: "#00a844", r: "#006810", H: "#d82800", Y: "#fcfcfc" },
   },
   nimbus: {
@@ -441,6 +464,7 @@ export const CHARACTERS: Record<string, CharacterData> = {
     canDoubleJump: true,
     canDash: false,
     specialAbility: "cloudHop",
+    throwable: "bubble",
     tint: { R: "#fcfcfc", r: "#b8d8f8", H: "#00a844", Y: "#fcd83c" },
   },
   grommel: {
@@ -459,6 +483,7 @@ export const CHARACTERS: Record<string, CharacterData> = {
     canDoubleJump: false,
     canDash: false,
     specialAbility: "kingStomp",
+    throwable: "shell",
     tint: { R: "#a44400", r: "#682000", H: "#fcd83c", Y: "#fcfcfc" },
   },
   clank: {
@@ -477,6 +502,7 @@ export const CHARACTERS: Record<string, CharacterData> = {
     canDoubleJump: false,
     canDash: false,
     specialAbility: "arcingHammer",
+    throwable: "hammer",
     tint: { R: "#00a844", r: "#006810", H: "#a8a8a8", Y: "#fcd83c" },
   },
   quill: {
@@ -495,6 +521,7 @@ export const CHARACTERS: Record<string, CharacterData> = {
     canDoubleJump: false,
     canDash: true,
     specialAbility: "spinyRoll",
+    throwable: "claw",
     tint: { R: "#f83800", r: "#a01000", H: "#f8f8f8", Y: "#fcd83c" },
   },
   fin: {
@@ -513,6 +540,7 @@ export const CHARACTERS: Record<string, CharacterData> = {
     canDoubleJump: false,
     canDash: true,
     specialAbility: "swimFin",
+    throwable: "bubble",
     tint: { R: "#f83800", r: "#a01000", H: "#00b8f8", Y: "#fcfcfc" },
   },
   gilda: {
@@ -531,6 +559,7 @@ export const CHARACTERS: Record<string, CharacterData> = {
     canDoubleJump: true,
     canDash: true,
     specialAbility: "glitterBurst",
+    throwable: "star",
     tint: { R: "#fcd83c", r: "#c88000", H: "#fcfcfc", Y: "#00b8f8" },
   },
   umbra: {
@@ -549,6 +578,7 @@ export const CHARACTERS: Record<string, CharacterData> = {
     canDoubleJump: true,
     canDash: true,
     specialAbility: "cloneSwarm",
+    throwable: "shadow",
     tint: { R: "#282838", r: "#101018", H: "#7c3cfc", Y: "#fcfcfc" },
   },
   nub: {
@@ -567,6 +597,7 @@ export const CHARACTERS: Record<string, CharacterData> = {
     canDoubleJump: false,
     canDash: false,
     specialAbility: "slowWalk",
+    throwable: "pellet",
     tint: { R: "#a44400", r: "#682000", H: "#502000", Y: "#fcfcfc" },
   },
   petal: {
@@ -585,6 +616,7 @@ export const CHARACTERS: Record<string, CharacterData> = {
     canDoubleJump: false,
     canDash: true,
     specialAbility: "vineWhip",
+    throwable: "vine",
     tint: { R: "#00a844", r: "#006810", H: "#f8b8f8", Y: "#fcd83c" },
   },
 
@@ -604,6 +636,7 @@ export const CHARACTERS: Record<string, CharacterData> = {
     canDoubleJump: true,
     canDash: false,
     specialAbility: "crownFloat",
+    throwable: "star",
     tint: { R: "#f8b8f8", r: "#c028c0", H: "#fcd83c", Y: "#fcfcfc" },
   },
   belle: {
@@ -622,6 +655,7 @@ export const CHARACTERS: Record<string, CharacterData> = {
     canDoubleJump: true,
     canDash: true,
     specialAbility: "ribbonTwirl",
+    throwable: "star",
     tint: { R: "#fc74b4", r: "#c02878", H: "#fcd83c", Y: "#fcfcfc" },
   },
   iris: {
@@ -640,6 +674,7 @@ export const CHARACTERS: Record<string, CharacterData> = {
     canDoubleJump: true,
     canDash: false,
     specialAbility: "wishBeam",
+    throwable: "star",
     tint: { R: "#b8b8f8", r: "#5c5cd8", H: "#fcd83c", Y: "#00b8f8" },
   },
   kaya: {
@@ -658,6 +693,7 @@ export const CHARACTERS: Record<string, CharacterData> = {
     canDoubleJump: false,
     canDash: true,
     specialAbility: "quickSlash",
+    throwable: "claw",
     tint: { R: "#00a844", r: "#006810", H: "#a44400", Y: "#fcd83c" },
   },
   nova: {
@@ -676,6 +712,7 @@ export const CHARACTERS: Record<string, CharacterData> = {
     canDoubleJump: false,
     canDash: true,
     specialAbility: "beamCannon",
+    throwable: "beam",
     tint: { R: "#f8a800", r: "#a44400", H: "#d82800", Y: "#00b8f8" },
   },
   shade: {
@@ -694,6 +731,7 @@ export const CHARACTERS: Record<string, CharacterData> = {
     canDoubleJump: true,
     canDash: true,
     specialAbility: "shadowDash",
+    throwable: "claw",
     tint: { R: "#3830a0", r: "#181850", H: "#f8a878", Y: "#fcfcfc" },
   },
   rowan: {
@@ -712,6 +750,7 @@ export const CHARACTERS: Record<string, CharacterData> = {
     canDoubleJump: false,
     canDash: false,
     specialAbility: "whipCrack",
+    throwable: "claw",
     tint: { R: "#a44400", r: "#682000", H: "#fcd83c", Y: "#fcfcfc" },
   },
   mochi: {
@@ -730,6 +769,7 @@ export const CHARACTERS: Record<string, CharacterData> = {
     canDoubleJump: true,
     canDash: false,
     specialAbility: "bubbleBounce",
+    throwable: "bubble",
     tint: { R: "#fcd8e8", r: "#f878b0", H: "#00b8f8", Y: "#fcfcfc" },
   },
   suki: {
@@ -748,6 +788,7 @@ export const CHARACTERS: Record<string, CharacterData> = {
     canDoubleJump: true,
     canDash: true,
     specialAbility: "galeFan",
+    throwable: "bubble",
     tint: { R: "#f83800", r: "#a01000", H: "#282838", Y: "#fcfcfc" },
   },
   onyx: {
@@ -766,6 +807,7 @@ export const CHARACTERS: Record<string, CharacterData> = {
     canDoubleJump: false,
     canDash: true,
     specialAbility: "shieldBash",
+    throwable: "shell",
     tint: { R: "#787878", r: "#383838", H: "#00b8f8", Y: "#fcd83c" },
   },
 };
