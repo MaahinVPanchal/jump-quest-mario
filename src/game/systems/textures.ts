@@ -223,13 +223,16 @@ export function buildTextures(scene: Phaser.Scene): void {
   });
 
   // ---- hero ----
-  const hero = (key: string, pose: Parameters<typeof heroPixels>[0]): void =>
+  const hero = (key: string, pose: HeroPose): void =>
     make(scene, key, 32, 48, (ctx) => paint(ctx, heroPixels(pose), 2, 0, 16), false);
   hero("hero_idle", "idle");
   hero("hero_walk_0", "walk0");
   hero("hero_walk_1", "walk1");
+  hero("hero_walk_2", "walk2");
+  hero("hero_walk_3", "walk3");
   hero("hero_jump", "jump");
   hero("hero_fall", "fall");
+  hero("hero_land", "land");
   hero("hero_hurt", "hurt");
 
   // ---- enemies ----
