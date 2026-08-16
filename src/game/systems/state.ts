@@ -93,12 +93,6 @@ export class GameState {
     return this.starIds;
   }
 
-  private legacyAddCoin(): void {
-    this.coins += 1;
-    this.levelCoins += 1;
-    if (this.coins > 0 && this.coins % RULES.coinsPerLife === 0) this.lives += 1;
-  }
-
   rankFor(timeLeft: number, timeLimit: number): LevelResult["rank"] {
     const fast = timeLeft > timeLimit * 0.55;
     if (fast && this.relicIds.length >= 3 && this.damageTaken === 0) return "S";
