@@ -13,7 +13,7 @@ export interface PlayerHooks {
   onPowerChange: (state: PowerState) => void;
 }
 
-const SCALE: Record<PowerState, number> = { small: 0.68, big: 1, fire: 1 };
+const SCALE: Record<PowerState, number> = { small: 0.9, big: 1.3, fire: 1.3 };
 
 /** Thin façade: state + wiring only; behaviour lives in the controllers. */
 export class Player {

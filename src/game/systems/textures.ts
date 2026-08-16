@@ -195,12 +195,12 @@ export function buildTextures(scene: Phaser.Scene): void {
   });
 
   // ---- hero ----
-  make(scene, "hero_idle", 32, 48, (ctx) => heroBody(ctx, { legOffset: 0, arm: 0 }));
-  make(scene, "hero_walk_0", 32, 48, (ctx) => heroBody(ctx, { legOffset: 3, arm: 2 }));
-  make(scene, "hero_walk_1", 32, 48, (ctx) => heroBody(ctx, { legOffset: -3, arm: -2 }));
-  make(scene, "hero_jump", 32, 48, (ctx) => heroBody(ctx, { legOffset: 2, arm: 4, squash: 1.08 }));
-  make(scene, "hero_fall", 32, 48, (ctx) => heroBody(ctx, { legOffset: -2, arm: -4, squash: 0.94 }));
-  make(scene, "hero_hurt", 32, 48, (ctx) => heroBody(ctx, { legOffset: 4, arm: -3, hurt: true }));
+  make(scene, "hero_idle", 32, 48, (ctx) => heroBody(ctx, { legOffset: 0, arm: 0 }), false);
+  make(scene, "hero_walk_0", 32, 48, (ctx) => heroBody(ctx, { legOffset: 3, arm: 2 }), false);
+  make(scene, "hero_walk_1", 32, 48, (ctx) => heroBody(ctx, { legOffset: -3, arm: -2 }), false);
+  make(scene, "hero_jump", 32, 48, (ctx) => heroBody(ctx, { legOffset: 2, arm: 4, squash: 1.08 }), false);
+  make(scene, "hero_fall", 32, 48, (ctx) => heroBody(ctx, { legOffset: -2, arm: -4, squash: 0.94 }), false);
+  make(scene, "hero_hurt", 32, 48, (ctx) => heroBody(ctx, { legOffset: 4, arm: -3, hurt: true }), false);
 
   // ---- enemies ----
   const walker = (ctx: Ctx, step: number): void => {
