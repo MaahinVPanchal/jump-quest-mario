@@ -1,6 +1,7 @@
 import { RULES, SCORE } from "../config";
 import type { LevelResult, SaveData } from "../types";
 import { applyResult, emptySave, saveSlot } from "./save";
+import { FIRST_LEVEL_ID } from "../levels";
 
 export interface CheckpointState {
   x: number;
@@ -16,6 +17,7 @@ export class GameState {
   slot = 1;
   save: SaveData = emptySave();
   characterId = "riko";
+  levelId: string = FIRST_LEVEL_ID;
   lives: number = RULES.startingLives;
   coins = 0;
   score = 0;
@@ -23,6 +25,7 @@ export class GameState {
   enemiesDefeated = 0;
   damageTaken = 0;
   relicIds: string[] = [];
+  starIds: string[] = [];
   collectedIds = new Set<string>();
   checkpoint: CheckpointState | null = null;
   comboCount = 0;
@@ -41,6 +44,7 @@ export class GameState {
     this.enemiesDefeated = 0;
     this.damageTaken = 0;
     this.relicIds = [];
+    this.starIds = [];
     this.comboCount = 0;
     if (hard) {
       this.checkpoint = null;
