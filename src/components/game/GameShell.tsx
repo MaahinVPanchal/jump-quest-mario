@@ -20,7 +20,7 @@ const CONTROLS: [string, string][] = [
   ["Enter a tunnel", "Down / S on top of a pipe"],
   ["Restart from checkpoint", "R"],
   ["Pause", "Esc"],
-  ["Debug (dev only)", "F1 hitboxes · F2 stats · F10 invincible"],
+  ["Debug (dev only)", "F1 hitboxes · F2 stats · F9 sanity check · F10 invincible"],
 ];
 
 const POWER_UPS: { id: SpriteId; name: string; text: string }[] = [

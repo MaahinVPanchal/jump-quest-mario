@@ -837,7 +837,14 @@ export class LevelScene extends Phaser.Scene {
       for (let i = 0; i < 10; i++) gameState.addCoin();
       this.emitHud();
     });
-    keyboard?.on("keydown-F9", () => this.completeLevel());
+    keyboard?.on("keydown-F7", () => this.completeLevel());
+    // F9 opens the rendering sanity check over a paused level.
+    keyboard?.on("keydown-F9", (e: KeyboardEvent) => {
+      e.preventDefault();
+      if (this.scene.isActive("Sanity")) return;
+      this.scene.pause();
+      this.scene.launch("Sanity");
+    });
     keyboard?.on("keydown-F10", () => {
       this.invincible = !this.invincible;
       this.toast(this.invincible ? "Debug invincibility ON" : "Debug invincibility OFF");
