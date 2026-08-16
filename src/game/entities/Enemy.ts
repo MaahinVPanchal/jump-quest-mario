@@ -1,7 +1,7 @@
 import Phaser from "phaser";
 import { TILE } from "../config";
 import { ENEMIES } from "../data/enemies";
-import type { EnemyKind, EnemySpawn } from "../types";
+import type { EnemyData, EnemyKind, EnemySpawn } from "../types";
 
 export type EnemyState = "patrol" | "shell" | "sliding" | "dead";
 export type DamageSource = "stomp" | "fire" | "shell";
@@ -9,10 +9,10 @@ export type DamageSource = "stomp" | "fire" | "shell";
 /** Data-driven enemy; all kinds share this body and branch on their data record. */
 export class Enemy extends Phaser.Physics.Arcade.Sprite {
   readonly kind: EnemyKind;
-  state: EnemyState = "patrol";
+  mode: EnemyState = "patrol";
   dir: number;
-  private originX: number;
-  private originY: number;
+  private homeX: number;
+  private homeY: number;
   private patrol: number;
   private animTime = 0;
   private frame2 = 0;
@@ -21,7 +21,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
   awake = false;
 
   constructor(scene: Phaser.Scene, spawn: EnemySpawn) {
-    const data = ENEMIES[spawn.type];
+    const data: EnemyData = ENEMIES[spawn.type];
     const key = spawn.type === "walker" ? "walker_0" : spawn.type === "shell" ? "shell_0" : "flyer_0";
     super(scene, spawn.x * TILE + TILE / 2, spawn.y * TILE + TILE, key);
     this.kind = spawn.type;
@@ -35,12 +35,12 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     body.setSize(26, 26);
     body.setOffset(3, 6);
     if (data.canFly) body.setAllowGravity(false);
-    this.originX = this.x;
-    this.originY = this.y;
+    this.homeX = this.x;
+    this.homeY = this.y;
     this.setActive(false).setVisible(false);
   }
 
-  get data() {
+  get stats(): EnemyData {
     return ENEMIES[this.kind];
   }
 
@@ -52,17 +52,17 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
 
   /** Returns true when the enemy is removed from play. */
   hit(source: DamageSource): boolean {
-    if (this.state === "dead") return false;
+    if (this.mode === "dead") return false;
     if (this.kind === "shell" && source === "stomp") {
-      if (this.state === "patrol") {
-        this.state = "shell";
+      if (this.mode === "patrol") {
+        this.mode = "shell";
         this.shellIdleUntil = this.scene.time.now + 5000;
         this.setTexture("shell_hidden");
         this.setVelocity(0, 0);
         return false;
       }
-      if (this.state === "sliding") {
-        this.state = "shell";
+      if (this.mode === "sliding") {
+        this.mode = "shell";
         this.shellIdleUntil = this.scene.time.now + 5000;
         this.setVelocityX(0);
         return false;
@@ -73,14 +73,14 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
   }
 
   kickShell(fromX: number): void {
-    if (this.kind !== "shell" || this.state !== "shell") return;
-    this.state = "sliding";
+    if (this.kind !== "shell" || this.mode !== "shell") return;
+    this.mode = "sliding";
     this.dir = this.x >= fromX ? 1 : -1;
     this.setVelocityX(this.dir * 380);
   }
 
   defeat(flip = false): void {
-    this.state = "dead";
+    this.mode = "dead";
     const body = this.body as Phaser.Physics.Arcade.Body;
     body.checkCollision.none = true;
     body.setAllowGravity(true);
@@ -102,32 +102,32 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     }
   }
 
-  preUpdate(time: number, delta: number): void {
+  override preUpdate(time: number, delta: number): void {
     super.preUpdate(time, delta);
-    if (this.state === "dead" || !this.awake) return;
+    if (this.mode === "dead" || !this.awake) return;
     const body = this.body as Phaser.Physics.Arcade.Body;
 
     if (this.kind === "flyer") {
-      this.x += this.dir * this.data.speed * (delta / 1000);
-      if (Math.abs(this.x - this.originX) > this.patrol) this.dir *= -1;
-      this.y = this.originY + Math.sin(time / 520 + this.phase) * 52;
+      this.x += this.dir * this.stats.speed * (delta / 1000);
+      if (Math.abs(this.x - this.homeX) > this.patrol) this.dir *= -1;
+      this.y = this.homeY + Math.sin(time / 520 + this.phase) * 52;
       body.updateFromGameObject();
-    } else if (this.state === "sliding") {
+    } else if (this.mode === "sliding") {
       this.setVelocityX(this.dir * 380);
       if (body.blocked.left || body.blocked.right) {
         this.dir *= -1;
         this.setVelocityX(this.dir * 380);
       }
-    } else if (this.state === "shell") {
+    } else if (this.mode === "shell") {
       this.setVelocityX(0);
       if (time > this.shellIdleUntil) {
-        this.state = "patrol";
+        this.mode = "patrol";
         this.setTexture("shell_0");
       }
     } else {
-      this.setVelocityX(this.dir * this.data.speed);
+      this.setVelocityX(this.dir * this.stats.speed);
       const hitWall = body.blocked.left || body.blocked.right;
-      const beyondPatrol = Math.abs(this.x - this.originX) > this.patrol;
+      const beyondPatrol = Math.abs(this.x - this.homeX) > this.patrol;
       const edge = body.blocked.down && !this.groundAhead();
       if (hitWall || beyondPatrol || edge) {
         this.dir *= -1;
@@ -137,7 +137,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
 
     this.setFlipX(this.dir > 0);
     this.animTime += delta;
-    if (this.animTime > 180 && this.state === "patrol") {
+    if (this.animTime > 180 && this.mode === "patrol") {
       this.animTime = 0;
       this.frame2 = 1 - this.frame2;
       const base = this.kind === "walker" ? "walker" : this.kind === "shell" ? "shell" : "flyer";

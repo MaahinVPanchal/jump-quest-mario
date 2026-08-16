@@ -46,7 +46,7 @@ export class Collectible extends Phaser.Physics.Arcade.Sprite {
     this.setVelocity(dir * 90, -180);
   }
 
-  preUpdate(time: number, delta: number): void {
+  override preUpdate(time: number, delta: number): void {
     super.preUpdate(time, delta);
     this.t += delta;
     if (this.kind === "coin") {

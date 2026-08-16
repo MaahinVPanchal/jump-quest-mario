@@ -30,7 +30,7 @@ const VALUE = {
 export class HudScene extends Phaser.Scene {
   private score!: Phaser.GameObjects.Text;
   private coins!: Phaser.GameObjects.Text;
-  private time!: Phaser.GameObjects.Text;
+  private timeText!: Phaser.GameObjects.Text;
   private lives!: Phaser.GameObjects.Text;
   private world!: Phaser.GameObjects.Text;
   private power!: Phaser.GameObjects.Text;
@@ -59,7 +59,7 @@ export class HudScene extends Phaser.Scene {
     this.add.text(VIEW.width - 250, 22, "RELICS", LABEL).setAlpha(0.8);
     this.coins = this.add.text(VIEW.width - 250, 40, "0", VALUE);
     this.add.text(VIEW.width - 110, 22, "TIME", LABEL).setAlpha(0.8);
-    this.time = this.add.text(VIEW.width - 110, 40, "300", VALUE);
+    this.timeText = this.add.text(VIEW.width - 110, 40, "300", VALUE);
 
     this.combo = this.add.text(VIEW.width / 2, 88, "", { ...VALUE, color: "#ffd447" }).setOrigin(0.5, 0);
     this.toast = this.add
@@ -83,8 +83,8 @@ export class HudScene extends Phaser.Scene {
   private onUpdate(data: HudPayload): void {
     this.targetScore = data.score;
     this.coins.setText(`${data.coins}c / ${data.relics}R`);
-    this.time.setText(`${data.time}`);
-    this.time.setColor(data.time <= 30 ? "#ff8080" : "#ffffff");
+    this.timeText.setText(`${data.time}`);
+    this.timeText.setColor(data.time <= 30 ? "#ff8080" : "#ffffff");
     this.lives.setText(`x${data.lives}`);
     this.world.setText(`WORLD ${data.world}`);
     this.power.setText(data.power.toUpperCase());
@@ -97,7 +97,7 @@ export class HudScene extends Phaser.Scene {
     this.tweens.add({ targets: this.toast, alpha: 0, delay: 1800, duration: 500 });
   }
 
-  update(_time: number, delta: number): void {
+  override update(_time: number, delta: number): void {
     if (this.displayedScore !== this.targetScore) {
       const step = Math.max(5, Math.ceil(Math.abs(this.targetScore - this.displayedScore) * (delta / 120)));
       this.displayedScore +=

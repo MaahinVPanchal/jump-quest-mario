@@ -47,7 +47,7 @@ export class LevelScene extends Phaser.Scene {
     super("Level");
   }
 
-  create(): void {
+  override create(): void {
     const level = this.level;
     this.finished = false;
     this.respawning = false;
@@ -269,23 +269,23 @@ export class LevelScene extends Phaser.Scene {
     this.physics.add.collider(this.items, this.terrain);
     this.physics.add.collider(this.items, this.platformGroup);
 
-    this.physics.add.collider(sprite, this.blocks, (_p, b) => this.onBlockCollide(b as Block));
-    this.physics.add.overlap(sprite, this.enemies, (_p, e) => this.onEnemyTouch(e as Enemy));
-    this.physics.add.overlap(sprite, this.items, (_p, i) => this.collect(i as Collectible));
+    this.physics.add.collider(sprite, this.blocks, (_p, b) => this.onBlockCollide(b as unknown as Block));
+    this.physics.add.overlap(sprite, this.enemies, (_p, e) => this.onEnemyTouch(e as unknown as Enemy));
+    this.physics.add.overlap(sprite, this.items, (_p, i) => this.collect(i as unknown as Collectible));
     this.physics.add.overlap(sprite, this.hazardSprites, () => this.hurtPlayer());
     this.physics.add.overlap(sprite, this.goalZone, () => this.completeLevel());
 
-    this.physics.add.collider(this.fireballs, this.terrain, (f) => this.bounceFireball(f as Phaser.Physics.Arcade.Image));
-    this.physics.add.collider(this.fireballs, this.blocks, (f) => this.bounceFireball(f as Phaser.Physics.Arcade.Image));
+    this.physics.add.collider(this.fireballs, this.terrain, (f) => this.bounceFireball(f as unknown as Phaser.Physics.Arcade.Image));
+    this.physics.add.collider(this.fireballs, this.blocks, (f) => this.bounceFireball(f as unknown as Phaser.Physics.Arcade.Image));
     this.physics.add.overlap(this.fireballs, this.enemies, (f, e) => {
-      (f as Phaser.Physics.Arcade.Image).destroy();
+      (f as unknown as Phaser.Physics.Arcade.Image).destroy();
       this.defeatEnemy(e as Enemy, "fire");
     });
     this.physics.add.overlap(this.enemies, this.enemies, (a, b) => {
       const ea = a as Enemy;
       const eb = b as Enemy;
-      if (ea.state === "sliding" && eb.state !== "dead" && eb !== ea) this.defeatEnemy(eb, "shell");
-      else if (eb.state === "sliding" && ea.state !== "dead" && ea !== eb) this.defeatEnemy(ea, "shell");
+      if (ea.mode === "sliding" && eb.mode !== "dead" && eb !== ea) this.defeatEnemy(eb, "shell");
+      else if (eb.mode === "sliding" && ea.mode !== "dead" && ea !== eb) this.defeatEnemy(ea, "shell");
     });
   }
 
@@ -404,11 +404,11 @@ export class LevelScene extends Phaser.Scene {
   }
 
   private onEnemyTouch(enemy: Enemy): void {
-    if (enemy.state === "dead" || this.player.dead || this.finished) return;
+    if (enemy.mode === "dead" || this.player.dead || this.finished) return;
     const body = this.player.sprite.body as Phaser.Physics.Arcade.Body;
     const stomping = body.velocity.y > 40 && this.player.sprite.y < enemy.y - enemy.displayHeight * 0.45;
 
-    if (stomping && enemy.data.stompable) {
+    if (stomping && enemy.stats.stompable) {
       this.player.movement.bounce();
       this.hitStop();
       audio.play("stomp");
@@ -418,7 +418,7 @@ export class LevelScene extends Phaser.Scene {
       else this.addScore(SCORE.enemyBase, enemy.x, enemy.y - 20);
       return;
     }
-    if (enemy.kind === "shell" && enemy.state === "shell") {
+    if (enemy.kind === "shell" && enemy.mode === "shell") {
       enemy.kickShell(this.player.sprite.x);
       audio.play("block");
       return;
@@ -431,14 +431,14 @@ export class LevelScene extends Phaser.Scene {
   }
 
   private defeatEnemy(enemy: Enemy, source: "stomp" | "fire" | "shell", alreadyHandled = false): void {
-    if (enemy.state === "dead") return;
+    if (enemy.mode === "dead") return;
     if (!alreadyHandled) {
       const removed = enemy.hit(source);
       if (!removed) return;
     }
     gameState.enemiesDefeated += 1;
     const multiplier = gameState.bumpCombo(this.time.now);
-    const points = enemy.data.score * multiplier;
+    const points = enemy.stats.score * multiplier;
     this.addScore(points, enemy.x, enemy.y - 20, multiplier > 1 ? `x${multiplier}` : undefined);
     this.burst(enemy.x, enemy.y - 12, 0xfff1a8, 8);
     audio.play("stomp");
@@ -691,7 +691,7 @@ export class LevelScene extends Phaser.Scene {
 
   // ------------------------------------------------------------- update
 
-  update(time: number, delta: number): void {
+  override update(time: number, delta: number): void {
     this.controls.update();
     if (!this.finished && !this.respawning) this.elapsed += delta;
 

@@ -12,7 +12,7 @@ const TEXTURE: Record<BlockKind, string> = {
 /** Question / brick / hidden / metal blocks share one body with data-driven behaviour. */
 export class Block extends Phaser.Physics.Arcade.Sprite {
   readonly kind: BlockKind;
-  readonly contains?: ItemKind;
+  readonly contains: ItemKind | undefined;
   coinsLeft: number;
   used = false;
   revealed: boolean;
