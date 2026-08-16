@@ -194,4 +194,5 @@ export const LEVEL_1: LevelData = {
     { x: 174, y: 18 },
   ],
   music: "level",
+  next: "2-1",
 };

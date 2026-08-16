@@ -5,6 +5,7 @@ import type { ItemKind, ItemSpawn } from "../types";
 const TEXTURE: Record<ItemKind, string> = {
   coin: "coin_0",
   relic: "relic",
+  star: "star",
   growthOrb: "item_orb",
   fireCrystal: "item_crystal",
   oneUp: "item_oneup",
@@ -34,6 +35,7 @@ export class Collectible extends Phaser.Physics.Arcade.Sprite {
     body.setAllowGravity(false);
     body.setSize(this.width * 0.8, this.height * 0.8, true);
     if (spawn.type === "relic") this.setDepth(13);
+    if (spawn.type === "star") this.setDepth(13);
   }
 
   /** Turns a spawned power-up into a moving pickup. */
@@ -65,5 +67,9 @@ export class Collectible extends Phaser.Physics.Arcade.Sprite {
     }
     this.y = this.baseY + Math.sin(time / 320) * 4;
     if (this.kind === "relic") this.setScale(1 + Math.sin(time / 260) * 0.06);
+    if (this.kind === "star") {
+      this.setScale(1 + Math.sin(time / 200) * 0.1);
+      this.setAngle(Math.sin(time / 420) * 12);
+    }
   }
 }

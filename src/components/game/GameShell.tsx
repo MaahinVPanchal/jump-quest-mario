@@ -5,6 +5,8 @@ import { emptySave, listSlots, loadSlot, saveSlot, deleteSlot, SLOT_COUNT } from
 import type { SaveData } from "@/game/types";
 import PixelSprite, { type SpriteId } from "./PixelSprite";
 import { ENEMIES } from "@/game/data/enemies";
+import { CHARACTERS } from "@/game/data/characters";
+import { LEVELS } from "@/game/levels";
 
 const PhaserMount = lazy(() => import("./PhaserMount"));
 
@@ -91,6 +93,21 @@ const ENEMY_CARDS: EnemyCard[] = [
     danger: "The head has no weak point — stomping it always hurts. Jumping over the pipe during the bite is the most common death.",
     tip: "Stand on the rim to keep it down, or walk past exactly during the retract beat.",
   },
+  {
+    id: "spiker",
+    key: "spiker",
+    text: "New in 2-1. Spiked roller that charges when it spots you. Never stompable.",
+    behaviour:
+      "Rolls at 48 px/s across a 144 px beat. If Riko is within 260 px and in front of it, it winds up and charges at 2.6x speed for about a second, glowing red as it goes.",
+    counters: ["Fire ember — clean kill", "Sliding shell — bowls it over", "Jump clean over the charge"],
+    danger: "Spikes cover the top, so a stomp always costs you a power stage.",
+    tip: "Bait the charge from a ledge, then drop behind it while it overshoots.",
+  },
+];
+
+const CHARACTER_CARDS: { id: string; sprite: SpriteId }[] = [
+  { id: "riko", sprite: "riko" },
+  { id: "mira", sprite: "mira" },
 ];
 
 export default function GameShell() {
@@ -98,6 +115,8 @@ export default function GameShell() {
   const [slots, setSlots] = useState<(SaveData | null)[]>([]);
   const [activeSlot, setActiveSlot] = useState(1);
   const [activeSave, setActiveSave] = useState<SaveData | null>(null);
+  const [characterId, setCharacterId] = useState("riko");
+  const [levelId, setLevelId] = useState(LEVELS[0]!.id);
 
   useEffect(() => {
     setSlots(listSlots());
@@ -111,6 +130,11 @@ export default function GameShell() {
     setScreen("playing");
   }, []);
 
+  const unlockedCharacters = new Set(
+    slots.flatMap((s) => s?.unlockedCharacters ?? []).concat(["riko"]),
+  );
+  const completedLevels = new Set(slots.flatMap((s) => s?.completedLevels ?? []));
+
   const exit = useCallback(() => {
     setActiveSave(null);
     setScreen("menu");
@@ -121,7 +145,13 @@ export default function GameShell() {
       <div className="fixed inset-0 bg-nes-ink">
         <ClientOnly fallback={<LoadingCanvas />}>
           <Suspense fallback={<LoadingCanvas />}>
-            <PhaserMount slot={activeSlot} save={activeSave} onExit={exit} />
+            <PhaserMount
+              slot={activeSlot}
+              save={activeSave}
+              characterId={characterId}
+              levelId={levelId}
+              onExit={exit}
+            />
           </Suspense>
         </ClientOnly>
       </div>
@@ -209,7 +239,7 @@ export default function GameShell() {
 
             {/* Enemies */}
             <div className="border-4 border-nes-ink bg-nes-paper p-5 shadow-[6px_6px_0_0_var(--nes-ink)]">
-              <h2 className="text-center text-xs uppercase tracking-widest text-nes-ink">Enemies in 1-1</h2>
+              <h2 className="text-center text-xs uppercase tracking-widest text-nes-ink">Enemy lineup</h2>
               <ul className="mt-4 grid gap-5 sm:grid-cols-2">
                 {ENEMY_CARDS.map((e) => {
                   const data = ENEMIES[e.key];
@@ -247,6 +277,79 @@ export default function GameShell() {
                   );
                 })}
               </ul>
+            </div>
+
+            {/* Character select */}
+            <div className="border-4 border-nes-ink bg-nes-paper p-5 shadow-[6px_6px_0_0_var(--nes-ink)]">
+              <h2 className="text-center text-xs uppercase tracking-widest text-nes-ink">Choose your hero</h2>
+              <div className="mt-5 grid gap-4 sm:grid-cols-2">
+                {CHARACTER_CARDS.map((c) => {
+                  const data = CHARACTERS[c.id]!;
+                  const locked = !unlockedCharacters.has(c.id);
+                  const selected = characterId === c.id;
+                  return (
+                    <button
+                      key={c.id}
+                      type="button"
+                      disabled={locked}
+                      onClick={() => setCharacterId(c.id)}
+                      className={`flex items-start gap-3 border-4 border-nes-ink p-3 text-left transition ${
+                        selected ? "bg-nes-coin" : "bg-nes-paper"
+                      } ${locked ? "opacity-50" : "active:translate-y-[2px]"}`}
+                    >
+                      <PixelSprite id={c.sprite} px={3} />
+                      <div className="min-w-0">
+                        <p className="text-[9px] uppercase tracking-widest text-nes-brick-dark">
+                          {data.name}
+                          {locked ? " · locked" : selected ? " · selected" : ""}
+                        </p>
+                        <p className="mt-1 text-[9px] leading-5">{data.blurb}</p>
+                        <p className="mt-2 text-[8px] uppercase tracking-widest opacity-70">
+                          {locked ? `Clear ${data.unlockedBy} to unlock` : data.canDoubleJump ? "Double jump" : "Single jump"}
+                        </p>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Level select */}
+            <div className="border-4 border-nes-ink bg-nes-paper p-5 shadow-[6px_6px_0_0_var(--nes-ink)]">
+              <h2 className="text-center text-xs uppercase tracking-widest text-nes-ink">Choose a level</h2>
+              <div className="mt-5 grid gap-4 sm:grid-cols-2">
+                {LEVELS.map((level, i) => {
+                  const prev = LEVELS[i - 1];
+                  const locked = !!prev && !completedLevels.has(prev.id);
+                  const selected = levelId === level.id;
+                  return (
+                    <button
+                      key={level.id}
+                      type="button"
+                      disabled={locked}
+                      onClick={() => setLevelId(level.id)}
+                      className={`border-4 border-nes-ink p-3 text-left transition ${
+                        selected ? "bg-nes-coin" : "bg-nes-paper"
+                      } ${locked ? "opacity-50" : "active:translate-y-[2px]"}`}
+                    >
+                      <p className="text-[9px] uppercase tracking-widest text-nes-brick-dark">
+                        World {level.world}-{level.level} · {level.name}
+                      </p>
+                      <p className="mt-2 text-[9px] leading-5">
+                        {level.starsRequired
+                          ? `Collect all ${level.starsRequired} Sky Stars before the goal flag will open.`
+                          : "Reach the goal flag before the timer runs out."}
+                      </p>
+                      <div className="mt-2 flex items-center gap-2">
+                        {level.starsRequired ? <PixelSprite id="star" px={3} /> : <PixelSprite id="coin" px={3} />}
+                        <span className="text-[8px] uppercase tracking-widest opacity-70">
+                          {locked ? `Clear ${prev?.id} first` : `${level.timeLimit}s · ${level.enemies.length} enemies`}
+                        </span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             <h2 className="text-center text-xs uppercase tracking-widest text-nes-ink">Choose a save slot</h2>

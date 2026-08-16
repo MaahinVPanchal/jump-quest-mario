@@ -36,3 +36,9 @@ export function formatWorld(world: string): string {
 export function formatCombo(combo: number): string {
   return combo > 1 ? `COMBO x${Math.trunc(combo)}` : "";
 }
+
+/** Star counter, always "N/M" with the collected count clamped to the target. */
+export function formatStars(stars: number, required: number): string {
+  const target = clampInt(required, 0, 99);
+  return `${clampInt(stars, 0, target)}/${`${target}`}`;
+}

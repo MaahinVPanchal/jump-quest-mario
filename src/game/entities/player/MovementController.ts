@@ -18,6 +18,9 @@ export class MovementController {
   private buffer = 0;
   private wasGrounded = false;
   private jumping = false;
+  /** Granted by characters with an air jump (e.g. Mira). */
+  canDoubleJump = false;
+  private airJumpUsed = false;
   controlsLocked = false;
   knockbackUntil = 0;
 
@@ -39,6 +42,7 @@ export class MovementController {
 
     if (grounded) this.coyote = JUMP.coyoteMs;
     else this.coyote = Math.max(0, this.coyote - deltaMs);
+    if (grounded) this.airJumpUsed = false;
 
     if (this.input.justPressed("JUMP")) this.buffer = JUMP.bufferMs;
     else this.buffer = Math.max(0, this.buffer - deltaMs);
@@ -72,6 +76,18 @@ export class MovementController {
       this.coyote = 0;
       this.jumping = true;
       this.host.onJump();
+    } else if (
+      this.buffer > 0 &&
+      this.canDoubleJump &&
+      !this.airJumpUsed &&
+      !grounded &&
+      !this.controlsLocked
+    ) {
+      body.velocity.y = JUMP.velocity * 0.86;
+      this.buffer = 0;
+      this.airJumpUsed = true;
+      this.jumping = true;
+      this.host.onJump();
     }
 
     if (this.jumping && body.velocity.y < 0 && this.input.justReleased("JUMP")) {
@@ -93,6 +109,7 @@ export class MovementController {
     if (!body) return;
     body.velocity.y = this.input.isDown("JUMP") ? JUMP.velocity : JUMP.bounceVelocity;
     this.jumping = true;
+    this.airJumpUsed = false;
   }
 
   knockback(time: number, dir: number): void {

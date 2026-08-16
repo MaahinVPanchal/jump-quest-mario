@@ -49,4 +49,16 @@ export const ENEMIES: Record<EnemyKind, EnemyData> = {
     score: 250,
     weakness: ["fire"],
   },
+  spiker: {
+    id: "spiker",
+    name: "Cinder Spiker",
+    health: 1,
+    speed: 48,
+    damage: 1,
+    patrolRange: 144,
+    stompable: false,
+    canFly: false,
+    score: 300,
+    weakness: ["fire", "shell"],
+  },
 };

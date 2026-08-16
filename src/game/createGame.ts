@@ -10,16 +10,21 @@ import { audio } from "./systems/audio";
 import { gameState } from "./systems/state";
 import { display, resolveZoom } from "./systems/display";
 import type { SaveData } from "./types";
+import { FIRST_LEVEL_ID, getLevel } from "./levels";
 
 export interface StartOptions {
   parent: HTMLElement;
   slot: number;
   save: SaveData;
   onExit: () => void;
+  characterId?: string;
+  levelId?: string;
 }
 
-export function createGame({ parent, slot, save, onExit }: StartOptions): Phaser.Game {
+export function createGame({ parent, slot, save, onExit, characterId, levelId }: StartOptions): Phaser.Game {
   gameState.bindSave(slot, save);
+  gameState.characterId = characterId ?? "riko";
+  gameState.levelId = getLevel(levelId ?? FIRST_LEVEL_ID).id;
   gameState.resetLevel(true);
   audio.settings.music = save.settings.music;
   audio.settings.sfx = save.settings.sfx;

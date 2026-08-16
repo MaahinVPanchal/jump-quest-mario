@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatCoins, formatCombo, formatLives, formatScore, formatTime, formatWorld } from "./hudFormat";
+import { formatCoins, formatCombo, formatStars, formatLives, formatScore, formatTime, formatWorld } from "./hudFormat";
 
 describe("HUD formatting", () => {
   it("zero-pads the score across every range", () => {
@@ -77,5 +77,17 @@ describe("HUD formatting", () => {
   it("shows the combo only above 1x", () => {
     expect(formatCombo(1)).toBe("");
     expect(formatCombo(3)).toBe("COMBO x3");
+  });
+});
+
+describe("formatStars", () => {
+  it("renders collected over required", () => {
+    expect(formatStars(0, 5)).toBe("0/5");
+    expect(formatStars(3, 5)).toBe("3/5");
+  });
+  it("clamps overflow and bad input", () => {
+    expect(formatStars(9, 5)).toBe("5/5");
+    expect(formatStars(-2, 5)).toBe("0/5");
+    expect(formatStars(Number.NaN, 5)).toBe("0/5");
   });
 });

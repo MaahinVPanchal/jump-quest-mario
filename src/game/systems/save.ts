@@ -1,5 +1,6 @@
 import type { LevelResult, SaveData } from "../types";
 import { RULES } from "../config";
+import { CHARACTERS } from "../data/characters";
 
 const KEY_PREFIX = "emberleaf.save.slot";
 export const SAVE_VERSION = 1;
@@ -67,12 +68,18 @@ export function listSlots(): (SaveData | null)[] {
 }
 
 export function applyResult(save: SaveData, result: LevelResult): SaveData {
+  const completed = save.completedLevels.includes(result.levelId)
+    ? save.completedLevels
+    : [...save.completedLevels, result.levelId];
+  const unlocked = new Set(save.unlockedCharacters);
+  for (const character of Object.values(CHARACTERS)) {
+    if (character.unlockedBy && completed.includes(character.unlockedBy)) unlocked.add(character.id);
+  }
   const next: SaveData = {
     ...save,
     coins: save.coins + result.coins,
-    completedLevels: save.completedLevels.includes(result.levelId)
-      ? save.completedLevels
-      : [...save.completedLevels, result.levelId],
+    completedLevels: completed,
+    unlockedCharacters: Array.from(unlocked),
     bestScores: {
       ...save.bestScores,
       [result.levelId]: Math.max(save.bestScores[result.levelId] ?? 0, result.score),

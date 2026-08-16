@@ -69,13 +69,24 @@ const PALETTE: Record<string, string> = {
   P: "#e03c28", // piranha head
   p: "#a01810",
   N: "#00a800", // piranha stem
+  V: "#7c3cfc", // spiker body
+  v: "#4c18b0",
+  C: "#3cbcfc", // Mira cyan
+  c: "#0058f8",
 };
 
-function paint(ctx: Ctx, rows: readonly string[], px: number, ox = 0, oy = 0): void {
+function paint(
+  ctx: Ctx,
+  rows: readonly string[],
+  px: number,
+  ox = 0,
+  oy = 0,
+  override: Record<string, string> = {},
+): void {
   rows.forEach((row, y) => {
     for (let x = 0; x < row.length; x++) {
       const c = row[x]!;
-      const fill = PALETTE[c];
+      const fill = override[c] ?? PALETTE[c];
       if (!fill) continue;
       ctx.fillStyle = fill;
       ctx.fillRect(ox + x * px, oy + y * px, px, px);
@@ -234,6 +245,42 @@ export function buildTextures(scene: Phaser.Scene): void {
   hero("hero_fall", "fall");
   hero("hero_land", "land");
   hero("hero_hurt", "hurt");
+
+  // Second playable character: same rig, cool-toned palette.
+  const MIRA_TINT: Record<string, string> = { R: "#3cbcfc", r: "#0058f8", H: "#203890", Y: "#f8f8f8" };
+  const mira = (key: string, pose: HeroPose): void =>
+    make(scene, key, 32, 48, (ctx) => paint(ctx, heroPixels(pose), 2, 0, 16, MIRA_TINT), false);
+  mira("mira_idle", "idle");
+  mira("mira_walk_0", "walk0");
+  mira("mira_walk_1", "walk1");
+  mira("mira_walk_2", "walk2");
+  mira("mira_walk_3", "walk3");
+  mira("mira_jump", "jump");
+  mira("mira_fall", "fall");
+  mira("mira_land", "land");
+  mira("mira_hurt", "hurt");
+
+  // Spiked roller: never stompable, spikes ring the whole shell.
+  const spikerBody = (swap: boolean): readonly string[] => [
+    "....K..K..K..K..",
+    "...KKK.KK.KKK...",
+    "..KKVVVVVVVVKK..",
+    ".KVVVVVVVVVVVVK.",
+    "KVVWWVVVVVVWWVVK",
+    "KVVWKVVVVVVKWVVK",
+    "KVVVVVVVVVVVVVVK",
+    "KVvvvvvvvvvvvvVK",
+    "KVvvvvvvvvvvvvVK",
+    ".KVvvvvvvvvvvVK.",
+    "..KKvvvvvvvvKK..",
+    "...KKK.KK.KKK...",
+    "....K..K..K..K..",
+    swap ? "..OO........OO.." : "...OO......OO...",
+    swap ? "..OO........OO.." : "...OO......OO...",
+    "................",
+  ];
+  make(scene, "spiker_0", 32, 32, (ctx) => paint(ctx, spikerBody(false), 2), false);
+  make(scene, "spiker_1", 32, 32, (ctx) => paint(ctx, spikerBody(true), 2), false);
 
   // ---- enemies ----
   // Mushroom-shaped stomper: brown dome, white eyes with hard pupils, two dark feet.
@@ -496,6 +543,38 @@ export function buildTextures(scene: Phaser.Scene): void {
     ctx.fillStyle = "#ffffff";
     ctx.fillRect(0, 0, 8, 8);
   });
+
+  // Sky Star: the level-2 objective pickup.
+  make(
+    scene,
+    "star",
+    32,
+    32,
+    (ctx) =>
+      paint(
+        ctx,
+        [
+          ".......YY.......",
+          "......YYYY......",
+          "......YYYY......",
+          ".....YYYYYY.....",
+          "YYYYYYYYYYYYYYYY",
+          "YYYYYYYYYYYYYYYY",
+          ".YYYYYYYYYYYYYY.",
+          "..YYYYYYYYYYYY..",
+          "..YYYKYYYYKYYY..",
+          "..YYYYYYYYYYYY..",
+          ".YYYYY....YYYYY.",
+          ".YYYY......YYYY.",
+          "YYYY........YYYY",
+          "YYY..........YYY",
+          ".Y............Y.",
+          "................",
+        ],
+        2,
+      ),
+    false,
+  );
 
   // ---- level furniture ----
   make(scene, "checkpoint", 24, 72, (ctx) => {

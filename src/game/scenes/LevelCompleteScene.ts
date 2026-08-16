@@ -2,6 +2,7 @@ import Phaser from "phaser";
 import { VIEW } from "../config";
 import { audio } from "../systems/audio";
 import { gameState } from "../systems/state";
+import { getLevel, nextLevelId } from "../levels";
 
 export class LevelCompleteScene extends Phaser.Scene {
   constructor() {
@@ -25,6 +26,7 @@ export class LevelCompleteScene extends Phaser.Scene {
           ["Time taken", `${result.timeTaken}s`],
           ["Time bonus", `${result.timeLeft * 50}`],
           ["Coins", `${result.coins}`],
+          ["Sky Stars", `${result.stars}`],
           ["Golden Relics", `${result.relics} / 3`],
           ["Enemies defeated", `${result.enemies}`],
           ["Damage taken", `${result.damageTaken}`],
@@ -59,11 +61,20 @@ export class LevelCompleteScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
 
-    this.button(VIEW.width / 2 - 170, 630, "Replay level", () => {
+    const next = result ? nextLevelId(result.levelId) : null;
+    if (next) {
+      const nextLevel = getLevel(next);
+      this.button(VIEW.width / 2 - 300, 630, `Next: ${nextLevel.world}-${nextLevel.level}`, () => {
+        gameState.levelId = next;
+        gameState.resetLevel(true);
+        this.scene.start("Level");
+      });
+    }
+    this.button(VIEW.width / 2, 630, "Replay level", () => {
       gameState.resetLevel(true);
       this.scene.start("Level");
     });
-    this.button(VIEW.width / 2 + 170, 630, "Back to menu", () => {
+    this.button(VIEW.width / 2 + 300, 630, "Back to menu", () => {
       this.scene.stop();
       this.game.events.emit("game:exit");
     });

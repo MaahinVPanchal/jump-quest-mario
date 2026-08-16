@@ -5,10 +5,12 @@ interface Props {
   slot: number;
   save: SaveData;
   onExit: () => void;
+  characterId: string;
+  levelId: string;
 }
 
 /** Owns the Phaser canvas lifecycle. Phaser is imported only in the browser. */
-export default function PhaserMount({ slot, save, onExit }: Props) {
+export default function PhaserMount({ slot, save, onExit, characterId, levelId }: Props) {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const exitRef = useRef(onExit);
   exitRef.current = onExit;
@@ -24,6 +26,8 @@ export default function PhaserMount({ slot, save, onExit }: Props) {
         parent: hostRef.current,
         slot,
         save,
+        characterId,
+        levelId,
         onExit: () => exitRef.current(),
       });
     })();
@@ -33,7 +37,7 @@ export default function PhaserMount({ slot, save, onExit }: Props) {
       game?.destroy(true);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [slot]);
+  }, [slot, characterId, levelId]);
 
   return <div ref={hostRef} className="h-full w-full" aria-label="Game canvas" />;
 }

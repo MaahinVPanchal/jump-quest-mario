@@ -1,6 +1,8 @@
 import Phaser from "phaser";
 import { CAMERA, COLORS, COMBAT, PHYSICS, SCORE, TILE, VIEW } from "../config";
 import { LEVEL_1 } from "../levels/level1";
+import { getLevel } from "../levels";
+import { CHARACTERS, DEFAULT_CHARACTER } from "../data/characters";
 import type { LevelData, LevelResult, MovingPlatformSpawn } from "../types";
 import { InputManager } from "../systems/input";
 import { audio } from "../systems/audio";
@@ -42,12 +44,22 @@ export class LevelScene extends Phaser.Scene {
   private showHitboxes = false;
   private invincible = false;
   private lastCheckpointIndex = -1;
+  private goalLocked = false;
+
+  private get starsRequired(): number {
+    return this.level.starsRequired ?? 0;
+  }
+
+  private get starsCollected(): number {
+    return gameState.starIds.length;
+  }
 
   constructor() {
     super("Level");
   }
 
   create(): void {
+    this.level = getLevel(gameState.levelId);
     const level = this.level;
     this.finished = false;
     this.respawning = false;
@@ -62,7 +74,7 @@ export class LevelScene extends Phaser.Scene {
     this.physics.world.setBounds(0, 0, worldW, worldH + 200);
     this.physics.world.gravity.y = PHYSICS.gravity;
     this.cameras.main.setBounds(0, 0, worldW, worldH);
-    this.cameras.main.setBackgroundColor(COLORS.sky);
+    this.cameras.main.setBackgroundColor(level.skyColor ?? COLORS.sky);
 
     this.buildParallax(worldW);
     this.buildTerrain();
@@ -112,15 +124,22 @@ export class LevelScene extends Phaser.Scene {
     };
     this.timeLeft = gameState.checkpoint ? start.timeLeft : level.timeLimit;
 
-    this.player = new Player(this, start.x, start.y, this.controls, {
-      onFire: (x, y, dir) => this.spawnFireball(x, y, dir),
-      onDeath: () => this.handleDeath(),
-      onDamage: () => {
-        gameState.damageTaken += 1;
-        this.shake(CAMERA.shakeBig);
+    this.player = new Player(
+      this,
+      start.x,
+      start.y,
+      this.controls,
+      {
+        onFire: (x, y, dir) => this.spawnFireball(x, y, dir),
+        onDeath: () => this.handleDeath(),
+        onDamage: () => {
+          gameState.damageTaken += 1;
+          this.shake(CAMERA.shakeBig);
+        },
+        onPowerChange: () => this.emitHud(),
       },
-      onPowerChange: () => this.emitHud(),
-    });
+      CHARACTERS[gameState.characterId] ?? DEFAULT_CHARACTER,
+    );
     if (start.power === "big") this.player.grow();
     if (start.power === "fire") this.player.giveFire();
 
@@ -134,6 +153,11 @@ export class LevelScene extends Phaser.Scene {
     audio.startMusic("level");
 
     this.game.events.emit(GameEvent.Toast, `World ${level.world}-${level.level}  ${level.name}`);
+    if (this.starsRequired > 0) {
+      this.time.delayedCall(2200, () =>
+        this.toast(`Collect ${this.starsRequired} Sky Stars to open the goal`),
+      );
+    }
     this.events.on(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.scene.stop("Hud");
       audio.stopMusic();
@@ -261,6 +285,7 @@ export class LevelScene extends Phaser.Scene {
     const gy = this.level.goal.y * TILE + TILE;
     this.add.image(gx, gy, "goal_pole").setOrigin(0.5, 1).setDepth(6);
     this.goalFlag = this.add.image(gx + 22, gy - 300, "goal_flag").setOrigin(0, 0).setDepth(7);
+    if (this.starsRequired > 0 && this.starsCollected < this.starsRequired) this.goalFlag.setAlpha(0.45);
     this.goalZone = this.add.zone(gx, gy - 160, 48, 320);
     this.physics.add.existing(this.goalZone, true);
   }
@@ -391,6 +416,17 @@ export class LevelScene extends Phaser.Scene {
         this.burst(x, y, COLORS.relic, 18);
         this.toast("Golden Relic found!");
         break;
+      case "star": {
+        gameState.collectedIds.add(item.uid);
+        if (!gameState.starIds.includes(item.uid)) gameState.starIds.push(item.uid);
+        audio.play("life");
+        this.addScore(SCORE.secret, x, y);
+        this.burst(x, y, COLORS.coin, 22);
+        const left = Math.max(0, this.starsRequired - this.starsCollected);
+        this.toast(left > 0 ? `Sky Star!  ${left} to go` : "All Sky Stars collected — the goal is open!");
+        if (left <= 0) this.unlockGoal();
+        break;
+      }
       case "growthOrb":
         this.player.grow();
         this.addScore(SCORE.powerUp, x, y);
@@ -529,7 +565,15 @@ export class LevelScene extends Phaser.Scene {
       combo: gameState.comboMultiplier(this.time.now),
       world: `${this.level.world}-${this.level.level}`,
       relics: gameState.relicIds.length,
+      stars: this.starsCollected,
+      starsRequired: this.starsRequired,
     });
+  }
+
+  /** Visual cue that the sealed goal is now usable. */
+  private unlockGoal(): void {
+    this.goalFlag.setAlpha(1);
+    this.tweens.add({ targets: this.goalFlag, scale: 1.3, yoyo: true, duration: 220, repeat: 2 });
   }
 
   // ------------------------------------------------------------ fireball
@@ -608,6 +652,18 @@ export class LevelScene extends Phaser.Scene {
 
   private completeLevel(): void {
     if (this.finished) return;
+    if (this.starsRequired > 0 && this.starsCollected < this.starsRequired) {
+      if (!this.goalLocked) {
+        this.goalLocked = true;
+        this.toast(
+          `The goal is sealed — collect ${this.starsRequired - this.starsCollected} more Sky Star${
+            this.starsRequired - this.starsCollected === 1 ? "" : "s"
+          }`,
+        );
+        this.time.delayedCall(1400, () => (this.goalLocked = false));
+      }
+      return;
+    }
     this.finished = true;
     this.player.lockControls(true);
     const body = this.player.sprite.body as Phaser.Physics.Arcade.Body;
@@ -629,6 +685,7 @@ export class LevelScene extends Phaser.Scene {
       timeLeft: Math.ceil(this.timeLeft),
       timeTaken: Math.round(this.elapsed / 1000),
       damageTaken: gameState.damageTaken,
+      stars: this.starsCollected,
       rank: gameState.rankFor(this.timeLeft, this.level.timeLimit),
     };
     gameState.lastResult = result;
