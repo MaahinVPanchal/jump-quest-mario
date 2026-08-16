@@ -56,6 +56,7 @@ export class HudScene extends Phaser.Scene {
     };
 
     this.score = col(160, "SCORE").value;
+    this.score.setText("000000");
     this.coins = col(400, "COINS").value;
     this.world = this.add.text(640, 20, "WORLD", LABEL).setOrigin(0.5, 0);
     this.world.setShadow(3, 3, "#000000", 0, true, true);
