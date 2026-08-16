@@ -38,12 +38,29 @@ export interface EnemyData {
   weakness: string[];
 }
 
+export type ThrowKind =
+  | "ember"
+  | "banana"
+  | "claw"
+  | "hammer"
+  | "egg"
+  | "star"
+  | "pellet"
+  | "beam"
+  | "bubble"
+  | "shell"
+  | "shadow"
+  | "vine"
+  | "ice";
+
 export type ItemKind =
   | "coin"
   | "relic"
   | "star"
   | "growthOrb"
   | "fireCrystal"
+  | "banana"
+  | "catBell"
   | "oneUp";
 
 export type BlockKind = "question" | "brick" | "hidden" | "metal";
