@@ -251,6 +251,47 @@ export function buildTextures(scene: Phaser.Scene): void {
     swap ? "..OO........OO.." : "...OO......OO...",
     "................",
   ];
+  // Cragspit Gunner: squat armoured shooter with a shoulder cannon; lobs fireshots.
+  const lobberBody = (fire: boolean): readonly string[] => [
+    "................",
+    "......KKKK......",
+    ".....KAAAAK.....",
+    "....KAWWWWAK....",
+    "....KAWKKWAK....",
+    "...KAAAAAAAAK...",
+    "..KAFFFFFFFFAK..",
+    ".KAFFFFFFFFFFAK.",
+    fire ? "KKKAFFFFFFFFAKKK" : ".KKAFFFFFFFFAKK.",
+    fire ? "PPKAFFFFFFFFAKKK" : ".KKAFFFFFFFFAKK.",
+    ".KAFFFFFFFFFFAK.",
+    "..KAaaaaaaaaAK..",
+    "..KAaaaaaaaaAK..",
+    "...KKAA..AAKK...",
+    "...KAA....AAK...",
+    "................",
+  ];
+  make(scene, "lobber_0", 32, 32, (ctx) => paint(ctx, lobberBody(false), 2), false);
+  make(scene, "lobber_1", 32, 32, (ctx) => paint(ctx, lobberBody(true), 2), false);
+
+  // Enemy projectile: hot core with a dark rim so it reads on every background.
+  make(
+    scene,
+    "enemy_shot",
+    16,
+    16,
+    (ctx) => {
+      ctx.fillStyle = hex(0x000000);
+      ctx.fillRect(2, 2, 12, 12);
+      ctx.fillStyle = hex(0xff5a1f);
+      ctx.fillRect(3, 3, 10, 10);
+      ctx.fillStyle = hex(0xffd83c);
+      ctx.fillRect(5, 5, 6, 6);
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(6, 6, 3, 3);
+    },
+    false,
+  );
+
   make(scene, "spiker_0", 32, 32, (ctx) => paint(ctx, spikerBody(false), 2), false);
   make(scene, "spiker_1", 32, 32, (ctx) => paint(ctx, spikerBody(true), 2), false);
 
@@ -803,17 +844,53 @@ export function buildTextures(scene: Phaser.Scene): void {
     ctx.fillStyle = hex(0x007800);
     ctx.fillRect(44, 16, 10, 48);
   });
-  make(scene, "spike", TILE, 16, (ctx) => {
-    ctx.fillStyle = hex(0x9aa4b2);
-    for (let i = 0; i < 4; i++) {
-      ctx.beginPath();
-      ctx.moveTo(i * 8, 16);
-      ctx.lineTo(i * 8 + 4, 0);
-      ctx.lineTo(i * 8 + 8, 16);
-      ctx.closePath();
-      ctx.fill();
-    }
-  });
+  make(
+    scene,
+    "spike",
+    TILE,
+    24,
+    (ctx) => {
+      // Hazard base: black/yellow warning stripes so traps are unmissable.
+      ctx.fillStyle = hex(0xffd400);
+      ctx.fillRect(0, 16, TILE, 8);
+      ctx.fillStyle = hex(0x000000);
+      for (let i = -8; i < TILE + 8; i += 8) {
+        ctx.beginPath();
+        ctx.moveTo(i, 24);
+        ctx.lineTo(i + 4, 24);
+        ctx.lineTo(i + 8, 16);
+        ctx.lineTo(i + 4, 16);
+        ctx.closePath();
+        ctx.fill();
+      }
+      // Blades: bright steel with hard outlines and white highlights.
+      for (let i = 0; i < 4; i++) {
+        const x = i * 8;
+        ctx.fillStyle = hex(0x000000);
+        ctx.beginPath();
+        ctx.moveTo(x, 18);
+        ctx.lineTo(x + 4, 0);
+        ctx.lineTo(x + 8, 18);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = hex(0xe8ecf4);
+        ctx.beginPath();
+        ctx.moveTo(x + 1, 17);
+        ctx.lineTo(x + 4, 3);
+        ctx.lineTo(x + 7, 17);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = hex(0x9aa4b2);
+        ctx.beginPath();
+        ctx.moveTo(x + 4, 3);
+        ctx.lineTo(x + 7, 17);
+        ctx.lineTo(x + 4, 17);
+        ctx.closePath();
+        ctx.fill();
+      }
+    },
+    false,
+  );
 
   // ---- parallax ----
   // Stepped, flat-shaded scenery in the console-era style.
