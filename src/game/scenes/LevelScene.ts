@@ -44,6 +44,15 @@ export class LevelScene extends Phaser.Scene {
   private showHitboxes = false;
   private invincible = false;
   private lastCheckpointIndex = -1;
+  private goalLocked = false;
+
+  private get starsRequired(): number {
+    return this.level.starsRequired ?? 0;
+  }
+
+  private get starsCollected(): number {
+    return gameState.starIds.length;
+  }
 
   constructor() {
     super("Level");
@@ -406,6 +415,17 @@ export class LevelScene extends Phaser.Scene {
         this.burst(x, y, COLORS.relic, 18);
         this.toast("Golden Relic found!");
         break;
+      case "star": {
+        gameState.collectedIds.add(item.uid);
+        if (!gameState.starIds.includes(item.uid)) gameState.starIds.push(item.uid);
+        audio.play("life");
+        this.addScore(SCORE.secret, x, y);
+        this.burst(x, y, COLORS.coin, 22);
+        const left = Math.max(0, this.starsRequired - this.starsCollected);
+        this.toast(left > 0 ? `Sky Star!  ${left} to go` : "All Sky Stars collected — the goal is open!");
+        if (left <= 0) this.unlockGoal();
+        break;
+      }
       case "growthOrb":
         this.player.grow();
         this.addScore(SCORE.powerUp, x, y);
@@ -544,7 +564,15 @@ export class LevelScene extends Phaser.Scene {
       combo: gameState.comboMultiplier(this.time.now),
       world: `${this.level.world}-${this.level.level}`,
       relics: gameState.relicIds.length,
+      stars: this.starsCollected,
+      starsRequired: this.starsRequired,
     });
+  }
+
+  /** Visual cue that the sealed goal is now usable. */
+  private unlockGoal(): void {
+    this.goalFlag.setAlpha(1);
+    this.tweens.add({ targets: this.goalFlag, scale: 1.3, yoyo: true, duration: 220, repeat: 2 });
   }
 
   // ------------------------------------------------------------ fireball
@@ -623,6 +651,18 @@ export class LevelScene extends Phaser.Scene {
 
   private completeLevel(): void {
     if (this.finished) return;
+    if (this.starsRequired > 0 && this.starsCollected < this.starsRequired) {
+      if (!this.goalLocked) {
+        this.goalLocked = true;
+        this.toast(
+          `The goal is sealed — collect ${this.starsRequired - this.starsCollected} more Sky Star${
+            this.starsRequired - this.starsCollected === 1 ? "" : "s"
+          }`,
+        );
+        this.time.delayedCall(1400, () => (this.goalLocked = false));
+      }
+      return;
+    }
     this.finished = true;
     this.player.lockControls(true);
     const body = this.player.sprite.body as Phaser.Physics.Arcade.Body;
@@ -644,6 +684,7 @@ export class LevelScene extends Phaser.Scene {
       timeLeft: Math.ceil(this.timeLeft),
       timeTaken: Math.round(this.elapsed / 1000),
       damageTaken: gameState.damageTaken,
+      stars: this.starsCollected,
       rank: gameState.rankFor(this.timeLeft, this.level.timeLimit),
     };
     gameState.lastResult = result;
