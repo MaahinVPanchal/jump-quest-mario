@@ -267,7 +267,13 @@ export type HeroPose =
 
 /** Torso + leg variants keep the classic four-frame run cycle readable. */
 function heroPixels(pose: HeroPose, rig: HeroRig = "riko"): readonly string[] {
+  const art = RIGS[rig];
   const torso =
+    rig !== "riko" && rig !== "princess"
+      ? pose === "land"
+        ? [".".repeat(16), ...art.torso.slice(0, 3)]
+        : art.torso
+      :
     pose === "jump" || pose === "fall"
       ? [
           "S.HHHRRHRRHHH.SS",
@@ -288,7 +294,7 @@ function heroPixels(pose: HeroPose, rig: HeroRig = "riko"): readonly string[] {
           "SSHHRYRRRRYRHHSS",
           "SSHRRRRRRRRRRHSS",
         ];
-  const legs =
+  const rawLegs =
     pose === "walk0"
       ? ["...RRRRRRRRR....", "...RRRR..RRRR...", "...HHH....HHHH..", "..HHHH....HHHHH."]
       : pose === "walk2"
@@ -306,7 +312,14 @@ function heroPixels(pose: HeroPose, rig: HeroRig = "riko"): readonly string[] {
               : pose === "skid"
                 ? ["..RRRRRRRRR.....", ".RRRRR..RRRR....", "HHHH.......HHH..", "HHH.........HHH."]
                 : ["..RRRRRRRRRRRR..", "..RRRR....RRRR..", "..HHH......HHH..", ".HHHH......HHHH."];
-  const head = HEADS[rig];
+  const legs = rawLegs.map((row) =>
+    row
+      .split("R")
+      .join(art.legBody)
+      .split("H")
+      .join(art.legBoot),
+  );
+  const head = art.head;
   // idle2 is the breathing frame: the head settles one pixel row lower.
   const rows = pose === "idle2" ? [".".repeat(16), ...head.slice(0, head.length - 1)] : head;
   return [...rows, ...torso, ...legs];
