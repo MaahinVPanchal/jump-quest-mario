@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { CAMERA, COLORS, COMBAT, PHYSICS, RULES, SCORE, TILE, VIEW } from "../config";
+import { CAMERA, COLORS, COMBAT, PHYSICS, SCORE, TILE, VIEW } from "../config";
 import { LEVEL_1 } from "../levels/level1";
 import type { LevelData, LevelResult, MovingPlatformSpawn } from "../types";
 import { InputManager } from "../systems/input";
@@ -19,7 +19,7 @@ interface MovingPlatform {
 
 export class LevelScene extends Phaser.Scene {
   private level: LevelData = LEVEL_1;
-  private input!: InputManager;
+  private controls!: InputManager;
   private player!: Player;
   private terrain!: Phaser.Physics.Arcade.StaticGroup;
   private blocks!: Phaser.Physics.Arcade.StaticGroup;
@@ -101,7 +101,7 @@ export class LevelScene extends Phaser.Scene {
     this.buildCheckpoints();
     this.buildGoal();
 
-    this.input = new InputManager(this);
+    this.controls = new InputManager(this);
     const start = gameState.checkpoint ?? {
       x: level.spawn.x * TILE + TILE / 2,
       y: level.spawn.y * TILE + TILE,
@@ -112,7 +112,7 @@ export class LevelScene extends Phaser.Scene {
     };
     this.timeLeft = gameState.checkpoint ? start.timeLeft : level.timeLimit;
 
-    this.player = new Player(this, start.x, start.y, this.input, {
+    this.player = new Player(this, start.x, start.y, this.controls, {
       onFire: (x, y, dir) => this.spawnFireball(x, y, dir),
       onDeath: () => this.handleDeath(),
       onDamage: () => {
@@ -231,7 +231,6 @@ export class LevelScene extends Phaser.Scene {
       const spike = this.physics.add.staticImage(hazard.x * TILE + TILE / 2, hazard.y * TILE + TILE - 8, "spike");
       spike.setDepth(9).refreshBody();
       spike.setData("hazard", true);
-      this.physics.add.overlap(spike, [], () => undefined);
       this.hazardSprites.push(spike);
     }
   }
@@ -649,15 +648,8 @@ export class LevelScene extends Phaser.Scene {
     });
   }
 
-  private setupCheckpointCheck(): void {
-    /* handled inline in update for cheapness */
-  }
-
   private setupDebug(): void {
     if (!import.meta.env.DEV) return;
-    const kb = this.input;
-    void kb;
-    void this.setupCheckpointCheck;
     this.debugText = this.add
       .text(12, 92, "", {
         fontFamily: "monospace",
@@ -670,7 +662,7 @@ export class LevelScene extends Phaser.Scene {
       .setDepth(100)
       .setVisible(false);
 
-    const keyboard = this.sys.game.device.os.desktop ? this.scene.scene.input.keyboard : null;
+    const keyboard = this.input.keyboard;
     keyboard?.on("keydown-F1", (e: KeyboardEvent) => {
       e.preventDefault();
       this.showHitboxes = !this.showHitboxes;
@@ -700,15 +692,15 @@ export class LevelScene extends Phaser.Scene {
   // ------------------------------------------------------------- update
 
   update(time: number, delta: number): void {
-    this.input.update();
+    this.controls.update();
     if (!this.finished && !this.respawning) this.elapsed += delta;
 
-    if (this.input.justPressed("PAUSE") && !this.finished && !this.respawning) {
+    if (this.controls.justPressed("PAUSE") && !this.finished && !this.respawning) {
       this.scene.pause();
       this.scene.launch("Pause");
       return;
     }
-    if (this.input.justPressed("RESTART") && !this.respawning && !this.finished) {
+    if (this.controls.justPressed("RESTART") && !this.respawning && !this.finished) {
       this.player.kill();
       return;
     }
@@ -778,7 +770,7 @@ export class LevelScene extends Phaser.Scene {
   }
 
   private checkPipes(): void {
-    if (this.transitioning || !this.input.isDown("CROUCH")) return;
+    if (this.transitioning || !this.controls.isDown("CROUCH")) return;
     const body = this.player.sprite.body as Phaser.Physics.Arcade.Body;
     if (!body.blocked.down) return;
     for (const { zone, target } of this.pipeZones) {
@@ -811,6 +803,3 @@ export class LevelScene extends Phaser.Scene {
     });
   }
 }
-
-export const LEVEL_TIME_LIMIT = LEVEL_1.timeLimit;
-export const RULES_REF = RULES;
