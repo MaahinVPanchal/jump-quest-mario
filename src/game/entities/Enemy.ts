@@ -56,6 +56,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
   private chargeUntil = 0;
   /** Boss state: remaining hits, hop timer and the theme its art comes from. */
   private hp = 1;
+  private enraged = false;
   private hopAt = 0;
   private bossTheme = "meadow";
   awake = false;
@@ -93,6 +94,13 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
       body.setImmovable(true);
       body.checkCollision.none = true;
       this.cycle = Math.random() * PIRANHA_PERIOD;
+    }
+    if (spawn.type === "ogre") {
+      // Heavy brute: two stomps to fell, bigger hitbox than a walker.
+      this.hp = data.health;
+      this.setScale(1.25);
+      body.setSize(24, 30);
+      body.setOffset(4, 2);
     }
     if (spawn.type === "boss") {
       const theme = themeById(spawn.variant ?? "meadow");
@@ -150,6 +158,17 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
         return false;
       }
     }
+    if (this.kind === "ogre" && source !== "fire") {
+      this.hp -= source === "shell" ? 2 : 1;
+      if (this.hp > 0) {
+        // First stomp cracks its armour: it turns enraged and speeds up.
+        this.enraged = true;
+        this.setTint(0xff9c6c);
+        this.setVelocityY(-120);
+        this.scene.tweens.add({ targets: this, alpha: 0.3, yoyo: true, repeat: 2, duration: 60 });
+        return false;
+      }
+    }
     if (this.kind === "boss") {
       this.hp -= source === "shell" ? 2 : 1;
       if (this.hp > 0) {
@@ -204,11 +223,6 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     if (this.kind === "piranha") {
       this.updatePiranha(delta);
       body.updateFromGameObject();
-    } else if (this.kind === "ogre") {
-      this.x += this.dir * this.stats.speed * (delta / 1000);
-      if (Math.abs(this.x - this.homeX) > this.patrol) this.dir *= -1;
-      this.y = this.homeY + Math.sin(time / 520 + this.phase) * 52;
-      body.updateFromGameObject();
     } else if (this.mode === "sliding") {
       this.setVelocityX(this.dir * SHELL.slideSpeed);
       if (body.blocked.left || body.blocked.right) {
@@ -238,6 +252,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
       }
     } else {
       let speed = this.stats.speed;
+      if (this.kind === "ogre" && this.enraged) speed *= 1.6;
       if (this.kind === "spiker") speed *= this.updateSpikerCharge(time);
       this.setVelocityX(this.dir * speed);
       const hitWall = body.blocked.left || body.blocked.right;
@@ -250,6 +265,17 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     }
 
     if (this.kind !== "piranha") this.setFlipX(this.dir > 0);
+    if (this.kind === "ogre" && source !== "fire") {
+      this.hp -= source === "shell" ? 2 : 1;
+      if (this.hp > 0) {
+        // First stomp cracks its armour: it turns enraged and speeds up.
+        this.enraged = true;
+        this.setTint(0xff9c6c);
+        this.setVelocityY(-120);
+        this.scene.tweens.add({ targets: this, alpha: 0.3, yoyo: true, repeat: 2, duration: 60 });
+        return false;
+      }
+    }
     if (this.kind === "boss") {
       this.setTexture(bossKey(this.bossTheme, Math.floor(time / 220) % 2));
       return;
