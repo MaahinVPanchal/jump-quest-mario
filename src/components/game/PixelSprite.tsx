@@ -29,6 +29,7 @@ export type SpriteId =
   | "rikoBig"
   | "rikoFire"
   | "mira"
+  | "princess"
   | "walker"
   | "shell"
   | "flyer"
@@ -68,6 +69,24 @@ const recolor = (rows: readonly string[], from: string, to: string): string[] =>
 
 const SPRITES: Record<SpriteId, readonly string[]> = {
   riko: [...HERO_HEAD, ...HERO_BODY],
+  princess: [
+    "...Y.Y.Y.Y.Y....",
+    "...YYYYYYYY.....",
+    "..HHHHHHHHHH....",
+    "..HHSSSSSSSH....",
+    "..HSSKSSKSSS....",
+    "..HSSSSSSSSS....",
+    "...SSSKKKSS.....",
+    "...HHRRRRHH.....",
+    "..RRRRRRRRRR....",
+    ".RRRRYRRYRRRR...",
+    "SRRRRRRRRRRRRS..",
+    "SRRRRRRRRRRRRS..",
+    "..RRRRRRRRRRR...",
+    ".RRRRRRRRRRRRR..",
+    ".HHH......HHH...",
+    "HHHH......HHHH..",
+  ],
   rikoBig: [...HERO_HEAD, ...HERO_BODY],
   rikoFire: [...recolor(HERO_HEAD, "R", "W"), ...recolor(HERO_BODY, "R", "W")],
   mira: [

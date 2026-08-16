@@ -212,7 +212,13 @@ export default function GameShell() {
                       }`}
                     >
                       <PixelSprite
-                        id={c.canDoubleJump ? "mira" : "riko"}
+                        id={
+                          /Princess|Doll|Dancer|Star/i.test(c.archetype ?? "")
+                            ? "princess"
+                            : c.canDoubleJump
+                              ? "mira"
+                              : "riko"
+                        }
                         px={3}
                         tint={c.tint}
                       />
