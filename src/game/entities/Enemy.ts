@@ -317,7 +317,6 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
 
   /** Returns the speed multiplier for the spiker's patrol / charge rhythm. */
   private updateLobber(time: number): void {
-    void 0;
     const scene = this.scene as Phaser.Scene & {
       playerX?: () => number;
       spawnEnemyShot?: (x: number, y: number, dir: number) => void;
@@ -336,6 +335,52 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
       });
     }
     this.setTint(time < this.telegraphUntil ? 0xffe08a : 0xffffff);
+  }
+
+  /**
+   * Signature skills: walkers leap, shells burst-dash, ogres pounce and bosses
+   * fire ranged shots, so every stage has active threats instead of pacers.
+   */
+  private useSkill(time: number, body: Phaser.Physics.Arcade.Body): void {
+    const scene = this.scene as Phaser.Scene & {
+      playerX?: () => number;
+      spawnEnemyShot?: (x: number, y: number, dir: number) => void;
+    };
+    const px = scene.playerX?.();
+    if (px === undefined || !Number.isFinite(px)) return;
+    const dx = px - this.x;
+    const near = (r: number): boolean => Math.abs(dx) < r;
+    if (time < this.nextSkillAt) return;
+
+    if (this.kind === "walker" && body.blocked.down && near(SKILL.walkerHopRange)) {
+      this.nextSkillAt = time + SKILL.walkerHopCooldown;
+      this.dir = dx >= 0 ? 1 : -1;
+      this.setVelocityY(-300);
+      this.setVelocityX(this.dir * this.stats.speed * 1.8);
+    } else if (this.kind === "shell" && this.mode === "patrol" && near(SKILL.shellDashRange)) {
+      this.nextSkillAt = time + SKILL.shellDashCooldown;
+      this.dir = dx >= 0 ? 1 : -1;
+      this.setTint(0xffd0d0);
+      this.scene.time.delayedCall(260, () => {
+        if (this.mode !== "patrol" || !this.active) return;
+        this.clearTint();
+        this.setVelocityX(this.dir * this.stats.speed * 3);
+      });
+    } else if (this.kind === "ogre" && body.blocked.down && near(SKILL.ogreLeapRange)) {
+      this.nextSkillAt = time + SKILL.ogreLeapCooldown;
+      this.dir = dx >= 0 ? 1 : -1;
+      this.setVelocityY(-380);
+      this.setVelocityX(this.dir * this.stats.speed * 1.6);
+    } else if (this.kind === "boss" && near(SKILL.bossShotRange)) {
+      this.nextSkillAt = time + SKILL.bossShotCooldown;
+      const dir = dx >= 0 ? 1 : -1;
+      this.setTint(0xffc8a0);
+      this.scene.time.delayedCall(360, () => {
+        if (this.mode === "dead" || !this.active) return;
+        this.clearTint();
+        scene.spawnEnemyShot?.(this.x + dir * 24, this.y - 40, dir);
+      });
+    }
   }
 
   private updateSpikerCharge(time: number): number {
