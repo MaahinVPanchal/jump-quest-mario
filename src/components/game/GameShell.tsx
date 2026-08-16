@@ -50,7 +50,7 @@ export default function GameShell() {
 
   if (screen === "playing" && activeSave) {
     return (
-      <div className="fixed inset-0 bg-dusk">
+      <div className="fixed inset-0 bg-nes-ink">
         <ClientOnly fallback={<LoadingCanvas />}>
           <Suspense fallback={<LoadingCanvas />}>
             <PhaserMount slot={activeSlot} save={activeSave} onExit={exit} />
@@ -61,21 +61,25 @@ export default function GameShell() {
   }
 
   return (
-    <main className="min-h-screen bg-dusk text-primary-foreground">
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -top-32 left-1/2 h-[520px] w-[900px] -translate-x-1/2 rounded-full bg-sky-soft/25 blur-3xl" />
-        <div className="absolute bottom-0 h-64 w-full bg-meadow-deep/40" />
+    <main className="relative min-h-screen overflow-hidden bg-nes-sky font-pixel text-nes-ink">
+      {/* Pixel scenery: stepped hills, blocky clouds, brick floor. */}
+      <div aria-hidden className="pointer-events-none absolute inset-0">
+        <PixelClouds />
+        <PixelHills />
+        <div className="absolute inset-x-0 bottom-0 h-24 bg-nes-brick [background-image:repeating-linear-gradient(0deg,transparent_0_14px,var(--nes-brick-dark)_14px_16px),repeating-linear-gradient(90deg,transparent_0_30px,var(--nes-brick-dark)_30px_32px)]" />
       </div>
 
-      <div className="relative mx-auto flex min-h-screen max-w-4xl flex-col items-center justify-center gap-10 px-6 py-16">
+      <div className="relative mx-auto flex min-h-screen max-w-4xl flex-col items-center justify-center gap-10 px-6 py-20">
         <header className="text-center">
-          <p className="text-sm font-semibold uppercase tracking-[0.35em] text-ember">Chapter One</p>
-          <h1 className="mt-3 text-5xl font-black tracking-tight sm:text-7xl">
-            Riko <span className="text-meadow">&</span> the Emberleaf Meadow
+          <p className="text-[10px] uppercase tracking-[0.4em] text-nes-brick-dark">Chapter One</p>
+          <h1 className="mx-auto mt-5 max-w-3xl bg-nes-ink px-6 py-5 text-xl leading-relaxed text-nes-paper shadow-[8px_8px_0_0_var(--nes-brick-dark)] sm:text-3xl sm:leading-relaxed">
+            RIKO <span className="text-nes-coin">&</span> THE
+            <br />
+            EMBERLEAF MEADOW
           </h1>
-          <p className="mt-4 max-w-xl text-balance text-base text-sky-soft/80">
-            An original 2D precision platformer. Run, stomp, uncover hidden blocks and hunt three Golden
-            Relics before the clock runs out.
+          <p className="mx-auto mt-6 max-w-xl text-[10px] leading-6 text-nes-ink sm:text-xs sm:leading-7">
+            An original 8-bit style platformer. Run, stomp, bump blocks and hunt three Golden Relics
+            before the timer hits zero.
           </p>
         </header>
 
@@ -85,7 +89,7 @@ export default function GameShell() {
               Play
             </MenuButton>
             <MenuButton onClick={() => setScreen("controls")}>Controls</MenuButton>
-            <p className="mt-4 max-w-md text-center text-xs text-sky-soft/60">
+            <p className="mt-4 max-w-md text-center text-[9px] leading-5 text-nes-brick-dark">
               Original characters, art, music and sound. No third-party game assets are used.
             </p>
           </nav>
@@ -93,25 +97,23 @@ export default function GameShell() {
 
         {screen === "slots" && (
           <section className="w-full max-w-xl space-y-3">
-            <h2 className="text-center text-lg font-semibold uppercase tracking-widest text-sky-soft/70">
-              Choose a save slot
-            </h2>
+            <h2 className="text-center text-xs uppercase tracking-widest text-nes-ink">Choose a save slot</h2>
             {Array.from({ length: SLOT_COUNT }, (_, i) => i + 1).map((slot) => {
               const save = slots[slot - 1] ?? null;
               return (
                 <div
                   key={slot}
-                  className="flex items-center justify-between gap-4 rounded-2xl border border-sky-soft/15 bg-dusk-soft/70 px-5 py-4"
+                  className="flex flex-wrap items-center justify-between gap-4 border-4 border-nes-ink bg-nes-paper px-5 py-4 shadow-[6px_6px_0_0_var(--nes-ink)]"
                 >
                   <div>
-                    <p className="text-sm uppercase tracking-widest text-sky-soft/60">Slot {slot}</p>
-                    <p className="text-base font-semibold">{slotSummary(save)}</p>
+                    <p className="text-[9px] uppercase tracking-widest text-nes-brick-dark">Slot {slot}</p>
+                    <p className="mt-2 text-[10px] leading-5">{slotSummary(save)}</p>
                   </div>
                   <div className="flex gap-2">
                     <button
                       type="button"
                       onClick={() => play(slot)}
-                      className="rounded-full bg-ember px-5 py-2 text-sm font-bold text-dusk transition hover:brightness-110"
+                      className="border-4 border-nes-ink bg-nes-coin px-4 py-2 text-[10px] uppercase text-nes-ink transition active:translate-y-[2px]"
                     >
                       {save ? "Continue" : "New game"}
                     </button>
@@ -122,7 +124,7 @@ export default function GameShell() {
                           deleteSlot(slot);
                           setSlots(listSlots());
                         }}
-                        className="rounded-full border border-sky-soft/25 px-4 py-2 text-sm text-sky-soft/80 transition hover:bg-sky-soft/10"
+                        className="border-4 border-nes-ink bg-nes-paper px-4 py-2 text-[10px] uppercase text-nes-ink transition active:translate-y-[2px]"
                       >
                         Erase
                       </button>
@@ -137,14 +139,12 @@ export default function GameShell() {
 
         {screen === "controls" && (
           <section className="w-full max-w-xl space-y-2">
-            <h2 className="text-center text-lg font-semibold uppercase tracking-widest text-sky-soft/70">
-              Controls
-            </h2>
-            <dl className="divide-y divide-sky-soft/10 rounded-2xl border border-sky-soft/15 bg-dusk-soft/70 px-5">
+            <h2 className="text-center text-xs uppercase tracking-widest text-nes-ink">Controls</h2>
+            <dl className="divide-y-4 divide-nes-ink/10 border-4 border-nes-ink bg-nes-paper px-5 shadow-[6px_6px_0_0_var(--nes-ink)]">
               {CONTROLS.map(([label, keys]) => (
-                <div key={label} className="flex items-center justify-between gap-6 py-3">
-                  <dt className="text-sm text-sky-soft/70">{label}</dt>
-                  <dd className="text-sm font-semibold">{keys}</dd>
+                <div key={label} className="flex flex-wrap items-center justify-between gap-4 py-3">
+                  <dt className="text-[9px] uppercase text-nes-brick-dark">{label}</dt>
+                  <dd className="text-[9px] leading-5">{keys}</dd>
                 </div>
               ))}
             </dl>
@@ -153,6 +153,43 @@ export default function GameShell() {
         )}
       </div>
     </main>
+  );
+}
+
+function PixelClouds() {
+  const clouds = [
+    { left: "8%", top: "12%", scale: 1 },
+    { left: "42%", top: "6%", scale: 0.8 },
+    { left: "72%", top: "18%", scale: 1.2 },
+  ];
+  return (
+    <>
+      {clouds.map((c) => (
+        <div
+          key={c.left}
+          className="absolute"
+          style={{ left: c.left, top: c.top, transform: `scale(${c.scale})` }}
+        >
+          <div className="h-4 w-24 bg-nes-paper" />
+          <div className="-mt-4 ml-6 h-4 w-12 bg-nes-paper" />
+          <div className="ml-3 h-4 w-32 bg-nes-paper" />
+        </div>
+      ))}
+    </>
+  );
+}
+
+function PixelHills() {
+  return (
+    <div className="absolute inset-x-0 bottom-24 flex items-end justify-around">
+      {[1, 0.7, 1.3, 0.9].map((s, i) => (
+        <div key={i} className="flex flex-col items-center" style={{ transform: `scale(${s})` }}>
+          <div className="h-4 w-10 bg-nes-pipe" />
+          <div className="h-4 w-20 bg-nes-pipe" />
+          <div className="h-4 w-32 bg-nes-pipe" />
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -171,8 +208,8 @@ function MenuButton({
       onClick={onClick}
       className={
         primary
-          ? "w-64 rounded-full bg-meadow px-8 py-3 text-lg font-black uppercase tracking-wide text-dusk transition hover:brightness-110"
-          : "w-64 rounded-full border border-sky-soft/25 px-8 py-3 text-base font-semibold uppercase tracking-wide text-sky-soft/90 transition hover:bg-sky-soft/10"
+          ? "w-64 border-4 border-nes-ink bg-nes-coin px-8 py-4 text-sm uppercase tracking-wide text-nes-ink shadow-[6px_6px_0_0_var(--nes-ink)] transition active:translate-x-[3px] active:translate-y-[3px] active:shadow-none"
+          : "w-64 border-4 border-nes-ink bg-nes-paper px-8 py-4 text-xs uppercase tracking-wide text-nes-ink shadow-[6px_6px_0_0_var(--nes-ink)] transition active:translate-x-[3px] active:translate-y-[3px] active:shadow-none"
       }
     >
       {children}
@@ -182,6 +219,8 @@ function MenuButton({
 
 function LoadingCanvas() {
   return (
-    <div className="flex h-full w-full items-center justify-center text-sky-soft/70">Loading the meadow…</div>
+    <div className="flex h-full w-full items-center justify-center font-pixel text-xs text-nes-paper">
+      LOADING…
+    </div>
   );
 }
