@@ -49,6 +49,18 @@ export const ENEMIES: Record<EnemyKind, EnemyData> = {
     score: 250,
     weakness: ["fire"],
   },
+  lobber: {
+    id: "lobber",
+    name: "Cragspit Gunner",
+    health: 1,
+    speed: 34,
+    damage: 1,
+    patrolRange: 72,
+    stompable: true,
+    canFly: false,
+    score: 350,
+    weakness: ["stomp", "fire", "shell"],
+  },
   boss: {
     id: "boss",
     name: "World Boss",

@@ -46,7 +46,7 @@ export interface StageTheme {
   far: number;
   near: number;
   liquidColors: [number, number];
-  enemies: ("walker" | "shell" | "ogre" | "piranha" | "spiker")[];
+  enemies: ("walker" | "shell" | "ogre" | "piranha" | "spiker" | "lobber")[];
   boss: BossSpec;
 }
 
@@ -105,7 +105,7 @@ export const STAGE_THEMES: StageTheme[] = [
     far: 0x2c7c9c,
     near: 0x1c5470,
     liquidColors: [0x2088cc, 0x105c9c],
-    enemies: ["ogre", "piranha", "walker", "shell"],
+    enemies: ["lobber", "ogre", "piranha", "walker", "shell"],
     boss: { id: "water", name: "Deepcoil Maw", extraHits: 1, score: 2800, shape: "fish", body: 0x2088cc, bodyDark: 0x0c3c68, trim: 0xfcfcfc },
   },
   {
@@ -124,7 +124,7 @@ export const STAGE_THEMES: StageTheme[] = [
     far: 0xa8b8fc,
     near: 0x7c8cf0,
     liquidColors: [0x101830, 0x000000],
-    enemies: ["ogre", "ogre", "shell", "walker"],
+    enemies: ["lobber", "ogre", "ogre", "shell", "walker"],
     boss: { id: "sky", name: "Galewing Roc", extraHits: 1, score: 2900, shape: "bird", body: 0xf0f4fc, bodyDark: 0x6870c8, trim: 0xfc8018 },
   },
   {
@@ -143,7 +143,7 @@ export const STAGE_THEMES: StageTheme[] = [
     far: 0xa07840,
     near: 0x745020,
     liquidColors: [0x1c1408, 0x000000],
-    enemies: ["walker", "shell", "spiker", "ogre"],
+    enemies: ["lobber", "walker", "shell", "spiker", "ogre"],
     boss: { id: "box", name: "Crateclaw Stacker", extraHits: 2, score: 3000, shape: "block", body: 0xc08040, bodyDark: 0x6c4418, trim: 0xfc3830 },
   },
   {
@@ -162,7 +162,7 @@ export const STAGE_THEMES: StageTheme[] = [
     far: 0x8c6c18,
     near: 0x5c4410,
     liquidColors: [0xfcc814, 0xc08c10],
-    enemies: ["spiker", "shell", "walker", "ogre"],
+    enemies: ["lobber", "spiker", "shell", "walker", "ogre"],
     boss: { id: "gold", name: "Bullion Golem", extraHits: 2, score: 3200, shape: "block", body: 0xfcd83c, bodyDark: 0x8c6408, trim: 0xfcfcfc },
   },
   {
@@ -181,7 +181,7 @@ export const STAGE_THEMES: StageTheme[] = [
     far: 0x1c8c38,
     near: 0x0c5c24,
     liquidColors: [0x0c1c08, 0x000000],
-    enemies: ["piranha", "walker", "ogre", "shell", "spiker"],
+    enemies: ["lobber", "piranha", "walker", "ogre", "shell", "spiker"],
     boss: { id: "jungle", name: "Kongoro the Barrel King", extraHits: 2, score: 3400, shape: "ape", body: 0x8c5c20, bodyDark: 0x4c3010, trim: 0xfcd83c },
   },
   {
@@ -200,7 +200,7 @@ export const STAGE_THEMES: StageTheme[] = [
     far: 0x3c5c8c,
     near: 0x223c60,
     liquidColors: [0x1c5c9c, 0x0c3468],
-    enemies: ["shell", "ogre", "walker", "piranha", "spiker"],
+    enemies: ["lobber", "shell", "ogre", "walker", "piranha", "spiker"],
     boss: { id: "boat", name: "Dread Captain Brine", extraHits: 3, score: 3600, shape: "ship", body: 0x8c6030, bodyDark: 0x3c2408, trim: 0xe82820 },
   },
   {
@@ -219,7 +219,7 @@ export const STAGE_THEMES: StageTheme[] = [
     far: 0x5c5c74,
     near: 0x3c3c50,
     liquidColors: [0x60d8fc, 0x1c78bc],
-    enemies: ["spiker", "shell", "ogre", "walker"],
+    enemies: ["lobber", "spiker", "shell", "ogre", "walker"],
     boss: { id: "rocket", name: "Booster Mk. IX", extraHits: 3, score: 3800, shape: "rocket", body: 0xd8d8e4, bodyDark: 0x545464, trim: 0xfc3830 },
   },
   {
@@ -238,7 +238,7 @@ export const STAGE_THEMES: StageTheme[] = [
     far: 0x2c2050,
     near: 0x1c1438,
     liquidColors: [0x8c3cfc, 0x3c1078],
-    enemies: ["ogre", "spiker", "piranha", "shell", "walker"],
+    enemies: ["lobber", "ogre", "spiker", "piranha", "shell", "walker"],
     boss: { id: "space", name: "Grimtusk Warlord", extraHits: 5, score: 5400, shape: "ogre", body: 0x3ca03c, bodyDark: 0x1c601c, trim: 0xd8b83c },
   },
 ];
