@@ -285,7 +285,7 @@ export default function PixelSprite({
   px?: number;
   className?: string;
   /** Palette overrides (same keys as the shared palette), used to skin heroes. */
-  tint?: Record<string, string>;
+  tint?: Record<string, string> | undefined;
 }) {
   const ref = useRef<HTMLCanvasElement>(null);
   const rows = SPRITES[id];
