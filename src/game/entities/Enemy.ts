@@ -29,6 +29,13 @@ const PIRANHA = {
 } as const;
 const PIRANHA_PERIOD = PIRANHA.hiddenMs + PIRANHA.riseMs + PIRANHA.upMs + PIRANHA.sinkMs;
 
+/** Ranged gunner: paces slowly and lobs shots at the hero on a fixed cadence. */
+const LOBBER = {
+  range: 460,
+  cooldownMs: 1900,
+  telegraphMs: 420,
+} as const;
+
 /** Spiked roller: winds up, then charges when the hero is close and level with it. */
 const SPIKER = {
   chargeRange: 260,
@@ -54,6 +61,8 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
   private cycle = 0;
   private hideDepth = 44;
   private chargeUntil = 0;
+  private nextShotAt = 0;
+  private telegraphUntil = 0;
   /** Boss state: remaining hits, hop timer and the theme its art comes from. */
   private hp = 1;
   private enraged = false;
@@ -72,6 +81,8 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
             ? "piranha_0"
             : spawn.type === "spiker"
               ? "spiker_0"
+              : spawn.type === "lobber"
+                ? "lobber_0"
               : spawn.type === "boss"
                 ? bossKey(themeById(spawn.variant ?? "meadow").id, 0)
                 : "ogre_0";
@@ -251,6 +262,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
         this.setVelocityY(-420);
       }
     } else {
+      if (this.kind === "lobber") this.updateLobber(time);
       let speed = this.stats.speed;
       if (this.kind === "ogre" && this.enraged) speed *= 1.6;
       if (this.kind === "spiker") speed *= this.updateSpikerCharge(time);
@@ -280,12 +292,35 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
             ? "shell"
             : this.kind === "spiker"
               ? "spiker"
-              : "ogre";
+              : this.kind === "lobber"
+                ? "lobber"
+                : "ogre";
       this.setTexture(`${base}_${this.frame2}`);
     }
   }
 
   /** Returns the speed multiplier for the spiker's patrol / charge rhythm. */
+  private updateLobber(time: number): void {
+    const scene = this.scene as Phaser.Scene & {
+      playerX?: () => number;
+      spawnEnemyShot?: (x: number, y: number, dir: number) => void;
+    };
+    const px = scene.playerX?.();
+    if (px === undefined || !Number.isFinite(px)) return;
+    const dx = px - this.x;
+    if (Math.abs(dx) > LOBBER.range) return;
+    this.dir = dx >= 0 ? 1 : -1;
+    if (time > this.nextShotAt) {
+      this.nextShotAt = time + LOBBER.cooldownMs;
+      this.telegraphUntil = time + LOBBER.telegraphMs;
+      this.scene.time.delayedCall(LOBBER.telegraphMs, () => {
+        if (this.mode === "dead" || !this.active) return;
+        scene.spawnEnemyShot?.(this.x + this.dir * 16, this.y - 20, this.dir);
+      });
+    }
+    this.setTint(time < this.telegraphUntil ? 0xffe08a : 0xffffff);
+  }
+
   private updateSpikerCharge(time: number): number {
     const scene = this.scene as Phaser.Scene & { playerX?: () => number };
     const px = scene.playerX?.() ?? Number.NaN;

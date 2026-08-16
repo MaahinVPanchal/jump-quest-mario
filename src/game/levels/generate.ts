@@ -71,7 +71,16 @@ export function buildLevel(world: number, level: number): LevelData {
     for (let cx = x0; cx <= x1; cx++) items.push({ type: "coin", x: cx, y });
   };
 
-  const enemyDensity = 10 + Math.floor(index * 0.5);
+  // Difficulty curve: later worlds field more, faster, longer-ranged patrols.
+  const enemyDensity = 12 + Math.floor(index * 1.4);
+  const SAFE_START = 14;
+  const checkpointXs: number[] = [];
+  const safeFrom = (tx: number): boolean =>
+    tx > SAFE_START && checkpointXs.every((cx) => Math.abs(tx - cx) > 6);
+  const thirdSeg = segments[Math.floor(segments.length / 3)];
+  const midSeg = segments[Math.floor(segments.length / 2)];
+  if (thirdSeg) checkpointXs.push(thirdSeg[0] + 4);
+  if (midSeg) checkpointXs.push(midSeg[0] + 4);
   segments.forEach(([sx, ex], i) => {
     if (ex - sx < 10) return;
     const shelfY = 8 + Math.floor(rand() * 6);
@@ -90,11 +99,15 @@ export function buildLevel(world: number, level: number): LevelData {
     if (i === 3) blocks.push({ kind: "question", x: sx + 6, y: SURFACE - 4, contains: "catBell" });
     if (i === 3) blocks.push({ kind: "hidden", x: sx + 5, y: SURFACE - 5, contains: "oneUp" });
 
-    const count = Math.min(4, 1 + Math.floor(rand() * (1 + enemyDensity / segments.length)));
+    const count = Math.min(6, 1 + Math.floor(rand() * (1 + enemyDensity / segments.length)));
     for (let n = 0; n < count; n++) {
       const kind = pick(theme.enemies);
       const ex0 = sx + 4 + Math.floor(rand() * Math.max(1, ex - sx - 6));
+      // Never place a threat in the drop zone or on a checkpoint respawn pad.
+      if (!safeFrom(ex0)) continue;
       if (kind === "ogre") enemies.push({ type: "ogre", x: ex0, y: shelfY + 1, patrol: 140 + Math.floor(rand() * 60) });
+      else if (kind === "lobber")
+        enemies.push({ type: "lobber", x: ex0, y: SURFACE - 1, direction: -1, patrol: 60 + Math.floor(rand() * 40) });
       else if (kind === "piranha") {
         pipes.push({ x: ex0, y: SURFACE - 2, target: { x: Math.min(width - 24, ex0 + 24), y: SURFACE - 1 }, label: `${theme.name} tunnel` });
         enemies.push({ type: "piranha", x: ex0, y: SURFACE - 2 });
@@ -117,7 +130,13 @@ export function buildLevel(world: number, level: number): LevelData {
         duration: 2200 + Math.floor(rand() * 1200),
       });
     }
-    if (world >= 3 && i % 3 === 2) hazards.push({ x: sx + 8, y: SURFACE - 1 });
+    // Traps: spike beds get longer and more frequent deeper into the campaign.
+    if (world >= 2 && i % 2 === 1) {
+      const trapX = sx + 8;
+      const span = 1 + Math.min(3, Math.floor(index / 3));
+      for (let t = 0; t < span; t++) if (safeFrom(trapX + t)) hazards.push({ x: trapX + t, y: SURFACE - 1 });
+    }
+    if (world >= 5 && i % 3 === 0 && safeFrom(sx + 13)) hazards.push({ x: sx + 13, y: SURFACE - 1 });
   });
 
   // --- stars: required from world 3 onward, more of them deeper in
@@ -135,6 +154,8 @@ export function buildLevel(world: number, level: number): LevelData {
 
   // --- world boss guarding the run-up to the flag
   const bossX = width - 16;
+  // Gunner escort so the run-up to the boss keeps pressure on.
+  if (world >= 3) enemies.push({ type: "lobber", x: bossX - 12, y: SURFACE - 1, direction: -1, patrol: 40 });
   enemies.push({ type: "boss", x: bossX, y: SURFACE - 1, variant: theme.id, patrol: 190, direction: -1 });
 
   const mid = segments[Math.floor(segments.length / 2)]!;

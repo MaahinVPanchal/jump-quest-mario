@@ -83,6 +83,16 @@ const ENEMY_CARDS: EnemyCard[] = [
     tip: "Kick a shell down a lane of Sprout Walkers for a rapid score chain — it also clears Emberjaw Blooms.",
   },
   {
+    id: "lobber",
+    key: "lobber",
+    text: "Ranged gunner. It flashes, then lobs an arcing fireshot at you.",
+    behaviour:
+      "Paces slowly over a short 72 px beat and tracks Riko within 460 px. Every 1.9 s it glows yellow for ~0.4 s (the tell), then launches an arcing shot that bounces once before burning out.",
+    counters: ["Stomp — one hit", "Fire ember — one hit", "Sliding shell — knocked away", "Your own shot cancels its shot mid-air"],
+    danger: "The arc clears low cover and lands behind ledges, so hiding does not work. Contact with the shot costs a power stage.",
+    tip: "Move on the flash: jump the first arc, then close in and stomp during its reload window.",
+  },
+  {
     id: "ogre",
     key: "ogre",
     text: "Armoured club ogre. Two stomps — the first only enrages it.",
