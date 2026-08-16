@@ -3,6 +3,8 @@ import { ClientOnly } from "@tanstack/react-router";
 import { lazy, Suspense } from "react";
 import { emptySave, listSlots, loadSlot, saveSlot, deleteSlot, SLOT_COUNT } from "@/game/save-facade";
 import type { SaveData } from "@/game/types";
+import PixelSprite, { type SpriteId } from "./PixelSprite";
+import { ENEMIES } from "@/game/data/enemies";
 
 const PhaserMount = lazy(() => import("./PhaserMount"));
 
@@ -24,6 +26,20 @@ function slotSummary(save: SaveData | null): string {
   const done = save.completedLevels.length;
   return `${save.name} · ${done} level${done === 1 ? "" : "s"} · ${save.relics.length}/3 relics · ${save.coins} coins`;
 }
+
+const POWER_UPS: { id: SpriteId; name: string; text: string }[] = [
+  { id: "growthOrb", name: "Growth Orb", text: "Riko grows big — takes one extra hit and smashes bricks." },
+  { id: "fireCrystal", name: "Fire Crystal", text: "Throw embers with X to burn any enemy from range." },
+  { id: "oneUp", name: "Ember Heart", text: "Hidden 1-Up. Adds a life to your run." },
+  { id: "relic", name: "Golden Relic", text: "Three per level, tucked into secret routes." },
+];
+
+const ENEMY_CARDS: { id: SpriteId; key: keyof typeof ENEMIES; text: string }[] = [
+  { id: "walker", key: "walker", text: "Marches in a straight line. Stomp it flat." },
+  { id: "shell", key: "shell", text: "Shelled patroller. Stomp once to shell it, then kick it into a crowd." },
+  { id: "flyer", key: "flyer", text: "Hovers in a wave pattern. Time your jump or use fire." },
+  { id: "piranha", key: "piranha", text: "Bites out of pipes on a cycle. Cannot be stomped — fire only." },
+];
 
 export default function GameShell() {
   const [screen, setScreen] = useState<Screen>("menu");
@@ -96,7 +112,70 @@ export default function GameShell() {
         )}
 
         {screen === "slots" && (
-          <section className="w-full max-w-xl space-y-3">
+          <section className="w-full max-w-3xl space-y-6">
+            {/* Hero briefing */}
+            <div className="border-4 border-nes-ink bg-nes-paper p-5 shadow-[6px_6px_0_0_var(--nes-ink)]">
+              <h2 className="text-center text-xs uppercase tracking-widest text-nes-ink">Your character</h2>
+              <div className="mt-5 flex flex-wrap items-center justify-center gap-6">
+                <PixelSprite id="star" px={4} />
+                <div className="flex flex-col items-center gap-2">
+                  <PixelSprite id="riko" px={6} />
+                  <p className="text-[10px] uppercase tracking-widest text-nes-brick-dark">Riko</p>
+                </div>
+                <PixelSprite id="coin" px={4} />
+              </div>
+              <p className="mt-4 text-center text-[9px] leading-5">
+                Original mascot — quick acceleration, skid turns, coyote time and a variable-height jump.
+              </p>
+              <div className="mt-5 flex flex-wrap items-center justify-center gap-6">
+                {(["riko", "rikoBig", "rikoFire"] as SpriteId[]).map((id, i) => (
+                  <div key={id} className="flex flex-col items-center gap-2">
+                    <PixelSprite id={id} px={i === 0 ? 3 : 4} />
+                    <p className="text-[8px] uppercase tracking-widest text-nes-brick-dark">
+                      {["Small", "Big", "Fire"][i]}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Power-ups */}
+            <div className="border-4 border-nes-ink bg-nes-paper p-5 shadow-[6px_6px_0_0_var(--nes-ink)]">
+              <h2 className="text-center text-xs uppercase tracking-widest text-nes-ink">Upgrades</h2>
+              <ul className="mt-4 grid gap-4 sm:grid-cols-2">
+                {POWER_UPS.map((p) => (
+                  <li key={p.id} className="flex items-start gap-3">
+                    <PixelSprite id={p.id} px={3} />
+                    <div>
+                      <p className="text-[9px] uppercase tracking-widest text-nes-brick-dark">{p.name}</p>
+                      <p className="mt-1 text-[9px] leading-5">{p.text}</p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Enemies */}
+            <div className="border-4 border-nes-ink bg-nes-paper p-5 shadow-[6px_6px_0_0_var(--nes-ink)]">
+              <h2 className="text-center text-xs uppercase tracking-widest text-nes-ink">Enemies in 1-1</h2>
+              <ul className="mt-4 grid gap-4 sm:grid-cols-2">
+                {ENEMY_CARDS.map((e) => {
+                  const data = ENEMIES[e.key];
+                  return (
+                    <li key={e.id} className="flex items-start gap-3">
+                      <PixelSprite id={e.id} px={3} />
+                      <div>
+                        <p className="text-[9px] uppercase tracking-widest text-nes-brick-dark">
+                          {data.name} · {data.score} pts
+                        </p>
+                        <p className="mt-1 text-[9px] leading-5">{e.text}</p>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+
             <h2 className="text-center text-xs uppercase tracking-widest text-nes-ink">Choose a save slot</h2>
             {Array.from({ length: SLOT_COUNT }, (_, i) => i + 1).map((slot) => {
               const save = slots[slot - 1] ?? null;
