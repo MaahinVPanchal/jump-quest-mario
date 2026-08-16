@@ -28,6 +28,13 @@ const PIRANHA = {
 } as const;
 const PIRANHA_PERIOD = PIRANHA.hiddenMs + PIRANHA.riseMs + PIRANHA.upMs + PIRANHA.sinkMs;
 
+/** Spiked roller: winds up, then charges when the hero is close and level with it. */
+const SPIKER = {
+  chargeRange: 260,
+  chargeMultiplier: 2.6,
+  windUpMs: 260,
+} as const;
+
 /** Data-driven enemy; all kinds share this body and branch on their data record. */
 export class Enemy extends Phaser.Physics.Arcade.Sprite {
   readonly kind: EnemyKind;
@@ -45,6 +52,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
   /** Piranha emergence cycle timer (ms). */
   private cycle = 0;
   private hideDepth = 44;
+  private chargeUntil = 0;
   awake = false;
 
   constructor(scene: Phaser.Scene, spawn: EnemySpawn) {
@@ -56,7 +64,9 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
           ? "shell_0"
           : spawn.type === "piranha"
             ? "piranha_0"
-            : "flyer_0";
+            : spawn.type === "spiker"
+              ? "spiker_0"
+              : "flyer_0";
     const y = spawn.type === "piranha" ? spawn.y * TILE + 48 : spawn.y * TILE + TILE;
     super(scene, spawn.x * TILE + TILE / 2, y, key);
     this.kind = spawn.type;
@@ -191,7 +201,9 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
         this.setFlipY(Math.floor(time / 110) % 2 === 0);
       }
     } else {
-      this.setVelocityX(this.dir * this.stats.speed);
+      let speed = this.stats.speed;
+      if (this.kind === "spiker") speed *= this.updateSpikerCharge(time);
+      this.setVelocityX(this.dir * speed);
       const hitWall = body.blocked.left || body.blocked.right;
       const beyondPatrol = Math.abs(this.x - this.homeX) > this.patrol;
       const edge = body.blocked.down && !this.groundAhead();
@@ -206,9 +218,31 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     if (this.kind !== "piranha" && this.animTime > 180 && this.mode === "patrol") {
       this.animTime = 0;
       this.frame2 = 1 - this.frame2;
-      const base = this.kind === "walker" ? "walker" : this.kind === "shell" ? "shell" : "flyer";
+      const base =
+        this.kind === "walker"
+          ? "walker"
+          : this.kind === "shell"
+            ? "shell"
+            : this.kind === "spiker"
+              ? "spiker"
+              : "flyer";
       this.setTexture(`${base}_${this.frame2}`);
     }
+  }
+
+  /** Returns the speed multiplier for the spiker's patrol / charge rhythm. */
+  private updateSpikerCharge(time: number): number {
+    const scene = this.scene as Phaser.Scene & { playerX?: () => number };
+    const px = scene.playerX?.() ?? Number.NaN;
+    if (Number.isFinite(px)) {
+      const dx = px - this.x;
+      if (Math.abs(dx) < SPIKER.chargeRange && Math.sign(dx) === this.dir) {
+        if (time > this.chargeUntil) this.chargeUntil = time + SPIKER.windUpMs + 900;
+      }
+    }
+    const charging = time < this.chargeUntil;
+    this.setTint(charging ? 0xffc0c0 : 0xffffff);
+    return charging ? SPIKER.chargeMultiplier : 1;
   }
 
   /** Rises out of its pipe on a fixed NES cadence; stays down while the hero is on the rim. */

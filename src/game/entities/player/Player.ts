@@ -124,7 +124,6 @@ export class Player {
     body.setAllowGravity(true);
     body.checkCollision.none = true;
     body.setVelocity(0, -520);
-    this.sprite.setTexture("hero_hurt");
     this.sprite.setTexture(`${this.prefix}_hurt`);
     audio.play("death");
     this.hooks.onDeath();
