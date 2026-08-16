@@ -1,0 +1,40 @@
+import type { EnemyData, EnemyKind } from "../types";
+
+export const ENEMIES: Record<EnemyKind, EnemyData> = {
+  walker: {
+    id: "walker",
+    name: "Sprout Walker",
+    health: 1,
+    speed: 55,
+    damage: 1,
+    patrolRange: 96,
+    stompable: true,
+    canFly: false,
+    score: 100,
+    weakness: ["stomp", "fire", "shell"],
+  },
+  shell: {
+    id: "shell",
+    name: "Bramble Shell",
+    health: 2,
+    speed: 42,
+    damage: 1,
+    patrolRange: 128,
+    stompable: true,
+    canFly: false,
+    score: 200,
+    weakness: ["stomp", "fire"],
+  },
+  flyer: {
+    id: "flyer",
+    name: "Puffwing",
+    health: 1,
+    speed: 60,
+    damage: 1,
+    patrolRange: 160,
+    stompable: true,
+    canFly: true,
+    score: 150,
+    weakness: ["stomp", "fire"],
+  },
+};
