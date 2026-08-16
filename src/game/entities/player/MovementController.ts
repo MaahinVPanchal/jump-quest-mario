@@ -34,6 +34,11 @@ export class MovementController {
     return !!body && (body.blocked.down || body.touching.down);
   }
 
+  /** True while a mid-air jump is still banked (double-jump characters only). */
+  get airJumpReady(): boolean {
+    return this.canDoubleJump && !this.airJumpUsed && !this.grounded && !this.controlsLocked;
+  }
+
   update(time: number, deltaMs: number): void {
     const body = this.host.sprite.body as Phaser.Physics.Arcade.Body | null;
     if (!body) return;
