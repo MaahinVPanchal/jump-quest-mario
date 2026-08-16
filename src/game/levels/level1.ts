@@ -129,6 +129,8 @@ const blocks: BlockSpawn[] = [
   { kind: "brick", x: 145, y: 14 },
   // final approach
   { kind: "question", x: 184, y: 14, contains: "growthOrb" },
+  { kind: "question", x: 92, y: 11, contains: "banana" },
+  { kind: "hidden", x: 150, y: 11, contains: "catBell" },
   { kind: "brick", x: 185, y: 14 },
 ];
 

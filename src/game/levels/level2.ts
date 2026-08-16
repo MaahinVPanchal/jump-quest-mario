@@ -101,6 +101,8 @@ const blocks: BlockSpawn[] = [
   { kind: "question", x: 125, y: 10, contains: "growthOrb" },
   { kind: "brick", x: 126, y: 10 },
   { kind: "question", x: 155, y: 12, contains: "fireCrystal" },
+  { kind: "question", x: 66, y: 11, contains: "catBell" },
+  { kind: "question", x: 108, y: 11, contains: "banana" },
   { kind: "brick", x: 156, y: 12 },
   { kind: "question", x: 188, y: 14, coins: 5, contains: "coin" },
 ];
