@@ -225,17 +225,7 @@ export default function GameShell() {
                           : "border-nes-ink bg-nes-coin/80 hover:bg-nes-coin active:translate-y-[2px]"
                       }`}
                     >
-                      <PixelSprite
-                        id={
-                          /Princess|Doll|Dancer|Star/i.test(c.archetype ?? "")
-                            ? "princess"
-                            : c.canDoubleJump
-                              ? "mira"
-                              : "riko"
-                        }
-                        px={3}
-                        tint={c.tint}
-                      />
+                      <PixelSprite id={rigFor(c)} px={3} tint={c.tint} />
                       <div className="min-w-0">
                         <p className="text-[9px] uppercase tracking-widest text-nes-brick-dark">
                           {c.name} · {c.archetype ?? abilityLabel(c.specialAbility)}
