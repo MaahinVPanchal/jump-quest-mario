@@ -105,225 +105,17 @@ function paint(
   });
 }
 
-const HERO_HEAD: readonly string[] = [
-  "....RRRRR.......",
-  "...RRRRRRRRRR...",
-  "...HHHSSKS......",
-  "..HSHSSSKSSS....",
-  "..HSHHSSSKSSS...",
-  "..HHSSSSSKKKK...",
-  "....SSSSSSSS....",
-  "...HHRRHRRH.....",
-];
+import { HERO_ART, HERO_POSES, heroPose, type HeroPose } from "../art/heroes";
 
-/** Distinct silhouettes so every hero reads as its own character in-game. */
-export type HeroRig = "riko" | "princess" | "ninja" | "hunter" | "whip" | "ranger";
+export type { HeroPose };
 
-interface RigArt {
-  head: readonly string[];
-  /** Four torso rows drawn under the head. */
-  torso: readonly string[];
-  /** Palette chars swapped into the shared leg templates. */
-  legBody: string;
-  legBoot: string;
-}
-
-const RIKO_TORSO: readonly string[] = [
-  "..HHHRRHRRHHH...",
-  ".HHHHRRRRRRHHHH.",
-  "SSHHRYRRRRYRHHSS",
-  "SSHRRRRRRRRRRHSS",
-];
-
-const RIGS: Record<HeroRig, RigArt> = {
-  riko: { head: HERO_HEAD, torso: RIKO_TORSO, legBody: "R", legBoot: "H" },
-  princess: {
-    head: [
-    ".....Y.Y.Y......",
-    "....YYYYYYY.....",
-    "...HHHSSSSHH....",
-    "..HHSSSSSSSHH...",
-    "..HHSSKSSKSSH...",
-    "..HHSSSSSSSSH...",
-    "...HSSSSSSSH....",
-    "...HHRRRRHH.....",
-    ],
-    torso: RIKO_TORSO,
-    legBody: "R",
-    legBoot: "H",
-  },
-  /* Night ninja: masked hood, sash, back-slung blade. */
-  ninja: {
-    head: [
-      "....DDDDDD......",
-      "...DddddddD.....",
-      "...DdddddddD....",
-      "..DDTTKTTKTDD...",
-      "..DDTTTTTTTDD...",
-      "..DDddddddddD...",
-      "....DDDDDDD.....",
-      "...DDddddDD.....",
-    ],
-    torso: [
-      "..DDDdddddDDD...",
-      ".DDdddddddddDD.y",
-      "TDDdddRRRdddDDT.",
-      "..DDdddddddDD...",
-    ],
-    legBody: "d",
-    legBoot: "D",
-  },
-  /* Armoured hunter: visored helm, shoulder plates, arm cannon. */
-  hunter: {
-    head: [
-      "....AAAAAA......",
-      "...ARRRRRRA.....",
-      "...ARWWWWRA.....",
-      "...ARRRRRRA.....",
-      "...AAAAAAAA.....",
-      "..FFAAAAAAFF....",
-      "...FFFFFFFF.....",
-      "...AFFFFFFA.....",
-    ],
-    torso: [
-      ".AAFFFFFFFFAA...",
-      "AAFFEEEEEEFFAA..",
-      "AFFEEAAAAEEFFA..",
-      ".AFFFFFFFFFFA...",
-    ],
-    legBody: "F",
-    legBoot: "A",
-  },
-  /* Whip ranger: long blonde hair, leather harness, coiled lash. */
-  whip: {
-    head: [
-      "....YYYYYY......",
-      "...YYYYYYYY.....",
-      "...YTTTTTKY.....",
-      "...YTKTTTTY.....",
-      "....TTTTTT......",
-      "....TTTTTT......",
-      "...HHTTTTHH.....",
-      "..THHHHHHHHT....",
-    ],
-    torso: [
-      "..SSHHHHHHHHSS..",
-      ".SSHHtttttHHSS..",
-      ".SHHtttttttHHS.y",
-      "..HHtttttttHH...",
-    ],
-    legBody: "t",
-    legBoot: "A",
-  },
-  /* Hooded blade scout: pointed cap, tunic, drawn shortsword. */
-  ranger: {
-    head: [
-      ".....GGG........",
-      "....GLLGG.......",
-      "...GLLLLGG......",
-      "...GTTTTKG......",
-      "...GTKTTKT......",
-      "....TTTTTT......",
-      "...GGLLLLGG.....",
-      "..GLLLGLLLG..A..",
-    ],
-    torso: [
-      ".GGGLLLLLLGGG.A.",
-      "GGLLLLLLLLLLGGA.",
-      "tGLLyyyyyyLLGtA.",
-      ".GLLLLLLLLLLLG..",
-    ],
-    legBody: "L",
-    legBoot: "t",
-  },
-};
-
-export function rigForCharacter(c: {
-  archetype?: string;
-  specialAbility?: string;
-  canDoubleJump?: boolean;
-}): HeroRig {
-  const tag = `${c.archetype ?? ""} ${c.specialAbility ?? ""}`;
-  if (/Princess|Doll|Dancer|Royal|Crown/i.test(tag)) return "princess";
-  if (/Ninja|Shadow|Shade|Stealth|Ghost|Night/i.test(tag)) return "ninja";
-  if (/Hunter|Armour|Armor|Beam|Cannon|Iron|Guard|Blaster/i.test(tag)) return "hunter";
-  if (/Whip|Ranger|Vine|Lash|Hammer|Brawl/i.test(tag)) return "whip";
-  if (/Blade|Scout|Sword|Slash|Claw|Explorer/i.test(tag)) return "ranger";
-  return "riko";
-}
-
-export type HeroPose =
-  | "idle"
-  | "idle2"
-  | "walk0"
-  | "walk1"
-  | "walk2"
-  | "walk3"
-  | "jump"
-  | "fall"
-  | "land"
-  | "hurt"
-  | "skid";
-
-/** Torso + leg variants keep the classic four-frame run cycle readable. */
-function heroPixels(pose: HeroPose, rig: HeroRig = "riko"): readonly string[] {
-  const art = RIGS[rig];
-  const torso =
-    rig !== "riko" && rig !== "princess"
-      ? pose === "land"
-        ? [".".repeat(16), ...art.torso.slice(0, 3)]
-        : art.torso
-      :
-    pose === "jump" || pose === "fall"
-      ? [
-          "S.HHHRRHRRHHH.SS",
-          "SSHHHRRRRRRHHHSS",
-          "SSHHRYRRRRYRHH.S",
-          "..HRRRRRRRRRRH..",
-        ]
-      : pose === "land"
-        ? [
-            "................",
-            "SSHHHRRRRRRHHHSS",
-            "SSHHRYRRRRYRHHSS",
-            "SSHRRRRRRRRRRHSS",
-          ]
-        : [
-          "..HHHRRHRRHHH...",
-          ".HHHHRRRRRRHHHH.",
-          "SSHHRYRRRRYRHHSS",
-          "SSHRRRRRRRRRRHSS",
-        ];
-  const rawLegs =
-    pose === "walk0"
-      ? ["...RRRRRRRRR....", "...RRRR..RRRR...", "...HHH....HHHH..", "..HHHH....HHHHH."]
-      : pose === "walk2"
-        ? ["....RRRRRRRRR...", "..RRRR...RRRR...", ".HHHH.....HHH...", "HHHHH....HHHH..."]
-        : pose === "walk1" || pose === "walk3"
-          ? ["..RRRRRRRRRRR...", "..RRRRRRRRRR....", "...HHHH..HHH....", "..HHHH...HHHH..."]
-          : pose === "jump"
-          ? ["..RRRRRRRRRR....", "..RRRR...RRRR...", ".HHHH.....HHH...", "HHHH.....HHHHH.."]
-          : pose === "fall"
-            ? ["..RRRRRRRRRR....", "..RRR.....RRRR..", "..HHH.....HHH...", ".HHHH....HHHHH.."]
-            : pose === "land"
-              ? ["..RRRRRRRRRRRR..", "..RRRRRRRRRRRR..", ".HHHHH....HHHHH.", "HHHHHH....HHHHHH"]
-              : pose === "hurt"
-              ? ["..RRRRRRRRRR....", ".RRRR.....RRRR..", "HHHH.......HHHH.", "HHH.........HHH."]
-              : pose === "skid"
-                ? ["..RRRRRRRRR.....", ".RRRRR..RRRR....", "HHHH.......HHH..", "HHH.........HHH."]
-                : ["..RRRRRRRRRRRR..", "..RRRR....RRRR..", "..HHH......HHH..", ".HHHH......HHHH."];
-  const legs = rawLegs.map((row) =>
-    row
-      .split("R")
-      .join(art.legBody)
-      .split("H")
-      .join(art.legBoot),
-  );
-  const head = art.head;
-  // idle2 is the breathing frame: the head settles one pixel row lower.
-  const rows = pose === "idle2" ? [".".repeat(16), ...head.slice(0, head.length - 1)] : head;
-  return [...rows, ...torso, ...legs];
-}
+/** Texture-key suffix for a pose: walk poses become walk_0..walk_3. */
+const poseKey = (pose: HeroPose): string =>
+  pose.startsWith("walk")
+    ? `walk_${pose.slice(4)}`
+    : pose.startsWith("attack")
+      ? `attack_${pose.slice(6)}`
+      : pose;
 
 /** All artwork is drawn procedurally here - the build ships no external art. */
 export function buildTextures(scene: Phaser.Scene): void {
@@ -410,32 +202,17 @@ export function buildTextures(scene: Phaser.Scene): void {
   });
 
   // ---- heroes ----
-  // Every playable character shares the same original rig; the roster entry
-  // supplies a palette override so each hero reads distinctly at 8-bit scale.
-  const POSES: HeroPose[] = [
-    "idle",
-    "idle2",
-    "walk0",
-    "walk1",
-    "walk2",
-    "walk3",
-    "jump",
-    "fall",
-    "land",
-    "hurt",
-    "skid",
-  ];
-  const poseKey = (pose: HeroPose): string =>
-    pose.startsWith("walk") ? `walk_${pose.slice(4)}` : pose;
+  // Each hero owns its own pixel layout and palette (src/game/art/heroes.ts),
+  // so no two characters are recolors of one another.
   for (const character of Object.values(CHARACTERS)) {
-    const rig = rigForCharacter(character);
-    for (const pose of POSES) {
+    const art = HERO_ART[character.rig];
+    for (const pose of HERO_POSES) {
       make(
         scene,
         `${character.spritePrefix}_${poseKey(pose)}`,
         32,
         48,
-        (ctx) => paint(ctx, heroPixels(pose, rig), 2, 0, 16, character.tint),
+        (ctx) => paint(ctx, heroPose(character.rig, pose), 2, 0, 16, art.palette),
         false,
       );
     }
