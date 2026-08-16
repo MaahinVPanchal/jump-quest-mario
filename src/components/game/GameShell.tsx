@@ -44,6 +44,17 @@ const POWER_UPS: { id: SpriteId; name: string; text: string }[] = [
   { id: "relic", name: "Golden Relic", text: "Three per level, tucked into secret routes." },
 ];
 
+/** Pick the pixel rig that best matches a hero's archetype / special move. */
+function rigFor(c: { archetype?: string; specialAbility?: string; canDoubleJump?: boolean }): SpriteId {
+  const tag = `${c.archetype ?? ""} ${c.specialAbility ?? ""}`;
+  if (/Princess|Doll|Dancer|Royal|Crown/i.test(tag)) return "princess";
+  if (/Ninja|Shadow|Shade|Stealth|Ghost|Night/i.test(tag)) return "ninja";
+  if (/Hunter|Armour|Armor|Beam|Cannon|Iron|Guard|Blaster/i.test(tag)) return "hunter";
+  if (/Whip|Ranger|Vine|Lash|Hammer|Brawl/i.test(tag)) return "whip";
+  if (/Blade|Scout|Sword|Slash|Claw|Explorer/i.test(tag)) return "ranger";
+  return c.canDoubleJump ? "mira" : "riko";
+}
+
 type EnemyCard = {
   id: SpriteId;
   key: keyof typeof ENEMIES;
@@ -225,17 +236,7 @@ export default function GameShell() {
                           : "border-nes-ink bg-nes-coin/80 hover:bg-nes-coin active:translate-y-[2px]"
                       }`}
                     >
-                      <PixelSprite
-                        id={
-                          /Princess|Doll|Dancer|Star/i.test(c.archetype ?? "")
-                            ? "princess"
-                            : c.canDoubleJump
-                              ? "mira"
-                              : "riko"
-                        }
-                        px={3}
-                        tint={c.tint}
-                      />
+                      <PixelSprite id={rigFor(c)} px={3} tint={c.tint} />
                       <div className="min-w-0">
                         <p className="text-[9px] uppercase tracking-widest text-nes-brick-dark">
                           {c.name} · {c.archetype ?? abilityLabel(c.specialAbility)}

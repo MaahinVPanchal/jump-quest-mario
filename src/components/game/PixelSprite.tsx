@@ -22,6 +22,16 @@ const PALETTE: Record<string, string> = {
   V: "#7c3cfc",
   v: "#4c18b0",
   c: "#0058f8",
+  N: "#28407c",
+  n: "#101838",
+  T: "#fcd8a8",
+  t: "#c07840",
+  A: "#b8b8c8",
+  a: "#585868",
+  E: "#00d8c8",
+  L: "#58d818",
+  F: "#f87800",
+  J: "#f8f8f8",
 };
 
 export type SpriteId =
@@ -30,6 +40,10 @@ export type SpriteId =
   | "rikoFire"
   | "mira"
   | "princess"
+  | "ranger"
+  | "hunter"
+  | "whip"
+  | "ninja"
   | "banana"
   | "catBell"
   | "walker"
@@ -71,6 +85,82 @@ const recolor = (rows: readonly string[], from: string, to: string): string[] =>
 
 const SPRITES: Record<SpriteId, readonly string[]> = {
   riko: [...HERO_HEAD, ...HERO_BODY],
+  /* Hooded blade scout — pointed cap, tunic, drawn shortsword. */
+  ranger: [
+    ".....GGG........",
+    "....GLLGG.......",
+    "...GLLLLGG......",
+    "...GTTTTKG......",
+    "...GTKTTKT......",
+    "....TTTTTT......",
+    "...GGLLLLGG.....",
+    "..GLLLGLLLG..A..",
+    "..GLLLGLLLG.AA..",
+    "..TLLLLLLLTAA...",
+    "..TLyyyyyLTA....",
+    "...LLLLLLLt.....",
+    "...LLL..LLL.....",
+    "...ttt..ttt.....",
+    "..tttt..tttt....",
+    "..KKK....KKK....",
+  ],
+  /* Armoured hunter — visored helm, shoulder plate, arm cannon. */
+  hunter: [
+    "....AAAAAA......",
+    "...ARRRRRRA.....",
+    "...ARJJJJRA.....",
+    "...ARRRRRRA.....",
+    "...AAAAAAAA.....",
+    "..FFAAAAAAFF....",
+    ".FFFFFFFFFFFF...",
+    ".FFEEEEEEEEFF...",
+    ".AFEEAAAAEEFAAA.",
+    ".AFFEEEEEEFFAAA.",
+    "..FFFFFFFFFFAA..",
+    "..FFFF..FFFF....",
+    "..FFF....FFF....",
+    "..AFF....FFA....",
+    "..AFF....FFA....",
+    "..KKK....KKK....",
+  ],
+  /* Whip ranger — long hair, leather harness, coiled whip. */
+  whip: [
+    "....YYYYYY......",
+    "...YYYYYYYY.....",
+    "...YTTTTTKY.....",
+    "...YTKTTTTY.....",
+    "....TTTTTT......",
+    "...HHTTTTHH.....",
+    "..THHHHHHHHT....",
+    "..THHtttHHHT....",
+    "..THHtttHHHTy...",
+    "...HHHHHHHy.y...",
+    "...HHtttHHy..y..",
+    "...HHtttHH.y.y..",
+    "...ttt..ttt.y...",
+    "..tttt..tttt....",
+    "..AAA....AAA....",
+    "..KKK....KKK....",
+  ],
+  /* Night ninja — masked hood, sash, sheathed blade on the back. */
+  ninja: [
+    "....NNNNNN......",
+    "...NnnnnnnN.....",
+    "...NTTKTTKN.....",
+    "...NNNNNNNN.....",
+    "....NNNNNN...y..",
+    "...NNNNNNNN.y...",
+    "..TNNNNNNNNy....",
+    "..TNNRRRRNNT....",
+    "..TNNNNNNNNT....",
+    "...NNNNNNNN.....",
+    "...NNnnnnNN.....",
+    "...NNN..NNN.....",
+    "...nnn..nnn.....",
+    "..nnnn..nnnn....",
+    "..NNN....NNN....",
+    "..KKK....KKK....",
+  ],
   banana: [
     "................",
     "..........yy....",
