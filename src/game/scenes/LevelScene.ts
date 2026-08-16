@@ -137,7 +137,7 @@ export class LevelScene extends Phaser.Scene {
       start.y,
       this.controls,
       {
-        onFire: (x, y, dir) => this.spawnFireball(x, y, dir),
+        onFire: (x, y, dir, kind) => this.spawnFireball(x, y, dir, kind),
         onDeath: () => this.handleDeath(),
         onDamage: () => {
           gameState.damageTaken += 1;
@@ -149,6 +149,8 @@ export class LevelScene extends Phaser.Scene {
     );
     if (start.power === "big") this.player.grow();
     if (start.power === "fire") this.player.giveFire();
+    if (start.power === "monkey") this.player.giveMonkey();
+    if (start.power === "cat") this.player.giveCat();
 
     this.setupCollisions();
     this.setupCamera();
@@ -497,6 +499,16 @@ export class LevelScene extends Phaser.Scene {
         this.player.giveFire();
         this.addScore(SCORE.powerUp, x, y);
         this.toast("Fire Crystal - press X to throw embers");
+        break;
+      case "banana":
+        this.player.giveMonkey();
+        this.addScore(SCORE.powerUp, x, y);
+        this.toast("Banana! Monkey form - higher jumps, press X to hurl bananas");
+        break;
+      case "catBell":
+        this.player.giveCat();
+        this.addScore(SCORE.powerUp, x, y);
+        this.toast("Cat Bell! Claw form - air jump and rapid claw slashes");
         break;
       case "oneUp":
         gameState.lives += 1;
