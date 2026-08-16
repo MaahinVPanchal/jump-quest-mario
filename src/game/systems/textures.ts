@@ -94,8 +94,10 @@ const HERO_HEAD: readonly string[] = [
   "...HHRRHRRH.....",
 ];
 
+export type HeroPose = "idle" | "walk0" | "walk1" | "walk2" | "walk3" | "jump" | "fall" | "land" | "hurt";
+
 /** Torso + leg variants keep the classic four-frame run cycle readable. */
-function heroPixels(pose: "idle" | "walk0" | "walk1" | "jump" | "fall" | "hurt"): readonly string[] {
+function heroPixels(pose: HeroPose): readonly string[] {
   const torso =
     pose === "jump" || pose === "fall"
       ? [
@@ -104,7 +106,14 @@ function heroPixels(pose: "idle" | "walk0" | "walk1" | "jump" | "fall" | "hurt")
           "SSHHRYRRRRYRHH.S",
           "..HRRRRRRRRRRH..",
         ]
-      : [
+      : pose === "land"
+        ? [
+            "................",
+            "SSHHHRRRRRRHHHSS",
+            "SSHHRYRRRRYRHHSS",
+            "SSHRRRRRRRRRRHSS",
+          ]
+        : [
           "..HHHRRHRRHHH...",
           ".HHHHRRRRRRHHHH.",
           "SSHHRYRRRRYRHHSS",
@@ -113,13 +122,17 @@ function heroPixels(pose: "idle" | "walk0" | "walk1" | "jump" | "fall" | "hurt")
   const legs =
     pose === "walk0"
       ? ["...RRRRRRRRR....", "...RRRR..RRRR...", "...HHH....HHHH..", "..HHHH....HHHHH."]
-      : pose === "walk1"
+      : pose === "walk2"
         ? ["....RRRRRRRRR...", "..RRRR...RRRR...", ".HHHH.....HHH...", "HHHHH....HHHH..."]
-        : pose === "jump"
+        : pose === "walk1" || pose === "walk3"
+          ? ["..RRRRRRRRRRR...", "..RRRRRRRRRR....", "...HHHH..HHH....", "..HHHH...HHHH..."]
+          : pose === "jump"
           ? ["..RRRRRRRRRR....", "..RRRR...RRRR...", ".HHHH.....HHH...", "HHHH.....HHHHH.."]
           : pose === "fall"
             ? ["..RRRRRRRRRR....", "..RRR.....RRRR..", "..HHH.....HHH...", ".HHHH....HHHHH.."]
-            : pose === "hurt"
+            : pose === "land"
+              ? ["..RRRRRRRRRRRR..", "..RRRRRRRRRRRR..", ".HHHHH....HHHHH.", "HHHHHH....HHHHHH"]
+              : pose === "hurt"
               ? ["..RRRRRRRRRR....", ".RRRR.....RRRR..", "HHHH.......HHHH.", "HHH.........HHH."]
               : ["..RRRRRRRRRRRR..", "..RRRR....RRRR..", "..HHH......HHH..", ".HHHH......HHHH."];
   return [...HERO_HEAD, ...torso, ...legs];
