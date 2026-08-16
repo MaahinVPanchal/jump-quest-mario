@@ -18,23 +18,41 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
   private frame2 = 0;
   private phase = Math.random() * Math.PI * 2;
   private shellIdleUntil = 0;
+  /** Piranha emergence cycle timer (ms). */
+  private cycle = 0;
+  private hideDepth = 44;
   awake = false;
 
   constructor(scene: Phaser.Scene, spawn: EnemySpawn) {
     const data: EnemyData = ENEMIES[spawn.type];
-    const key = spawn.type === "walker" ? "walker_0" : spawn.type === "shell" ? "shell_0" : "flyer_0";
-    super(scene, spawn.x * TILE + TILE / 2, spawn.y * TILE + TILE, key);
+    const key =
+      spawn.type === "walker"
+        ? "walker_0"
+        : spawn.type === "shell"
+          ? "shell_0"
+          : spawn.type === "piranha"
+            ? "piranha_0"
+            : "flyer_0";
+    const y = spawn.type === "piranha" ? spawn.y * TILE + 48 : spawn.y * TILE + TILE;
+    super(scene, spawn.x * TILE + TILE / 2, y, key);
     this.kind = spawn.type;
     this.dir = spawn.direction ?? -1;
     this.patrol = spawn.patrol ?? data.patrolRange;
     scene.add.existing(this);
     scene.physics.add.existing(this);
     this.setOrigin(0.5, 1);
-    this.setDepth(15);
+    this.setDepth(spawn.type === "piranha" ? 7 : 15);
     const body = this.body as Phaser.Physics.Arcade.Body;
     body.setSize(26, 26);
     body.setOffset(3, 6);
     if (data.canFly) body.setAllowGravity(false);
+    if (spawn.type === "piranha") {
+      body.setSize(22, 24);
+      body.setOffset(5, 0);
+      body.setImmovable(true);
+      body.checkCollision.none = true;
+      this.cycle = Math.random() * 2000;
+    }
     this.homeX = this.x;
     this.homeY = this.y;
     this.setActive(false).setVisible(false);
@@ -107,7 +125,10 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     if (this.mode === "dead" || !this.awake) return;
     const body = this.body as Phaser.Physics.Arcade.Body;
 
-    if (this.kind === "flyer") {
+    if (this.kind === "piranha") {
+      this.updatePiranha(delta);
+      body.updateFromGameObject();
+    } else if (this.kind === "flyer") {
       this.x += this.dir * this.stats.speed * (delta / 1000);
       if (Math.abs(this.x - this.homeX) > this.patrol) this.dir *= -1;
       this.y = this.homeY + Math.sin(time / 520 + this.phase) * 52;
@@ -135,14 +156,38 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
       }
     }
 
-    this.setFlipX(this.dir > 0);
+    if (this.kind !== "piranha") this.setFlipX(this.dir > 0);
     this.animTime += delta;
-    if (this.animTime > 180 && this.mode === "patrol") {
+    if (this.animTime > (this.kind === "piranha" ? 260 : 180) && this.mode === "patrol") {
       this.animTime = 0;
       this.frame2 = 1 - this.frame2;
-      const base = this.kind === "walker" ? "walker" : this.kind === "shell" ? "shell" : "flyer";
+      const base =
+        this.kind === "walker"
+          ? "walker"
+          : this.kind === "shell"
+            ? "shell"
+            : this.kind === "piranha"
+              ? "piranha"
+              : "flyer";
       this.setTexture(`${base}_${this.frame2}`);
     }
+  }
+
+  /** Rises out of its pipe on a fixed cadence, but stays down while the hero stands on top. */
+  private updatePiranha(delta: number): void {
+    const scene = this.scene as Phaser.Scene & { playerX?: () => number };
+    const near = scene.playerX ? Math.abs(scene.playerX() - this.x) < 44 : false;
+    const period = 4600;
+    this.cycle = (this.cycle + delta) % period;
+    let t = 0;
+    if (this.cycle < 500) t = this.cycle / 500;
+    else if (this.cycle < 2400) t = 1;
+    else if (this.cycle < 2900) t = 1 - (this.cycle - 2400) / 500;
+    if (near && t > 0 && this.cycle < 500) {
+      this.cycle = 0;
+      t = 0;
+    }
+    this.y = this.homeY - this.hideDepth * t;
   }
 
   /** Cheap edge test against the solid tile layer so patrols never walk into pits. */
