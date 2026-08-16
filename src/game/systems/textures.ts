@@ -63,6 +63,12 @@ const PALETTE: Record<string, string> = {
   Y: "#fcd83c",
   B: "#d84000", // goomba body
   b: "#a02800",
+  G: "#00a800", // koopa shell green
+  g: "#007800",
+  O: "#f8b800", // koopa skin / feet
+  P: "#e03c28", // piranha head
+  p: "#a01810",
+  N: "#00a800", // piranha stem
 };
 
 function paint(ctx: Ctx, rows: readonly string[], px: number, ox = 0, oy = 0): void {
