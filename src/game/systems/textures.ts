@@ -74,6 +74,16 @@ const PALETTE: Record<string, string> = {
   v: "#4c18b0",
   C: "#3cbcfc", // Mira cyan
   c: "#0058f8",
+  D: "#28407c", // ninja navy
+  d: "#101838", // ninja navy shade
+  A: "#b8b8c8", // steel / boots
+  a: "#585868",
+  E: "#00d8c8", // visor teal
+  F: "#f87800", // armour orange
+  L: "#58d818", // tunic green
+  t: "#c07840", // leather tan
+  y: "#c88000", // gold shade
+  T: "#fcd8a8",
 };
 
 function paint(
