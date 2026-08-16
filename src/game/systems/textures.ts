@@ -106,10 +106,92 @@ const HERO_HEAD: readonly string[] = [
   "...HHRRHRRH.....",
 ];
 
-export type HeroPose = "idle" | "walk0" | "walk1" | "walk2" | "walk3" | "jump" | "fall" | "land" | "hurt";
+/** Distinct silhouettes so every hero reads as its own character in-game. */
+export type HeroRig = "riko" | "princess" | "ninja" | "hunter" | "whip" | "ranger";
+
+const HEADS: Record<HeroRig, readonly string[]> = {
+  riko: HERO_HEAD,
+  princess: [
+    ".....Y.Y.Y......",
+    "....YYYYYYY.....",
+    "...HHHSSSSHH....",
+    "..HHSSSSSSSHH...",
+    "..HHSSKSSKSSH...",
+    "..HHSSSSSSSSH...",
+    "...HSSSSSSSH....",
+    "...HHRRRRHH.....",
+  ],
+  ninja: [
+    "....RRRRRRR.....",
+    "...RRRRRRRRR....",
+    "...RRRRRRRRR....",
+    "..RRSSKSSKSSR...",
+    "..RRSSSSSSSSR...",
+    "..RRRRRRRRRRR...",
+    "....RRRRRRR.....",
+    "...HHRRRRHH.....",
+  ],
+  hunter: [
+    "....YYYYYYY.....",
+    "...YYYYYYYYY....",
+    "..YYRRRRRRRYY...",
+    "..YYRWWWWWRYY...",
+    "..YYRRRRRRRYY...",
+    "...YYYYYYYYY....",
+    "....YY...YY.....",
+    "...HHRRRRHH.....",
+  ],
+  whip: [
+    "....YYYYYY......",
+    "...YYYYYYYYY....",
+    "...RRRRRRRRR....",
+    "..YYSSKSSKSSY...",
+    "..YSSSSSSSSY....",
+    "...SSSSSSSS.....",
+    "....SSSSSS......",
+    "...HHRRRRHH.....",
+  ],
+  ranger: [
+    ".....RRR........",
+    "....RRRRRR......",
+    "...RRRRRRRRR....",
+    "..RRRSSKSSKR....",
+    "..RRSSSSSSSR....",
+    "...RSSSSSSR.....",
+    "....SSSSSS......",
+    "...HHRRRRHH.....",
+  ],
+};
+
+export function rigForCharacter(c: {
+  archetype?: string;
+  specialAbility?: string;
+  canDoubleJump?: boolean;
+}): HeroRig {
+  const tag = `${c.archetype ?? ""} ${c.specialAbility ?? ""}`;
+  if (/Princess|Doll|Dancer|Royal|Crown/i.test(tag)) return "princess";
+  if (/Ninja|Shadow|Shade|Stealth|Ghost|Night/i.test(tag)) return "ninja";
+  if (/Hunter|Armour|Armor|Beam|Cannon|Iron|Guard|Blaster/i.test(tag)) return "hunter";
+  if (/Whip|Ranger|Vine|Lash|Hammer|Brawl/i.test(tag)) return "whip";
+  if (/Blade|Scout|Sword|Slash|Claw|Explorer/i.test(tag)) return "ranger";
+  return "riko";
+}
+
+export type HeroPose =
+  | "idle"
+  | "idle2"
+  | "walk0"
+  | "walk1"
+  | "walk2"
+  | "walk3"
+  | "jump"
+  | "fall"
+  | "land"
+  | "hurt"
+  | "skid";
 
 /** Torso + leg variants keep the classic four-frame run cycle readable. */
-function heroPixels(pose: HeroPose): readonly string[] {
+function heroPixels(pose: HeroPose, rig: HeroRig = "riko"): readonly string[] {
   const torso =
     pose === "jump" || pose === "fall"
       ? [
@@ -146,8 +228,13 @@ function heroPixels(pose: HeroPose): readonly string[] {
               ? ["..RRRRRRRRRRRR..", "..RRRRRRRRRRRR..", ".HHHHH....HHHHH.", "HHHHHH....HHHHHH"]
               : pose === "hurt"
               ? ["..RRRRRRRRRR....", ".RRRR.....RRRR..", "HHHH.......HHHH.", "HHH.........HHH."]
-              : ["..RRRRRRRRRRRR..", "..RRRR....RRRR..", "..HHH......HHH..", ".HHHH......HHHH."];
-  return [...HERO_HEAD, ...torso, ...legs];
+              : pose === "skid"
+                ? ["..RRRRRRRRR.....", ".RRRRR..RRRR....", "HHHH.......HHH..", "HHH.........HHH."]
+                : ["..RRRRRRRRRRRR..", "..RRRR....RRRR..", "..HHH......HHH..", ".HHHH......HHHH."];
+  const head = HEADS[rig];
+  // idle2 is the breathing frame: the head settles one pixel row lower.
+  const rows = pose === "idle2" ? [".".repeat(16), ...head.slice(0, head.length - 1)] : head;
+  return [...rows, ...torso, ...legs];
 }
 
 /** All artwork is drawn procedurally here - the build ships no external art. */
@@ -237,17 +324,30 @@ export function buildTextures(scene: Phaser.Scene): void {
   // ---- heroes ----
   // Every playable character shares the same original rig; the roster entry
   // supplies a palette override so each hero reads distinctly at 8-bit scale.
-  const POSES: HeroPose[] = ["idle", "walk0", "walk1", "walk2", "walk3", "jump", "fall", "land", "hurt"];
+  const POSES: HeroPose[] = [
+    "idle",
+    "idle2",
+    "walk0",
+    "walk1",
+    "walk2",
+    "walk3",
+    "jump",
+    "fall",
+    "land",
+    "hurt",
+    "skid",
+  ];
   const poseKey = (pose: HeroPose): string =>
     pose.startsWith("walk") ? `walk_${pose.slice(4)}` : pose;
   for (const character of Object.values(CHARACTERS)) {
+    const rig = rigForCharacter(character);
     for (const pose of POSES) {
       make(
         scene,
         `${character.spritePrefix}_${poseKey(pose)}`,
         32,
         48,
-        (ctx) => paint(ctx, heroPixels(pose), 2, 0, 16, character.tint),
+        (ctx) => paint(ctx, heroPixels(pose, rig), 2, 0, 16, character.tint),
         false,
       );
     }
