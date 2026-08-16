@@ -288,33 +288,89 @@ export function buildTextures(scene: Phaser.Scene): void {
     false,
   );
 
-  const shell = (ctx: Ctx, step: number): void => {
-    ctx.fillStyle = hex(0x8a3a2a);
-    roundRect(ctx, 6 + step, 26, 7, 5, 2);
-    roundRect(ctx, 19 - step, 26, 7, 5, 2);
-    ctx.fillStyle = hex(COLORS.shell);
-    roundRect(ctx, 2, 10, 28, 18, 9);
-    ctx.fillStyle = hex(0xf6a58c);
-    for (let i = 0; i < 3; i++) roundRect(ctx, 6 + i * 8, 14, 6, 9, 3);
-    ctx.fillStyle = hex(0xffd7a1);
-    roundRect(ctx, 21, 2, 10, 10, 5);
-    ctx.fillStyle = hex(0x1d2430);
-    ctx.beginPath();
-    ctx.arc(27, 6, 1.9, 0, Math.PI * 2);
-    ctx.fill();
-  };
-  make(scene, "shell_0", 32, 32, (ctx) => shell(ctx, 2));
-  make(scene, "shell_1", 32, 32, (ctx) => shell(ctx, -2));
-  make(scene, "shell_hidden", 32, 32, (ctx) => {
-    ctx.fillStyle = hex(0xb04a34);
-    roundRect(ctx, 2, 8, 28, 22, 10);
-    ctx.fillStyle = hex(COLORS.shell);
-    roundRect(ctx, 5, 11, 22, 16, 8);
-    ctx.fillStyle = hex(0xf6a58c);
-    ctx.beginPath();
-    ctx.arc(16, 19, 5, 0, Math.PI * 2);
-    ctx.fill();
-  });
+  // Shelled patroller: yellow head, green domed shell, alternating boots.
+  const koopaTop: readonly string[] = [
+    "....KKKK........",
+    "...KOOOOK.......",
+    "...KOWKOK.......",
+    "...KOOOOK.......",
+    "....KOOKKK......",
+    "...KKOOOOKK.....",
+    "..KKGGGGGGKKK...",
+    ".KGGgGGgGGgGGK..",
+    "KGgGGgGGgGGgGGK.",
+    "KGGgGGgGGgGGgGK.",
+    "KYYYYYYYYYYYYYK.",
+    ".KKKKKKKKKKKKK..",
+  ];
+  const koopaFeet = (swap: boolean): readonly string[] =>
+    swap
+      ? ["..KOOK....KOOK..", "..KOOOK...KOOK..", "................", "................"]
+      : ["..KOOK....KOOK..", "..KOOK...KOOOK..", "................", "................"];
+  make(scene, "shell_0", 32, 32, (ctx) => paint(ctx, [...koopaTop, ...koopaFeet(false)], 2), false);
+  make(scene, "shell_1", 32, 32, (ctx) => paint(ctx, [...koopaTop, ...koopaFeet(true)], 2), false);
+  make(
+    scene,
+    "shell_hidden",
+    32,
+    32,
+    (ctx) =>
+      paint(
+        ctx,
+        [
+          "................",
+          "................",
+          "................",
+          "................",
+          "....KKKKKKK.....",
+          "..KKGGGGGGGKK...",
+          ".KGGgGGgGGgGGK..",
+          "KGgGGgGGgGGgGGK.",
+          "KGGgGGgGGgGGgGK.",
+          "KGgGGgGGgGGgGGK.",
+          "KYYYYYYYYYYYYYK.",
+          ".KKKKKKKKKKKKK..",
+          "................",
+          "................",
+          "................",
+          "................",
+        ],
+        2,
+      ),
+    false,
+  );
+
+  // Pipe-dwelling biter: toothy head on a green stem, 16x24 grid.
+  const piranhaHead = (open: boolean): readonly string[] => [
+    "....PPPPPPPP....",
+    "..PPWWPPPPWWPP..",
+    "..PPPPPPPPPPPP..",
+    ".PPPPPPPPPPPPPP.",
+    open ? ".PWPWPWPWPWPWWP." : ".PPPPPPPPPPPPPP.",
+    open ? ".WKKKKKKKKKKKKW." : ".PWPWPWPWPWPWWP.",
+    open ? ".WKKKKKKKKKKKKW." : ".PWPWPWPWPWPWWP.",
+    open ? ".PWPWPWPWPWPWWP." : ".PPPPPPPPPPPPPP.",
+    ".PPPPPPPPPPPPPP.",
+    "..PPPPPPPPPPPP..",
+    "..PPWWPPPPWWPP..",
+    "....PPPPPPPP....",
+  ];
+  const piranhaStem: readonly string[] = [
+    ".....NNNNNN.....",
+    ".....NNNNNN.....",
+    ".....NNNNNN.....",
+    ".....NNNNNN.....",
+    ".....NNNNNN.....",
+    ".....NNNNNN.....",
+    ".....NNNNNN.....",
+    ".....NNNNNN.....",
+    ".....NNNNNN.....",
+    ".....NNNNNN.....",
+    ".....NNNNNN.....",
+    ".....NNNNNN.....",
+  ];
+  make(scene, "piranha_0", 32, 48, (ctx) => paint(ctx, [...piranhaHead(true), ...piranhaStem], 2), false);
+  make(scene, "piranha_1", 32, 48, (ctx) => paint(ctx, [...piranhaHead(false), ...piranhaStem], 2), false);
 
   const flyer = (ctx: Ctx, up: boolean): void => {
     ctx.fillStyle = hex(0xe4c2ff);
