@@ -76,6 +76,8 @@ export class HudScene extends Phaser.Scene {
     this.coins = col(1, "COINS");
     this.stars = col(2, "STARS");
     this.stars.setColor("#fcd83c");
+    this.stars.setVisible(false);
+    this.starsLabel?.setVisible(false);
     this.world = col(3, "WORLD");
     this.timeText = col(4, "TIME");
     this.lives = col(5, "LIVES");
