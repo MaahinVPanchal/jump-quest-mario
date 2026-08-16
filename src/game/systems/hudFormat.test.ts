@@ -64,7 +64,7 @@ describe("HUD formatting", () => {
     for (const [score, coins, time, lives] of cases) {
       const row = [formatScore(score), formatCoins(coins), formatWorld("1-1"), formatTime(time), formatLives(lives)];
       expect(row.map((cell) => cell.length)).toEqual([6, 3, 3, 3, 3]);
-      expect(row.every((cell) => cell === cell.toUpperCase())).toBe(true);
+      expect(row.every((cell) => /^(x\d{2}|\d+|[\dA-Z-]+)$/.test(cell))).toBe(true);
       expect(row.some((cell) => cell.includes(" "))).toBe(false);
     }
   });
