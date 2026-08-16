@@ -29,6 +29,7 @@ export class LevelScene extends Phaser.Scene {
   private enemies!: Phaser.Physics.Arcade.Group;
   private items!: Phaser.Physics.Arcade.Group;
   private fireballs!: Phaser.Physics.Arcade.Group;
+  private enemyShots!: Phaser.Physics.Arcade.Group;
   private platformGroup!: Phaser.Physics.Arcade.StaticGroup;
   private platforms: MovingPlatform[] = [];
   private dust!: Phaser.GameObjects.Group;
@@ -123,6 +124,7 @@ export class LevelScene extends Phaser.Scene {
     }
 
     this.fireballs = this.physics.add.group({ maxSize: COMBAT.maxProjectiles, runChildUpdate: false });
+    this.enemyShots = this.physics.add.group({ maxSize: 12, runChildUpdate: false });
     this.dust = this.add.group();
 
     this.buildPlatforms();
@@ -345,8 +347,18 @@ export class LevelScene extends Phaser.Scene {
 
   private buildHazards(): void {
     for (const hazard of this.level.hazards) {
-      const spike = this.physics.add.staticImage(hazard.x * TILE + TILE / 2, hazard.y * TILE + TILE - 8, "spike");
+      const cx = hazard.x * TILE + TILE / 2;
+      const cy = hazard.y * TILE + TILE - 12;
+      // Warning halo under every trap so it is impossible to miss.
+      const glow = this.add.rectangle(cx, cy + 10, TILE, 6, 0xffd400, 0.9).setDepth(8);
+      this.tweens.add({ targets: glow, alpha: 0.25, yoyo: true, repeat: -1, duration: 460 });
+      this.add
+        .text(cx, cy - 30, "!", { fontFamily: "monospace", fontSize: "16px", color: "#ffd400" })
+        .setOrigin(0.5)
+        .setDepth(9);
+      const spike = this.physics.add.staticImage(cx, cy, "spike");
       spike.setDepth(9).refreshBody();
+      (spike.body as Phaser.Physics.Arcade.StaticBody).setSize(TILE - 4, 14).updateCenter();
       spike.setData("hazard", true);
       this.hazardSprites.push(spike);
     }
@@ -393,6 +405,24 @@ export class LevelScene extends Phaser.Scene {
     this.physics.add.overlap(sprite, this.items, (_p, i) => this.collect(i as unknown as Collectible));
     this.physics.add.overlap(sprite, this.hazardSprites, () => this.hurtPlayer());
     this.physics.add.overlap(sprite, this.goalZone, () => this.completeLevel());
+    this.physics.add.overlap(sprite, this.enemyShots, (_p, shot) => {
+      const img = shot as unknown as Phaser.Physics.Arcade.Image;
+      this.burst(img.x, img.y, COLORS.crystal, 6);
+      img.destroy();
+      this.hurtPlayer();
+    });
+    this.physics.add.collider(this.enemyShots, this.terrain, (shot) => {
+      const img = shot as unknown as Phaser.Physics.Arcade.Image;
+      const body = img.body as Phaser.Physics.Arcade.Body;
+      if (body.blocked.left || body.blocked.right) {
+        this.burst(img.x, img.y, COLORS.crystal, 5);
+        img.destroy();
+      }
+    });
+    this.physics.add.overlap(this.fireballs, this.enemyShots, (f, shot) => {
+      (shot as unknown as Phaser.Physics.Arcade.Image).destroy();
+      (f as unknown as Phaser.Physics.Arcade.Image).destroy();
+    });
 
     this.physics.add.collider(this.fireballs, this.terrain, (f) => this.bounceFireball(f as unknown as Phaser.Physics.Arcade.Image));
     this.physics.add.collider(this.fireballs, this.blocks, (f) => this.bounceFireball(f as unknown as Phaser.Physics.Arcade.Image));
@@ -715,6 +745,27 @@ export class LevelScene extends Phaser.Scene {
       if (ball.active) {
         this.burst(ball.x, ball.y, COLORS.crystal, 5);
         ball.destroy();
+      }
+    });
+  }
+
+  /** Enemy ranged attack: a lobbed shot that arcs toward the hero. */
+  spawnEnemyShot(x: number, y: number, dir: number): void {
+    if (this.finished || this.respawning) return;
+    const shot = this.physics.add.image(x, y, "enemy_shot");
+    this.enemyShots.add(shot);
+    shot.setDepth(18);
+    const body = shot.body as Phaser.Physics.Arcade.Body;
+    body.setCircle(6, 2, 2);
+    body.setAllowGravity(true);
+    body.setBounce(0.6, 0.55);
+    body.setVelocity(dir * 240, -300);
+    audio.play("fire");
+    this.tweens.add({ targets: shot, angle: 360, duration: 480, repeat: -1 });
+    this.time.delayedCall(3400, () => {
+      if (shot.active) {
+        this.burst(shot.x, shot.y, COLORS.crystal, 4);
+        shot.destroy();
       }
     });
   }
