@@ -8,6 +8,8 @@ const TEXTURE: Record<ItemKind, string> = {
   star: "star",
   growthOrb: "item_orb",
   fireCrystal: "item_crystal",
+  banana: "item_banana",
+  catBell: "item_bell",
   oneUp: "item_oneup",
 };
 
