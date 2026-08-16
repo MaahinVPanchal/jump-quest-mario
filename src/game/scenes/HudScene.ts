@@ -37,7 +37,6 @@ export class HudScene extends Phaser.Scene {
   private timeText!: Phaser.GameObjects.Text;
   private lives!: Phaser.GameObjects.Text;
   private world!: Phaser.GameObjects.Text;
-  private power!: Phaser.GameObjects.Text;
   private combo!: Phaser.GameObjects.Text;
   private toast!: Phaser.GameObjects.Text;
   private displayedScore = 0;
@@ -55,12 +54,10 @@ export class HudScene extends Phaser.Scene {
       return { label: l, value: v };
     };
 
-    this.score = col(160, "SCORE").value;
+    this.score = col(160, "RIKO").value;
     this.score.setText("000000");
     this.coins = col(400, "COINS").value;
-    this.world = this.add.text(640, 20, "WORLD", LABEL).setOrigin(0.5, 0);
-    this.world.setShadow(3, 3, "#000000", 0, true, true);
-    this.power = col(640, "").value;
+    this.world = col(640, "WORLD").value;
     this.timeText = col(880, "TIME").value;
     this.lives = col(1120, "LIVES").value;
 
@@ -86,12 +83,11 @@ export class HudScene extends Phaser.Scene {
 
   private onUpdate(data: HudPayload): void {
     this.targetScore = data.score;
-    this.coins.setText(`${data.coins}`);
+    this.coins.setText(`x${`${data.coins}`.padStart(2, "0")}`);
     this.timeText.setText(`${data.time}`);
     this.timeText.setColor(data.time <= 30 ? "#ff8080" : "#ffffff");
-    this.lives.setText(`${data.lives}`);
-    this.world.setText(`WORLD ${data.world}`);
-    this.power.setText(`${data.power.toUpperCase()}  ${data.relics}R`);
+    this.lives.setText(`x${data.lives}`);
+    this.world.setText(`${data.world}`);
     this.combo.setText(data.combo > 1 ? `COMBO x${data.combo}` : "");
   }
 
