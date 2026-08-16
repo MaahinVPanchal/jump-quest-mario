@@ -653,23 +653,33 @@ export class LevelScene extends Phaser.Scene {
 
   private spawnFireball(x: number, y: number, dir: number, kind: ThrowKind = "ember"): void {
     if (this.fireballs.countActive(true) >= COMBAT.maxProjectiles) return;
-    const texture = kind === "ember" ? "fireball" : `shot_${kind}`;
+    const texture = this.textures.exists(`shot_${kind}`) ? `shot_${kind}` : "fireball";
     const ball = this.physics.add.image(x, y, texture);
     this.fireballs.add(ball);
     ball.setDepth(18);
     const body = ball.body as Phaser.Physics.Arcade.Body;
     body.setCircle(8);
     // Each throwable flies its own way: arcing bananas / hammers, flat beams and claws.
-    const arcing = kind === "banana" || kind === "hammer" || kind === "egg";
-    const flat = kind === "beam" || kind === "claw" || kind === "ice";
-    const speed = COMBAT.projectileSpeed * (flat ? 1.3 : kind === "star" ? 1.15 : 1);
+    const arcing = kind === "banana" || kind === "hammer" || kind === "egg" || kind === "axe";
+    const flat =
+      kind === "beam" ||
+      kind === "claw" ||
+      kind === "ice" ||
+      kind === "plasma" ||
+      kind === "kunai" ||
+      kind === "pellet" ||
+      kind === "slash" ||
+      kind === "heart";
+    const speed =
+      COMBAT.projectileSpeed *
+      (kind === "plasma" || kind === "kunai" || kind === "pellet" ? 1.45 : flat ? 1.3 : kind === "star" ? 1.15 : 1);
     body.setVelocity(dir * speed, arcing ? -260 : flat ? 0 : 120);
     body.setAllowGravity(!flat);
     body.setBounce(1, arcing ? 0.95 : 0.85);
     body.setCollideWorldBounds(false);
     ball.setData("dir", dir);
     ball.setData("flat", flat);
-    if (kind === "shell" || kind === "star" || kind === "vine") {
+    if (kind === "shell" || kind === "star" || kind === "vine" || kind === "axe" || kind === "kunai") {
       this.tweens.add({ targets: ball, angle: 360, duration: 400, repeat: -1 });
     }
     this.time.delayedCall(COMBAT.projectileLifeMs, () => {
