@@ -210,17 +210,38 @@ export default function GameShell() {
             {/* Enemies */}
             <div className="border-4 border-nes-ink bg-nes-paper p-5 shadow-[6px_6px_0_0_var(--nes-ink)]">
               <h2 className="text-center text-xs uppercase tracking-widest text-nes-ink">Enemies in 1-1</h2>
-              <ul className="mt-4 grid gap-4 sm:grid-cols-2">
+              <ul className="mt-4 grid gap-5 sm:grid-cols-2">
                 {ENEMY_CARDS.map((e) => {
                   const data = ENEMIES[e.key];
                   return (
-                    <li key={e.id} className="flex items-start gap-3">
+                    <li key={e.id} className="flex items-start gap-3 border-4 border-nes-ink bg-nes-paper p-3">
                       <PixelSprite id={e.id} px={3} />
-                      <div>
+                      <div className="min-w-0">
                         <p className="text-[9px] uppercase tracking-widest text-nes-brick-dark">
                           {data.name} · {data.score} pts
                         </p>
                         <p className="mt-1 text-[9px] leading-5">{e.text}</p>
+                        <p className="mt-2 text-[8px] leading-5 opacity-80">{e.behaviour}</p>
+                        <p className="mt-2 text-[8px] uppercase tracking-widest text-nes-brick-dark">How to beat it</p>
+                        <ul className="mt-1 list-none space-y-1">
+                          {e.counters.map((c) => (
+                            <li key={c} className="text-[8px] leading-5">
+                              &gt; {c}
+                            </li>
+                          ))}
+                        </ul>
+                        <p className="mt-2 text-[8px] leading-5">
+                          <span className="text-nes-brick-dark">DANGER: </span>
+                          {e.danger}
+                        </p>
+                        <p className="mt-1 text-[8px] leading-5">
+                          <span className="text-nes-brick-dark">TIP: </span>
+                          {e.tip}
+                        </p>
+                        <p className="mt-2 text-[8px] uppercase tracking-widest opacity-70">
+                          SPD {data.speed} · RANGE {data.patrolRange}PX · STOMP {data.stompable ? "YES" : "NO"} · WEAK{" "}
+                          {data.weakness.join("/")}
+                        </p>
                       </div>
                     </li>
                   );
