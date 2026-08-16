@@ -3,6 +3,8 @@ import { COMBAT, PHYSICS } from "../../config";
 import type { InputManager } from "../../systems/input";
 import { audio } from "../../systems/audio";
 import { MovementController } from "./MovementController";
+import type { CharacterData } from "../../types";
+import { DEFAULT_CHARACTER } from "../../data/characters";
 
 export type PowerState = "small" | "big" | "fire";
 
@@ -28,6 +30,8 @@ export class Player {
   private animFrame = 0;
   private landUntil = 0;
   private transforming = false;
+  readonly character: CharacterData;
+  private prefix: string;
 
   constructor(
     private scene: Phaser.Scene,
@@ -35,8 +39,11 @@ export class Player {
     y: number,
     private input: InputManager,
     private hooks: PlayerHooks,
+    character: CharacterData = DEFAULT_CHARACTER,
   ) {
-    this.sprite = scene.physics.add.sprite(x, y, "hero_idle");
+    this.character = character;
+    this.prefix = character.spritePrefix;
+    this.sprite = scene.physics.add.sprite(x, y, `${this.prefix}_idle`);
     this.sprite.setOrigin(0.5, 1);
     this.sprite.setDepth(20);
     this.sprite.setCollideWorldBounds(true);
@@ -57,6 +64,7 @@ export class Player {
       },
     };
     this.movement = new MovementController(this.host, input);
+    this.movement.canDoubleJump = character.canDoubleJump;
   }
 
   private applyForm(state: PowerState): void {
@@ -117,6 +125,7 @@ export class Player {
     body.checkCollision.none = true;
     body.setVelocity(0, -520);
     this.sprite.setTexture("hero_hurt");
+    this.sprite.setTexture(`${this.prefix}_hurt`);
     audio.play("death");
     this.hooks.onDeath();
   }
@@ -153,21 +162,21 @@ export class Player {
   /** NES four-frame run cycle plus dedicated jump / fall / landing poses. */
   private animate(time: number, delta: number): void {
     const s = this.movement.state;
-    if (s === "jump") return void this.sprite.setTexture("hero_jump");
-    if (s === "fall") return void this.sprite.setTexture("hero_fall");
-    if (s === "hurt") return void this.sprite.setTexture("hero_hurt");
-    if (time < this.landUntil) return void this.sprite.setTexture("hero_land");
+    if (s === "jump") return void this.sprite.setTexture(`${this.prefix}_jump`);
+    if (s === "fall") return void this.sprite.setTexture(`${this.prefix}_fall`);
+    if (s === "hurt") return void this.sprite.setTexture(`${this.prefix}_hurt`);
+    if (time < this.landUntil) return void this.sprite.setTexture(`${this.prefix}_land`);
     if (s === "walk" || s === "run") {
       this.animTime += delta * (s === "run" ? 1.8 : 1);
       if (this.animTime > 90) {
         this.animTime = 0;
         this.animFrame = (this.animFrame + 1) % 4;
       }
-      this.sprite.setTexture(`hero_walk_${this.animFrame}`);
+      this.sprite.setTexture(`${this.prefix}_walk_${this.animFrame}`);
       return;
     }
     this.animFrame = 0;
     this.animTime = 0;
-    this.sprite.setTexture("hero_idle");
+    this.sprite.setTexture(`${this.prefix}_idle`);
   }
 }
