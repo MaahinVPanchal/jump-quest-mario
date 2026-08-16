@@ -285,6 +285,7 @@ export class LevelScene extends Phaser.Scene {
     const gy = this.level.goal.y * TILE + TILE;
     this.add.image(gx, gy, "goal_pole").setOrigin(0.5, 1).setDepth(6);
     this.goalFlag = this.add.image(gx + 22, gy - 300, "goal_flag").setOrigin(0, 0).setDepth(7);
+    if (this.starsRequired > 0 && this.starsCollected < this.starsRequired) this.goalFlag.setAlpha(0.45);
     this.goalZone = this.add.zone(gx, gy - 160, 48, 320);
     this.physics.add.existing(this.goalZone, true);
   }
