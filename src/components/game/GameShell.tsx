@@ -194,6 +194,9 @@ export default function GameShell() {
               <h2 className="text-center text-xs uppercase tracking-[0.3em] text-nes-coin">
                 Select your hero
               </h2>
+              <p className="mt-2 text-center text-[8px] uppercase tracking-widest text-nes-paper/70">
+                {ROSTER.length} original fighters · every one playable
+              </p>
               <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 {ROSTER.map((c) => {
                   const selected = characterId === c.id;
@@ -215,14 +218,22 @@ export default function GameShell() {
                       />
                       <div className="min-w-0">
                         <p className="text-[9px] uppercase tracking-widest text-nes-brick-dark">
-                          {c.name} · {abilityLabel(c.specialAbility)}
+                          {c.name} · {c.archetype ?? abilityLabel(c.specialAbility)}
                         </p>
                         <p className="mt-1 text-[8px] leading-5">{c.blurb}</p>
                         <p className="mt-2 text-[8px] uppercase tracking-widest text-nes-ink/70">
-                          {c.canDoubleJump ? "Double jump" : "Single jump"} · SPD {c.speed} · JMP{" "}
-                          {c.jumpForce}
+                          SPD {c.speed} · JMP {c.jumpForce} · HP {c.maxHealth}
+                          {c.canDoubleJump ? " · Double jump" : ""}
                           {c.canDash ? " · Dash" : ""}
                         </p>
+                        <p className="mt-2 inline-block border-2 border-nes-ink bg-nes-ink px-2 py-1 text-[8px] uppercase tracking-widest text-nes-coin">
+                          Special: {c.special ?? abilityLabel(c.specialAbility)}
+                        </p>
+                        {selected ? (
+                          <p className="mt-2 text-[8px] uppercase tracking-widest text-nes-brick-dark">
+                            ★ Selected
+                          </p>
+                        ) : null}
                       </div>
                     </button>
                   );
