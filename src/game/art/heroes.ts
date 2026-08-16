@@ -524,7 +524,7 @@ export const HERO_ART: Record<HeroRig, HeroArt> = {
  * Authoring resolution of every row string in this file.
  * Never change this — rows are hand-drawn at 16x16.
  */
-export const HERO_SOURCE_GRID = 16;
+export const HERO_SOURCE_GRID: number = 16;
 
 /**
  * Render resolution. Bump this (e.g. 16 -> 24 -> 32) to regenerate every hero
@@ -532,7 +532,7 @@ export const HERO_SOURCE_GRID = 16;
  * resampled, staircases are rounded off and a shading pass adds depth.
  * Must be a multiple of 8 and >= HERO_SOURCE_GRID.
  */
-export const HERO_GRID = 24;
+export const HERO_GRID: number = 24;
 
 /** Darker companion for each colour, used by the auto-shading pass. */
 const SHADE_OF: Record<string, string> = { "1": "2", "3": "4", S: "s", X: "x", "5": "5", W: "2" };
