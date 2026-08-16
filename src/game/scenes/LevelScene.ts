@@ -45,6 +45,8 @@ export class LevelScene extends Phaser.Scene {
   private invincible = false;
   private lastCheckpointIndex = -1;
   private goalLocked = false;
+  private airJumpPip?: Phaser.GameObjects.Text;
+  private controlHint?: Phaser.GameObjects.Text;
 
   private get starsRequired(): number {
     return this.level.starsRequired ?? 0;
@@ -158,10 +160,62 @@ export class LevelScene extends Phaser.Scene {
         this.toast(`Collect ${this.starsRequired} Sky Stars to open the goal`),
       );
     }
+    this.buildAbilityUi();
     this.events.on(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.scene.stop("Hud");
       audio.stopMusic();
     });
+  }
+
+  /**
+   * Double-jump characters get a floating pip over their head that lights up
+   * while the air jump is banked, plus a persistent on-screen control hint.
+   */
+  private buildAbilityUi(): void {
+    if (!this.player.character.canDoubleJump) return;
+    this.airJumpPip = this.add
+      .text(0, 0, "^^", {
+        fontFamily: "'Press Start 2P', monospace",
+        fontSize: "10px",
+        color: "#fcd83c",
+        stroke: "#000000",
+        strokeThickness: 3,
+      })
+      .setOrigin(0.5, 1)
+      .setDepth(30);
+    this.controlHint = this.add
+      .text(
+        this.scale.width / 2,
+        this.scale.height - 18,
+        `${this.player.character.name.toUpperCase()} DOUBLE JUMP - PRESS JUMP AGAIN IN MID-AIR`,
+        {
+          fontFamily: "'Press Start 2P', monospace",
+          fontSize: "8px",
+          color: "#fcfcfc",
+          backgroundColor: "#000000",
+          padding: { x: 6, y: 4 },
+        },
+      )
+      .setOrigin(0.5, 1)
+      .setScrollFactor(0)
+      .setDepth(100);
+    this.tweens.add({
+      targets: this.controlHint,
+      alpha: { from: 1, to: 0 },
+      delay: 7000,
+      duration: 900,
+      onComplete: () => this.controlHint?.destroy(),
+    });
+  }
+
+  private updateAbilityUi(): void {
+    const pip = this.airJumpPip;
+    if (!pip) return;
+    const ready = this.player.movement.airJumpReady && !this.player.dead;
+    pip.setVisible(ready);
+    if (!ready) return;
+    pip.setPosition(this.player.sprite.x, this.player.sprite.y - this.player.sprite.displayHeight - 6);
+    pip.setAlpha(0.6 + 0.4 * Math.abs(Math.sin(this.time.now / 160)));
   }
 
   // ---------------------------------------------------------------- build
@@ -786,6 +840,7 @@ export class LevelScene extends Phaser.Scene {
 
     this.player.update(time, delta);
     this.updateParallax();
+    this.updateAbilityUi();
     this.updateRiding();
     this.updateWakeRange();
     this.checkPipes();
