@@ -328,6 +328,21 @@ export default function GameShell() {
   );
 }
 
+/** Darkens a hero colour until it reads against the light card paper. */
+function onPaper(hex: string): string {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
+  if (!m) return hex;
+  let [r, g, b] = [0, 2, 4].map((i) => parseInt(m[1]!.slice(i, i + 2), 16)) as [number, number, number];
+  let lum = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+  while (lum > 0.55) {
+    r = Math.round(r * 0.72);
+    g = Math.round(g * 0.72);
+    b = Math.round(b * 0.72);
+    lum = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+  }
+  return `#${[r, g, b].map((v) => v.toString(16).padStart(2, "0")).join("")}`;
+}
+
 /** Compact pixel character card: sprite, name, role, stats, attack, special. */
 function HeroCard({
   hero,
@@ -357,12 +372,12 @@ function HeroCard({
       >
         <HeroSprite rig={hero.rig} px={5} />
       </div>
-      <p className="text-[11px] uppercase tracking-widest" style={{ color: hero.colors.primary }}>
+      <p className="text-[11px] uppercase tracking-widest" style={{ color: onPaper(hero.colors.primary) }}>
         {hero.name}
       </p>
       <p className="text-[8px] uppercase tracking-widest text-nes-brick-dark">{hero.role}</p>
-      <StatBar label="SPD" value={hero.stats.speed} color={hero.colors.primary} />
-      <StatBar label="JMP" value={hero.stats.jump} color={hero.colors.secondary} />
+      <StatBar label="SPD" value={hero.stats.speed} color={onPaper(hero.colors.primary)} />
+      <StatBar label="JMP" value={hero.stats.jump} color={onPaper(hero.colors.secondary)} />
       <p className="text-[8px] uppercase tracking-widest">
         HP {"\u2665".repeat(hero.stats.health)}
       </p>
