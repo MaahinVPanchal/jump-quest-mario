@@ -43,6 +43,18 @@ const SPIKER = {
   windUpMs: 260,
 } as const;
 
+/** Per-kind signature skills so no stage fields a purely passive patroller. */
+const SKILL = {
+  walkerHopRange: 150,
+  walkerHopCooldown: 1500,
+  shellDashRange: 210,
+  shellDashCooldown: 2200,
+  ogreLeapRange: 190,
+  ogreLeapCooldown: 2600,
+  bossShotRange: 620,
+  bossShotCooldown: 2400,
+} as const;
+
 /** Data-driven enemy; all kinds share this body and branch on their data record. */
 export class Enemy extends Phaser.Physics.Arcade.Sprite {
   readonly kind: EnemyKind;
