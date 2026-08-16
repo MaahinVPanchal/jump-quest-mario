@@ -1,15 +1,16 @@
 import type Phaser from "phaser";
 import { COLORS, TILE } from "../config";
 import { CHARACTERS } from "../data/characters";
+import { buildThemeTextures } from "./themeTextures";
 
-type Ctx = CanvasRenderingContext2D;
+export type Ctx = CanvasRenderingContext2D;
 
-const hex = (c: number): string => `#${c.toString(16).padStart(6, "0")}`;
+export const hex = (c: number): string => `#${c.toString(16).padStart(6, "0")}`;
 
 /** Chunky pixel size: art is drawn full size, crushed down, then blown back up. */
 const PX = 2;
 
-function make(
+export function make(
   scene: Phaser.Scene,
   key: string,
   w: number,
@@ -119,6 +120,7 @@ const poseKey = (pose: HeroPose): string =>
 
 /** All artwork is drawn procedurally here - the build ships no external art. */
 export function buildTextures(scene: Phaser.Scene): void {
+  buildThemeTextures(scene);
   // ---- terrain ----
   // Ground is a bricked slab, like the classic overworld floor.
   const groundBricks = (ctx: Ctx, top: boolean): void => {
