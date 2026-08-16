@@ -760,7 +760,7 @@ export class LevelScene extends Phaser.Scene {
     body.setAllowGravity(true);
     body.setBounce(0.6, 0.55);
     body.setVelocity(dir * 240, -300);
-    audio.play("fire");
+    audio.play("shoot");
     this.tweens.add({ targets: shot, angle: 360, duration: 480, repeat: -1 });
     this.time.delayedCall(3400, () => {
       if (shot.active) {
