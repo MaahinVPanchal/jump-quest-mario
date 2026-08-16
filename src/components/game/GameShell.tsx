@@ -1,16 +1,16 @@
 import { useCallback, useEffect, useState } from "react";
 import { ClientOnly } from "@tanstack/react-router";
 import { lazy, Suspense } from "react";
-import { emptySave, listSlots, loadSlot, saveSlot, deleteSlot, SLOT_COUNT } from "@/game/save-facade";
+import { emptySave, loadSlot, saveSlot } from "@/game/save-facade";
 import type { SaveData } from "@/game/types";
 import PixelSprite, { type SpriteId } from "./PixelSprite";
 import { ENEMIES } from "@/game/data/enemies";
 import { CHARACTERS, ROSTER } from "@/game/data/characters";
-import { LEVELS, isLevelUnlocked, WORLD_THEMES } from "@/game/levels";
+import { LEVELS } from "@/game/levels";
 
 const PhaserMount = lazy(() => import("./PhaserMount"));
 
-type Screen = "menu" | "slots" | "controls" | "playing";
+type Screen = "menu" | "roster" | "controls" | "playing";
 
 const CONTROLS: [string, string][] = [
   ["Move", "A / D or Left / Right"],
@@ -22,12 +22,6 @@ const CONTROLS: [string, string][] = [
   ["Pause", "Esc"],
   ["Debug (dev only)", "F1 hitboxes · F2 stats · F10 invincible"],
 ];
-
-function slotSummary(save: SaveData | null): string {
-  if (!save) return "Empty slot";
-  const done = save.completedLevels.length;
-  return `${save.name} · ${done} level${done === 1 ? "" : "s"} · ${save.relics.length}/3 relics · ${save.coins} coins`;
-}
 
 const POWER_UPS: { id: SpriteId; name: string; text: string }[] = [
   { id: "growthOrb", name: "Growth Orb", text: "Riko grows big — takes one extra hit and smashes bricks." },
@@ -105,45 +99,33 @@ const ENEMY_CARDS: EnemyCard[] = [
   },
 ];
 
-const CHARACTER_CARDS: { id: string; sprite: SpriteId }[] = ROSTER.map((c) => ({
-  id: c.id,
-  sprite: (c.canDoubleJump ? "mira" : "riko") as SpriteId,
-}));
+
+const SAVE_SLOT = 1;
+
+/** "emberFlare" -> "EMBER FLARE" for the ability tag on each hero card. */
+const abilityLabel = (id: string): string =>
+  id.replace(/([A-Z])/g, " $1").trim().toUpperCase();
 
 export default function GameShell() {
   const [screen, setScreen] = useState<Screen>("menu");
-  const [slots, setSlots] = useState<(SaveData | null)[]>([]);
-  const [activeSlot, setActiveSlot] = useState(1);
+  const [save, setSave] = useState<SaveData | null>(null);
   const [activeSave, setActiveSave] = useState<SaveData | null>(null);
   const [characterId, setCharacterId] = useState("riko");
-  const [levelId, setLevelId] = useState(LEVELS[0]!.id);
 
   useEffect(() => {
-    setSlots(listSlots());
+    setSave(loadSlot(SAVE_SLOT));
   }, [screen]);
 
-  const slotSave = slots[activeSlot - 1] ?? null;
+  const completedLevels = save?.completedLevels ?? [];
+  // Campaign flows automatically: drop straight into the first unfinished stage.
+  const nextLevel = LEVELS.find((l) => !completedLevels.includes(l.id)) ?? LEVELS[0]!;
 
-  const play = useCallback(
-    (slot: number) => {
-      const existing = loadSlot(slot) ?? emptySave(`Riko ${slot}`);
-      saveSlot(slot, existing);
-      setActiveSlot(slot);
-      setActiveSave(existing);
-      setScreen("playing");
-    },
-    [],
-  );
-
-  const unlockedCharacters = new Set([...(slotSave?.unlockedCharacters ?? []), "riko"]);
-  const completedLevels = slotSave?.completedLevels ?? [];
-
-  // Keep the current picks legal for the selected slot's progress.
-  useEffect(() => {
-    if (!unlockedCharacters.has(characterId)) setCharacterId("riko");
-    if (!isLevelUnlocked(levelId, completedLevels)) setLevelId(LEVELS[0]!.id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeSlot, slots]);
+  const play = useCallback(() => {
+    const existing = loadSlot(SAVE_SLOT) ?? emptySave("Riko");
+    saveSlot(SAVE_SLOT, existing);
+    setActiveSave(existing);
+    setScreen("playing");
+  }, []);
 
   const exit = useCallback(() => {
     setActiveSave(null);
@@ -156,10 +138,10 @@ export default function GameShell() {
         <ClientOnly fallback={<LoadingCanvas />}>
           <Suspense fallback={<LoadingCanvas />}>
             <PhaserMount
-              slot={activeSlot}
+              slot={SAVE_SLOT}
               save={activeSave}
               characterId={characterId}
-              levelId={levelId}
+              levelId={nextLevel.id}
               onExit={exit}
             />
           </Suspense>
@@ -167,6 +149,8 @@ export default function GameShell() {
       </div>
     );
   }
+
+  const hero = CHARACTERS[characterId]!;
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-nes-sky font-pixel text-nes-ink">
@@ -177,7 +161,7 @@ export default function GameShell() {
         <div className="absolute inset-x-0 bottom-0 h-24 bg-nes-brick [background-image:repeating-linear-gradient(0deg,transparent_0_14px,var(--nes-brick-dark)_14px_16px),repeating-linear-gradient(90deg,transparent_0_30px,var(--nes-brick-dark)_30px_32px)]" />
       </div>
 
-      <div className="relative mx-auto flex min-h-screen max-w-4xl flex-col items-center justify-center gap-10 px-6 py-20">
+      <div className="relative mx-auto flex min-h-screen max-w-6xl flex-col items-center justify-center gap-10 px-6 py-20">
         <header className="text-center">
           <p className="text-[10px] uppercase tracking-[0.4em] text-nes-brick-dark">Chapter One</p>
           <h1 className="mx-auto mt-5 max-w-3xl bg-nes-ink px-6 py-5 text-xl leading-relaxed text-nes-paper shadow-[8px_8px_0_0_var(--nes-brick-dark)] sm:text-3xl sm:leading-relaxed">
@@ -186,14 +170,14 @@ export default function GameShell() {
             EMBERLEAF MEADOW
           </h1>
           <p className="mx-auto mt-6 max-w-xl text-[10px] leading-6 text-nes-ink sm:text-xs sm:leading-7">
-            An original 8-bit style platformer. Run, stomp, bump blocks and hunt three Golden Relics
-            before the timer hits zero.
+            An original 8-bit style platformer. Pick a hero and run — the campaign carries you
+            straight from stage to stage.
           </p>
         </header>
 
         {screen === "menu" && (
           <nav className="flex flex-col items-center gap-3">
-            <MenuButton primary onClick={() => setScreen("slots")}>
+            <MenuButton primary onClick={() => setScreen("roster")}>
               Play
             </MenuButton>
             <MenuButton onClick={() => setScreen("controls")}>Controls</MenuButton>
@@ -203,32 +187,67 @@ export default function GameShell() {
           </nav>
         )}
 
-        {screen === "slots" && (
-          <section className="w-full max-w-3xl space-y-6">
-            {/* Hero briefing */}
-            <div className="border-4 border-nes-ink bg-nes-paper p-5 shadow-[6px_6px_0_0_var(--nes-ink)]">
-              <h2 className="text-center text-xs uppercase tracking-widest text-nes-ink">Your character</h2>
-              <div className="mt-5 flex flex-wrap items-center justify-center gap-6">
-                <PixelSprite id="star" px={4} />
-                <div className="flex flex-col items-center gap-2">
-                  <PixelSprite id="riko" px={6} />
-                  <p className="text-[10px] uppercase tracking-widest text-nes-brick-dark">Riko</p>
-                </div>
-                <PixelSprite id="coin" px={4} />
+        {screen === "roster" && (
+          <section className="w-full space-y-6">
+            {/* Hero roster - every hero is playable, arcade select-screen style */}
+            <div className="border-4 border-nes-ink bg-nes-ink p-4 shadow-[8px_8px_0_0_var(--nes-brick-dark)]">
+              <h2 className="text-center text-xs uppercase tracking-[0.3em] text-nes-coin">
+                Select your hero
+              </h2>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                {ROSTER.map((c) => {
+                  const selected = characterId === c.id;
+                  return (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => setCharacterId(c.id)}
+                      className={`flex items-start gap-3 border-4 p-3 text-left transition ${
+                        selected
+                          ? "border-nes-paper bg-nes-coin"
+                          : "border-nes-ink bg-nes-coin/80 hover:bg-nes-coin active:translate-y-[2px]"
+                      }`}
+                    >
+                      <PixelSprite
+                        id={c.canDoubleJump ? "mira" : "riko"}
+                        px={3}
+                        tint={c.tint}
+                      />
+                      <div className="min-w-0">
+                        <p className="text-[9px] uppercase tracking-widest text-nes-brick-dark">
+                          {c.name} · {abilityLabel(c.specialAbility)}
+                        </p>
+                        <p className="mt-1 text-[8px] leading-5">{c.blurb}</p>
+                        <p className="mt-2 text-[8px] uppercase tracking-widest text-nes-ink/70">
+                          {c.canDoubleJump ? "Double jump" : "Single jump"} · SPD {c.speed} · JMP{" "}
+                          {c.jumpForce}
+                          {c.canDash ? " · Dash" : ""}
+                        </p>
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
-              <p className="mt-4 text-center text-[9px] leading-5">
-                Original mascot — quick acceleration, skid turns, coyote time and a variable-height jump.
-              </p>
-              <div className="mt-5 flex flex-wrap items-center justify-center gap-6">
+            </div>
+
+            {/* Selected hero forms */}
+            <div className="border-4 border-nes-ink bg-nes-paper p-5 shadow-[6px_6px_0_0_var(--nes-ink)]">
+              <h2 className="text-center text-xs uppercase tracking-widest text-nes-ink">
+                {hero.name} · power forms
+              </h2>
+              <div className="mt-5 flex flex-wrap items-center justify-center gap-8">
+                <PixelSprite id="star" px={4} />
                 {(["riko", "rikoBig", "rikoFire"] as SpriteId[]).map((id, i) => (
                   <div key={id} className="flex flex-col items-center gap-2">
-                    <PixelSprite id={id} px={i === 0 ? 3 : 4} />
+                    <PixelSprite id={id} px={i === 0 ? 3 : 4} tint={i === 2 ? undefined : hero.tint} />
                     <p className="text-[8px] uppercase tracking-widest text-nes-brick-dark">
                       {["Small", "Big", "Fire"][i]}
                     </p>
                   </div>
                 ))}
+                <PixelSprite id="coin" px={4} />
               </div>
+              <p className="mt-4 text-center text-[9px] leading-5">{hero.blurb}</p>
             </div>
 
             {/* Power-ups */}
@@ -278,10 +297,6 @@ export default function GameShell() {
                           <span className="text-nes-brick-dark">TIP: </span>
                           {e.tip}
                         </p>
-                        <p className="mt-2 text-[8px] uppercase tracking-widest opacity-70">
-                          SPD {data.speed} · RANGE {data.patrolRange}PX · STOMP {data.stompable ? "YES" : "NO"} · WEAK{" "}
-                          {data.weakness.join("/")}
-                        </p>
                       </div>
                     </li>
                   );
@@ -289,139 +304,15 @@ export default function GameShell() {
               </ul>
             </div>
 
-            {/* Character select */}
-            <div className="border-4 border-nes-ink bg-nes-paper p-5 shadow-[6px_6px_0_0_var(--nes-ink)]">
-              <h2 className="text-center text-xs uppercase tracking-widest text-nes-ink">Choose your hero</h2>
-              <div className="mt-5 grid gap-4 sm:grid-cols-2">
-                {CHARACTER_CARDS.map((c) => {
-                  const data = CHARACTERS[c.id]!;
-                  const locked = !unlockedCharacters.has(c.id);
-                  const selected = characterId === c.id;
-                  return (
-                    <button
-                      key={c.id}
-                      type="button"
-                      disabled={locked}
-                      onClick={() => setCharacterId(c.id)}
-                      className={`flex items-start gap-3 border-4 border-nes-ink p-3 text-left transition ${
-                        selected ? "bg-nes-coin" : "bg-nes-paper"
-                      } ${locked ? "opacity-50" : "active:translate-y-[2px]"}`}
-                    >
-                      <PixelSprite id={c.sprite} px={3} />
-                      <div className="min-w-0">
-                        <p className="text-[9px] uppercase tracking-widest text-nes-brick-dark">
-                          {data.name}
-                          {locked ? " · locked" : selected ? " · selected" : ""}
-                        </p>
-                        <p className="mt-1 text-[9px] leading-5">{data.blurb}</p>
-                        <p className="mt-2 text-[8px] uppercase tracking-widest opacity-70">
-                          {locked ? `Clear ${data.unlockedBy} to unlock` : data.canDoubleJump ? "Double jump" : "Single jump"}
-                        </p>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
+            <div className="flex flex-col items-center gap-3">
+              <MenuButton primary onClick={play}>
+                Start {hero.name} · {nextLevel.world}-{nextLevel.level}
+              </MenuButton>
+              <p className="text-center text-[9px] leading-5 text-nes-brick-dark">
+                {completedLevels.length}/{LEVELS.length} stages cleared · next up {nextLevel.name}
+              </p>
+              <MenuButton onClick={() => setScreen("menu")}>Back</MenuButton>
             </div>
-
-            {/* Level select - the full 50-stage campaign, unlocked in order */}
-            <div className="border-4 border-nes-ink bg-nes-paper p-5 shadow-[6px_6px_0_0_var(--nes-ink)]">
-              <h2 className="text-center text-xs uppercase tracking-widest text-nes-ink">
-                Choose a level · {completedLevels.length}/{LEVELS.length} cleared
-              </h2>
-              <div className="mt-5 space-y-6">
-                {WORLD_THEMES.map((theme) => {
-                  const stages = LEVELS.filter((l) => l.world === theme.world);
-                  return (
-                    <div key={theme.world}>
-                      <p className="text-[9px] uppercase tracking-widest text-nes-brick-dark">
-                        World {theme.world} · {theme.name} · {theme.buildSet}
-                      </p>
-                      <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
-                        {stages.map((level) => {
-                          const locked = !isLevelUnlocked(level.id, completedLevels);
-                          const selected = levelId === level.id;
-                          const cleared = completedLevels.includes(level.id);
-                          const stars = slotSave?.levelStars?.[level.id] ?? 0;
-                          return (
-                            <button
-                              key={level.id}
-                              type="button"
-                              disabled={locked}
-                              onClick={() => setLevelId(level.id)}
-                              className={`border-4 border-nes-ink p-2 text-left transition ${
-                                selected ? "bg-nes-coin" : cleared ? "bg-nes-paper" : "bg-nes-paper"
-                              } ${locked ? "opacity-40" : "active:translate-y-[2px]"}`}
-                            >
-                              <p className="text-[8px] uppercase tracking-widest text-nes-brick-dark">
-                                {level.world}-{level.level} {locked ? "· locked" : cleared ? "· cleared" : ""}
-                              </p>
-                              <p className="mt-1 truncate text-[9px] leading-4">{level.name}</p>
-                              <div className="mt-2 flex items-center gap-2">
-                                {level.starsRequired ? <PixelSprite id="star" px={2} /> : <PixelSprite id="coin" px={2} />}
-                                <span className="text-[8px] uppercase opacity-70">
-                                  {level.starsRequired
-                                    ? `${stars}/${level.starsRequired} stars`
-                                    : `${level.timeLimit}s`}
-                                </span>
-                              </div>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            <h2 className="text-center text-xs uppercase tracking-widest text-nes-ink">Choose a save slot</h2>
-            {Array.from({ length: SLOT_COUNT }, (_, i) => i + 1).map((slot) => {
-              const save = slots[slot - 1] ?? null;
-              const active = activeSlot === slot;
-              return (
-                <div
-                  key={slot}
-                  className={`flex flex-wrap items-center justify-between gap-4 border-4 border-nes-ink px-5 py-4 shadow-[6px_6px_0_0_var(--nes-ink)] ${
-                    active ? "bg-nes-coin" : "bg-nes-paper"
-                  }`}
-                >
-                  <button type="button" onClick={() => setActiveSlot(slot)} className="text-left">
-                    <p className="text-[9px] uppercase tracking-widest text-nes-brick-dark">
-                      Slot {slot}
-                      {active ? " · selected" : ""}
-                    </p>
-                    <p className="mt-2 text-[10px] leading-5">{slotSummary(save)}</p>
-                  </button>
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => play(slot)}
-                      className="border-4 border-nes-ink bg-nes-paper px-4 py-2 text-[10px] uppercase text-nes-ink transition active:translate-y-[2px]"
-                    >
-                      {save ? "Continue" : "New game"}
-                    </button>
-                    {save && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          deleteSlot(slot);
-                          setSlots(listSlots());
-                        }}
-                        className="border-4 border-nes-ink bg-nes-paper px-4 py-2 text-[10px] uppercase text-nes-ink transition active:translate-y-[2px]"
-                      >
-                        Erase
-                      </button>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-
-            <MenuButton primary onClick={() => play(activeSlot)}>
-              Start {CHARACTERS[characterId]?.name} · {levelId}
-            </MenuButton>
-            <MenuButton onClick={() => setScreen("menu")}>Back</MenuButton>
           </section>
         )}
 
