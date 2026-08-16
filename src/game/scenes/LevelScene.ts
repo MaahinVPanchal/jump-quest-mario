@@ -753,8 +753,7 @@ export class LevelScene extends Phaser.Scene {
     body.setVelocity(0, 0);
     audio.stopMusic();
     audio.play("goal");
-    this.tweens.add({ targets: this.goalFlag, y: this.goalFlag.y + 250, duration: 900, ease: "Quad.easeOut" });
-    this.cameras.main.zoomTo(1.15, 800);
+    this.tweens.add({ targets: this.goalFlag, y: this.goalFlag.y + 250, duration: 420, ease: "Quad.easeOut" });
 
     const timeBonus = Math.ceil(this.timeLeft) * SCORE.timeBonusPerSecond;
     gameState.addScore(SCORE.levelComplete + timeBonus);
@@ -775,7 +774,7 @@ export class LevelScene extends Phaser.Scene {
     gameState.checkpoint = null;
     gameState.persist(result);
 
-    this.time.delayedCall(1600, () => {
+    this.time.delayedCall(600, () => {
       this.scene.stop("Hud");
       this.scene.start("LevelComplete");
     });
