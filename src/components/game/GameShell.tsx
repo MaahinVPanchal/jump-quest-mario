@@ -112,7 +112,70 @@ export default function GameShell() {
         )}
 
         {screen === "slots" && (
-          <section className="w-full max-w-xl space-y-3">
+          <section className="w-full max-w-3xl space-y-6">
+            {/* Hero briefing */}
+            <div className="border-4 border-nes-ink bg-nes-paper p-5 shadow-[6px_6px_0_0_var(--nes-ink)]">
+              <h2 className="text-center text-xs uppercase tracking-widest text-nes-ink">Your character</h2>
+              <div className="mt-5 flex flex-wrap items-center justify-center gap-6">
+                <PixelSprite id="star" px={4} />
+                <div className="flex flex-col items-center gap-2">
+                  <PixelSprite id="riko" px={6} />
+                  <p className="text-[10px] uppercase tracking-widest text-nes-brick-dark">Riko</p>
+                </div>
+                <PixelSprite id="coin" px={4} />
+              </div>
+              <p className="mt-4 text-center text-[9px] leading-5">
+                Original mascot — quick acceleration, skid turns, coyote time and a variable-height jump.
+              </p>
+              <div className="mt-5 flex flex-wrap items-center justify-center gap-6">
+                {(["riko", "rikoBig", "rikoFire"] as SpriteId[]).map((id, i) => (
+                  <div key={id} className="flex flex-col items-center gap-2">
+                    <PixelSprite id={id} px={i === 0 ? 3 : 4} />
+                    <p className="text-[8px] uppercase tracking-widest text-nes-brick-dark">
+                      {["Small", "Big", "Fire"][i]}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Power-ups */}
+            <div className="border-4 border-nes-ink bg-nes-paper p-5 shadow-[6px_6px_0_0_var(--nes-ink)]">
+              <h2 className="text-center text-xs uppercase tracking-widest text-nes-ink">Upgrades</h2>
+              <ul className="mt-4 grid gap-4 sm:grid-cols-2">
+                {POWER_UPS.map((p) => (
+                  <li key={p.id} className="flex items-start gap-3">
+                    <PixelSprite id={p.id} px={3} />
+                    <div>
+                      <p className="text-[9px] uppercase tracking-widest text-nes-brick-dark">{p.name}</p>
+                      <p className="mt-1 text-[9px] leading-5">{p.text}</p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Enemies */}
+            <div className="border-4 border-nes-ink bg-nes-paper p-5 shadow-[6px_6px_0_0_var(--nes-ink)]">
+              <h2 className="text-center text-xs uppercase tracking-widest text-nes-ink">Enemies in 1-1</h2>
+              <ul className="mt-4 grid gap-4 sm:grid-cols-2">
+                {ENEMY_CARDS.map((e) => {
+                  const data = ENEMIES[e.key];
+                  return (
+                    <li key={e.id} className="flex items-start gap-3">
+                      <PixelSprite id={e.id} px={3} />
+                      <div>
+                        <p className="text-[9px] uppercase tracking-widest text-nes-brick-dark">
+                          {data.name} · {data.score} pts
+                        </p>
+                        <p className="mt-1 text-[9px] leading-5">{e.text}</p>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+
             <h2 className="text-center text-xs uppercase tracking-widest text-nes-ink">Choose a save slot</h2>
             {Array.from({ length: SLOT_COUNT }, (_, i) => i + 1).map((slot) => {
               const save = slots[slot - 1] ?? null;
