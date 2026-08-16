@@ -1,6 +1,9 @@
 export interface CharacterData {
   id: string;
   name: string;
+  /** Texture key prefix for this character's sprite set. */
+  spritePrefix: string;
+  blurb: string;
   speed: number;
   acceleration: number;
   jumpForce: number;
@@ -10,9 +13,11 @@ export interface CharacterData {
   canDoubleJump: boolean;
   canDash: boolean;
   specialAbility: string;
+  /** Level id that must be cleared before this character is playable. */
+  unlockedBy?: string;
 }
 
-export type EnemyKind = "walker" | "shell" | "flyer" | "piranha";
+export type EnemyKind = "walker" | "shell" | "flyer" | "piranha" | "spiker";
 
 export interface EnemyData {
   id: EnemyKind;
@@ -30,6 +35,7 @@ export interface EnemyData {
 export type ItemKind =
   | "coin"
   | "relic"
+  | "star"
   | "growthOrb"
   | "fireCrystal"
   | "oneUp";
@@ -94,6 +100,12 @@ export interface LevelData {
   pipes: PipeSpawn[];
   hazards: Vec2[];
   music: string;
+  /** Sky Stars that must be collected before the goal opens (level 2+). */
+  starsRequired?: number;
+  /** Optional palette theme for the backdrop. */
+  skyColor?: number;
+  /** Next level in the campaign. */
+  next?: string;
 }
 
 export interface LevelResult {
@@ -106,6 +118,7 @@ export interface LevelResult {
   timeLeft: number;
   timeTaken: number;
   damageTaken: number;
+  stars: number;
   rank: "S" | "A" | "B" | "C";
 }
 
