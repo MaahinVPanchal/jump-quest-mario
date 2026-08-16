@@ -39,7 +39,7 @@ export interface CharacterData {
   tint?: Record<string, string>;
 }
 
-export type EnemyKind = "walker" | "shell" | "flyer" | "piranha" | "spiker";
+export type EnemyKind = "walker" | "shell" | "flyer" | "piranha" | "spiker" | "boss";
 
 export interface EnemyData {
   id: EnemyKind;
