@@ -2,6 +2,7 @@ import Phaser from "phaser";
 import { CAMERA, COLORS, COMBAT, PHYSICS, SCORE, TILE, VIEW } from "../config";
 import { LEVEL_1 } from "../levels/level1";
 import { getLevel } from "../levels";
+import { themeById, themeKey, type StageTheme } from "../levels/themes";
 import { CHARACTERS, DEFAULT_CHARACTER } from "../data/characters";
 import type { LevelData, LevelResult, MovingPlatformSpawn, ThrowKind } from "../types";
 import { InputManager } from "../systems/input";
@@ -369,7 +370,8 @@ export class LevelScene extends Phaser.Scene {
     const gy = this.level.goal.y * TILE + TILE;
     this.add.image(gx, gy, "goal_pole").setOrigin(0.5, 1).setDepth(6);
     this.goalFlag = this.add.image(gx + 22, gy - 300, "goal_flag").setOrigin(0, 0).setDepth(7);
-    if (this.starsRequired > 0 && this.starsCollected < this.starsRequired) this.goalFlag.setAlpha(0.45);
+    if ((this.starsRequired > 0 && this.starsCollected < this.starsRequired) || this.bossAlive)
+      this.goalFlag.setAlpha(0.45);
     this.goalZone = this.add.zone(gx, gy - 160, 48, 320);
     this.physics.add.existing(this.goalZone, true);
   }
@@ -580,7 +582,7 @@ export class LevelScene extends Phaser.Scene {
       this.bossAlive = false;
       this.cameras.main.shake(280, 0.008);
       this.toast(`${this.theme.boss.name} defeated — the goal is open!`);
-      this.unsealGoal();
+      if (!this.starsRequired || this.starsCollected >= this.starsRequired) this.unlockGoal();
     }
     gameState.enemiesDefeated += 1;
     const multiplier = gameState.bumpCombo(this.time.now);
