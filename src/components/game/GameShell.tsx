@@ -5,6 +5,8 @@ import { emptySave, listSlots, loadSlot, saveSlot, deleteSlot, SLOT_COUNT } from
 import type { SaveData } from "@/game/types";
 import PixelSprite, { type SpriteId } from "./PixelSprite";
 import { ENEMIES } from "@/game/data/enemies";
+import { CHARACTERS } from "@/game/data/characters";
+import { LEVELS } from "@/game/levels";
 
 const PhaserMount = lazy(() => import("./PhaserMount"));
 
@@ -91,6 +93,21 @@ const ENEMY_CARDS: EnemyCard[] = [
     danger: "The head has no weak point — stomping it always hurts. Jumping over the pipe during the bite is the most common death.",
     tip: "Stand on the rim to keep it down, or walk past exactly during the retract beat.",
   },
+  {
+    id: "spiker",
+    key: "spiker",
+    text: "New in 2-1. Spiked roller that charges when it spots you. Never stompable.",
+    behaviour:
+      "Rolls at 48 px/s across a 144 px beat. If Riko is within 260 px and in front of it, it winds up and charges at 2.6x speed for about a second, glowing red as it goes.",
+    counters: ["Fire ember — clean kill", "Sliding shell — bowls it over", "Jump clean over the charge"],
+    danger: "Spikes cover the top, so a stomp always costs you a power stage.",
+    tip: "Bait the charge from a ledge, then drop behind it while it overshoots.",
+  },
+];
+
+const CHARACTER_CARDS: { id: string; sprite: SpriteId }[] = [
+  { id: "riko", sprite: "riko" },
+  { id: "mira", sprite: "mira" },
 ];
 
 export default function GameShell() {
@@ -98,6 +115,8 @@ export default function GameShell() {
   const [slots, setSlots] = useState<(SaveData | null)[]>([]);
   const [activeSlot, setActiveSlot] = useState(1);
   const [activeSave, setActiveSave] = useState<SaveData | null>(null);
+  const [characterId, setCharacterId] = useState("riko");
+  const [levelId, setLevelId] = useState(LEVELS[0]!.id);
 
   useEffect(() => {
     setSlots(listSlots());
@@ -111,6 +130,11 @@ export default function GameShell() {
     setScreen("playing");
   }, []);
 
+  const unlockedCharacters = new Set(
+    slots.flatMap((s) => s?.unlockedCharacters ?? []).concat(["riko"]),
+  );
+  const completedLevels = new Set(slots.flatMap((s) => s?.completedLevels ?? []));
+
   const exit = useCallback(() => {
     setActiveSave(null);
     setScreen("menu");
@@ -121,7 +145,13 @@ export default function GameShell() {
       <div className="fixed inset-0 bg-nes-ink">
         <ClientOnly fallback={<LoadingCanvas />}>
           <Suspense fallback={<LoadingCanvas />}>
-            <PhaserMount slot={activeSlot} save={activeSave} onExit={exit} />
+            <PhaserMount
+              slot={activeSlot}
+              save={activeSave}
+              characterId={characterId}
+              levelId={levelId}
+              onExit={exit}
+            />
           </Suspense>
         </ClientOnly>
       </div>
