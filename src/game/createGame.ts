@@ -8,6 +8,7 @@ import { LevelCompleteScene } from "./scenes/LevelCompleteScene";
 import { GameOverScene } from "./scenes/GameOverScene";
 import { audio } from "./systems/audio";
 import { gameState } from "./systems/state";
+import { display, resolveZoom } from "./systems/display";
 import type { SaveData } from "./types";
 
 export interface StartOptions {
@@ -25,6 +26,7 @@ export function createGame({ parent, slot, save, onExit }: StartOptions): Phaser
   audio.settings.master = save.settings.master;
   audio.unlock();
   audio.applyVolumes();
+  display.setPixelPerfect(save.settings.pixelPerfect ?? true);
 
   const game = new Phaser.Game({
     type: Phaser.AUTO,
@@ -59,16 +61,20 @@ export function createGame({ parent, slot, save, onExit }: StartOptions): Phaser
     const dpr = window.devicePixelRatio || 1;
     const raw = Math.min(parent.clientWidth / VIEW.width, parent.clientHeight / VIEW.height);
     if (!Number.isFinite(raw) || raw <= 0) return;
-    const devicePx = Math.floor(raw * dpr);
-    const zoom = devicePx >= dpr ? devicePx / dpr : raw;
+    const zoom = resolveZoom(raw, dpr, display.pixelPerfect);
     game.scale.setZoom(zoom);
     game.scale.refresh();
+    display.setZoom(Math.round(zoom * 1000) / 1000);
     const canvas = game.canvas;
-    if (canvas) canvas.style.imageRendering = "pixelated";
+    if (canvas) canvas.style.imageRendering = display.pixelPerfect ? "pixelated" : "auto";
   };
   game.events.once(Phaser.Core.Events.READY, fitPixelPerfect);
   window.addEventListener("resize", fitPixelPerfect);
-  game.events.once(Phaser.Core.Events.DESTROY, () => window.removeEventListener("resize", fitPixelPerfect));
+  const unsubscribe = display.subscribe(() => fitPixelPerfect());
+  game.events.once(Phaser.Core.Events.DESTROY, () => {
+    window.removeEventListener("resize", fitPixelPerfect);
+    unsubscribe();
+  });
 
   return game;
 }
