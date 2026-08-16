@@ -6,6 +6,7 @@ import type { SaveData } from "@/game/types";
 import PixelSprite, { HeroSprite, type SpriteId } from "./PixelSprite";
 import { ENEMIES } from "@/game/data/enemies";
 import { CHARACTERS, ROSTER } from "@/game/data/characters";
+import { STAGE_THEMES } from "@/game/levels/themes";
 import { LEVELS } from "@/game/levels";
 
 const PhaserMount = lazy(() => import("./PhaserMount"));
@@ -289,6 +290,39 @@ export default function GameShell() {
                         <p className="mt-1 text-[8px] leading-5">
                           <span className="text-nes-brick-dark">TIP: </span>
                           {e.tip}
+                        </p>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+
+            {/* Ten themed worlds, each with its own art set and guardian boss */}
+            <div className="border-4 border-nes-ink bg-nes-paper p-5 shadow-[6px_6px_0_0_var(--nes-ink)]">
+              <h2 className="text-center text-xs uppercase tracking-widest text-nes-ink">
+                Ten worlds · ten bosses
+              </h2>
+              <ul className="mt-4 grid gap-2 sm:grid-cols-2">
+                {STAGE_THEMES.map((t) => {
+                  const cleared = completedLevels.includes(`${t.world}-1`);
+                  return (
+                    <li
+                      key={t.id}
+                      className="flex items-start gap-3 border-2 border-nes-ink/20 bg-white/60 p-2"
+                    >
+                      <span
+                        aria-hidden
+                        className="mt-[2px] h-5 w-5 shrink-0 border-2 border-nes-ink"
+                        style={{ background: `#${t.sky.toString(16).padStart(6, "0")}` }}
+                      />
+                      <div className="min-w-0">
+                        <p className="text-[9px] uppercase tracking-widest text-nes-ink">
+                          {t.world}-1 {t.name} {cleared ? "· CLEAR" : ""}
+                        </p>
+                        <p className="mt-1 text-[8px] leading-4 text-nes-brick-dark">{t.blurb}</p>
+                        <p className="mt-1 text-[8px] uppercase tracking-widest text-nes-brick">
+                          Boss: {t.boss.name}
                         </p>
                       </div>
                     </li>

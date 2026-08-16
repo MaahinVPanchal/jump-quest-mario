@@ -39,7 +39,7 @@ export interface CharacterData {
   tint?: Record<string, string>;
 }
 
-export type EnemyKind = "walker" | "shell" | "flyer" | "piranha" | "spiker";
+export type EnemyKind = "walker" | "shell" | "flyer" | "piranha" | "spiker" | "boss";
 
 export interface EnemyData {
   id: EnemyKind;
@@ -109,6 +109,8 @@ export interface BlockSpawn extends Vec2 {
 
 export interface EnemySpawn extends Vec2 {
   type: EnemyKind;
+  /** Theme id for bosses, so each world fields its own silhouette. */
+  variant?: string;
   direction?: -1 | 1;
   patrol?: number;
 }
@@ -154,6 +156,10 @@ export interface LevelData {
   music: string;
   /** Sky Stars that must be collected before the goal opens (level 2+). */
   starsRequired?: number;
+  /** Stage theme id driving tiles, backdrop, liquid and boss art. */
+  themeId?: string;
+  /** The stage goal stays sealed until this boss is defeated. */
+  bossRequired?: boolean;
   /** Optional palette theme for the backdrop. */
   skyColor?: number;
   /** Next level in the campaign. */
