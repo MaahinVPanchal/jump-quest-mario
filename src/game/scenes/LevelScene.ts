@@ -96,7 +96,7 @@ export class LevelScene extends Phaser.Scene {
     this.items = this.physics.add.group({ allowGravity: false });
     // Saved Sky Stars come back with the level so refreshing never loses progress.
     const restored = gameState.restoreStars(
-      level.items.filter((i) => i.type === "star").map((i, n) => i.id ?? `star:${i.x}:${i.y}:${n}`),
+      level.items.filter((i) => i.type === "star").map((i) => i.id ?? `${i.type}:${i.x}:${i.y}`),
     );
     for (const id of restored) gameState.collectedIds.add(id);
     for (const spawn of level.items) {
