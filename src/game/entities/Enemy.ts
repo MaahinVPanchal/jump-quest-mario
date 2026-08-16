@@ -2,6 +2,7 @@ import Phaser from "phaser";
 import { TILE } from "../config";
 import { ENEMIES } from "../data/enemies";
 import type { EnemyData, EnemyKind, EnemySpawn } from "../types";
+import { bossKey, themeById } from "../levels/themes";
 
 export type EnemyState = "patrol" | "shell" | "sliding" | "dead";
 export type DamageSource = "stomp" | "fire" | "shell";
@@ -53,6 +54,10 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
   private cycle = 0;
   private hideDepth = 44;
   private chargeUntil = 0;
+  /** Boss state: remaining hits, hop timer and the theme its art comes from. */
+  private hp = 1;
+  private hopAt = 0;
+  private bossTheme = "meadow";
   awake = false;
 
   constructor(scene: Phaser.Scene, spawn: EnemySpawn) {
@@ -66,7 +71,9 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
             ? "piranha_0"
             : spawn.type === "spiker"
               ? "spiker_0"
-              : "flyer_0";
+              : spawn.type === "boss"
+                ? bossKey(themeById(spawn.variant ?? "meadow").id, 0)
+                : "flyer_0";
     const y = spawn.type === "piranha" ? spawn.y * TILE + 48 : spawn.y * TILE + TILE;
     super(scene, spawn.x * TILE + TILE / 2, y, key);
     this.kind = spawn.type;
@@ -86,6 +93,15 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
       body.setImmovable(true);
       body.checkCollision.none = true;
       this.cycle = Math.random() * PIRANHA_PERIOD;
+    }
+    if (spawn.type === "boss") {
+      const theme = themeById(spawn.variant ?? "meadow");
+      this.bossTheme = theme.id;
+      this.hp = 3 + theme.boss.extraHits;
+      this.setScale(1.6);
+      body.setSize(46, 52);
+      body.setOffset(9, 12);
+      this.setDepth(16);
     }
     this.homeX = this.x;
     this.homeY = this.y;
@@ -131,6 +147,16 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
         this.shellIdleUntil = this.scene.time.now + SHELL.dormantMs;
         this.setTexture("shell_hidden");
         this.setVelocityX(0);
+        return false;
+      }
+    }
+    if (this.kind === "boss") {
+      this.hp -= source === "shell" ? 2 : 1;
+      if (this.hp > 0) {
+        // Flash + knock back so every landed hit reads clearly.
+        this.dir = -this.dir;
+        this.setVelocityY(-260);
+        this.scene.tweens.add({ targets: this, alpha: 0.25, yoyo: true, repeat: 3, duration: 70 });
         return false;
       }
     }
@@ -200,6 +226,16 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
         // Classic wobble tell just before the patroller climbs back out.
         this.setFlipY(Math.floor(time / 110) % 2 === 0);
       }
+    } else if (this.kind === "boss") {
+      this.setVelocityX(this.dir * this.stats.speed);
+      if (body.blocked.left || body.blocked.right || Math.abs(this.x - this.homeX) > this.patrol) {
+        this.dir *= -1;
+        this.x += this.dir * 3;
+      }
+      if (body.blocked.down && time > this.hopAt) {
+        this.hopAt = time + 1400;
+        this.setVelocityY(-420);
+      }
     } else {
       let speed = this.stats.speed;
       if (this.kind === "spiker") speed *= this.updateSpikerCharge(time);
@@ -214,6 +250,10 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     }
 
     if (this.kind !== "piranha") this.setFlipX(this.dir > 0);
+    if (this.kind === "boss") {
+      this.setTexture(bossKey(this.bossTheme, Math.floor(time / 220) % 2));
+      return;
+    }
     this.animTime += delta;
     if (this.kind !== "piranha" && this.animTime > 180 && this.mode === "patrol") {
       this.animTime = 0;
