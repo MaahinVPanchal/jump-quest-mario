@@ -78,6 +78,27 @@ export class GameState {
     if (this.coins > 0 && this.coins % RULES.coinsPerLife === 0) this.lives += 1;
   }
 
+  /** Star pickups persist immediately so progress survives a refresh. */
+  collectStar(uid: string): void {
+    if (!this.starIds.includes(uid)) this.starIds.push(uid);
+    if (!this.save.starIds.includes(uid)) {
+      this.save = { ...this.save, starIds: [...this.save.starIds, uid] };
+      saveSlot(this.slot, this.save);
+    }
+  }
+
+  /** Re-applies previously saved stars for the level being entered. */
+  restoreStars(levelStarIds: string[]): string[] {
+    this.starIds = this.save.starIds.filter((id) => levelStarIds.includes(id));
+    return this.starIds;
+  }
+
+  private legacyAddCoin(): void {
+    this.coins += 1;
+    this.levelCoins += 1;
+    if (this.coins > 0 && this.coins % RULES.coinsPerLife === 0) this.lives += 1;
+  }
+
   rankFor(timeLeft: number, timeLimit: number): LevelResult["rank"] {
     const fast = timeLeft > timeLimit * 0.55;
     if (fast && this.relicIds.length >= 3 && this.damageTaken === 0) return "S";
