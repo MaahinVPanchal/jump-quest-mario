@@ -300,6 +300,27 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
   }
 
   /** Returns the speed multiplier for the spiker's patrol / charge rhythm. */
+  private updateLobber(time: number): void {
+    const scene = this.scene as Phaser.Scene & {
+      playerX?: () => number;
+      spawnEnemyShot?: (x: number, y: number, dir: number) => void;
+    };
+    const px = scene.playerX?.();
+    if (px === undefined || !Number.isFinite(px)) return;
+    const dx = px - this.x;
+    if (Math.abs(dx) > LOBBER.range) return;
+    this.dir = dx >= 0 ? 1 : -1;
+    if (time > this.nextShotAt) {
+      this.nextShotAt = time + LOBBER.cooldownMs;
+      this.telegraphUntil = time + LOBBER.telegraphMs;
+      this.scene.time.delayedCall(LOBBER.telegraphMs, () => {
+        if (this.mode === "dead" || !this.active) return;
+        scene.spawnEnemyShot?.(this.x + this.dir * 16, this.y - 20, this.dir);
+      });
+    }
+    this.setTint(time < this.telegraphUntil ? 0xffe08a : 0xffffff);
+  }
+
   private updateSpikerCharge(time: number): number {
     const scene = this.scene as Phaser.Scene & { playerX?: () => number };
     const px = scene.playerX?.() ?? Number.NaN;
