@@ -203,15 +203,15 @@ export const HERO_ART: Record<HeroRig, HeroArt> = {
     ],
     torso: [
       "..K111K33K111K..",
-      ".K1113333331 K..".replace(" ", "1"),
-      "55K13333333 K55.".replace(" ", "3"),
-      "5K1333553335 K5.".replace(" ", "3"),
+      ".K11133333311K..",
+      "55K133333333K55.",
+      "5K13335533353K5.",
     ],
     attack: [
       "..K111K33K111K..",
       ".K11133333311K..",
       "55K133333333K...",
-      ".K13335533 K.55X".replace(" ", "3"),
+      ".K133355333K.55X",
     ],
     legs: "normal",
     palette: pal({
@@ -246,8 +246,8 @@ export const HERO_ART: Record<HeroRig, HeroArt> = {
     attack: [
       "...K11K33K11K...",
       "..K1133333311K..",
-      "5.K13333333 K...".replace(" ", "3"),
-      ".K1333553 1K.55X".replace(" ", "3"),
+      "5.K133333333K...",
+      ".K133355331K.55X",
     ],
     legs: "normal",
     palette: pal({
@@ -265,7 +265,7 @@ export const HERO_ART: Record<HeroRig, HeroArt> = {
   rosella: {
     head: [
       "...5.5.5.5.5....",
-      "..K5555555 K....".replace(" ", "5"),
+      "..K55555555K....",
       "..HHHHHHHHHH....",
       ".HHSSSSSSSSHH...",
       ".HHSSESSSESSH...",
@@ -276,13 +276,13 @@ export const HERO_ART: Record<HeroRig, HeroArt> = {
     torso: [
       "..HK1111111KH...",
       ".HK111555111KH..",
-      "5K111511151 K5..".replace(" ", "1"),
+      "5K1115111511K5..",
       "5K1111111111K5..",
     ],
     attack: [
       "..HK1111111KH...",
       ".HK111555111KH..",
-      "5K11151115 K....".replace(" ", "1"),
+      "5K111511151K....",
       ".K11111111K.5X5.",
     ],
     legs: "gown",
@@ -302,7 +302,7 @@ export const HERO_ART: Record<HeroRig, HeroArt> = {
   krogar: {
     head: [
       "..5.K1111K.5....",
-      ".5 K111111K 5...".replace(/ /g, "5"),
+      ".55K111111K55...",
       "..K11SSSS11K....",
       ".K11SEWSEWS1K...",
       ".K11SSSSSSS1K...",
@@ -313,13 +313,13 @@ export const HERO_ART: Record<HeroRig, HeroArt> = {
     torso: [
       ".K1111111111K...",
       "K1155533355511K.",
-      "K13355555553 1K.".replace(" ", "3"),
+      "K1335555555331K.",
       "K1335555555331K.",
     ],
     attack: [
       ".K1111111111K.5.",
       "K115553335551K55",
-      "K1335555555 K.55".replace(" ", "3"),
+      "K13355555553K.55",
       "K13355555533K.5.",
     ],
     legs: "wide",
@@ -357,7 +357,7 @@ export const HERO_ART: Record<HeroRig, HeroArt> = {
       "................",
       "...K33333333K...",
       "S.K31111113K....",
-      "SK3311111 K..5X5".replace(" ", "3"),
+      "SK33111113K..5X5",
     ],
     legs: "short",
     palette: pal({
@@ -379,14 +379,14 @@ export const HERO_ART: Record<HeroRig, HeroArt> = {
       "...K1SSSSS1K....",
       "...K1SESSEK.....",
       "....KSSSSSK.....",
-      "...K111111 K....".replace(" ", "1"),
+      "...K1111111K....",
       "..K11111111K.X..",
     ],
     torso: [
-      ".K11333333311K X".replace(" ", "."),
+      ".K11333333311K.X",
       "K1333333333331KX",
-      "S133355553331 SX".replace(" ", "3"),
-      "SK1333333333 KS.".replace(" ", "1"),
+      "S1333555533313SX",
+      "SK13333333331KS.",
     ],
     attack: [
       ".K11333333311K..",
@@ -412,24 +412,24 @@ export const HERO_ART: Record<HeroRig, HeroArt> = {
     head: [
       "...KK1111KK.....",
       "..K11111111K....",
-      "..K1333333 K....".replace(" ", "1"),
+      "..K13333331K....",
       "..K13555553K....",
       "..K13555553K....",
-      "..K1333333 K....".replace(" ", "1"),
+      "..K13333331K....",
       "...K111111K.....",
       "...K3111113K....",
     ],
     torso: [
-      "4K11111111 K4...".replace(" ", "1"),
-      "4K13555553 K44..".replace(" ", "1"),
-      "4K11555551 K44..".replace(" ", "1"),
+      "4K111111111K4...",
+      "4K135555531K44..",
+      "4K115555511K44..",
       ".K1111111111K...",
     ],
     attack: [
       "4K111111111K4...",
-      "4K1355555 1K44..".replace(" ", "3"),
+      "4K135555531K44..",
       "4K11555551K.XXX5",
-      ".K111111 1K..5..".replace(" ", "1"),
+      ".K11111111K..5..",
     ],
     legs: "normal",
     palette: pal({
@@ -457,16 +457,16 @@ export const HERO_ART: Record<HeroRig, HeroArt> = {
       "...HHHHHHHH.X...",
     ],
     torso: [
-      "SK1113333111KS X".replace(" ", "."),
-      "S11133555331 SXX".replace(" ", "1"),
-      "S1113355331 1SXX".replace(" ", "1"),
-      ".K111333331 K...".replace(" ", "1"),
+      "SK1113333111KS.X",
+      "S111335553311SXX",
+      "S111335533111SXX",
+      ".K1113333311K...",
     ],
     attack: [
       "XXK11133311KS...",
-      "XX1113355331 S..".replace(" ", "1"),
+      "XX11133553311S..",
       ".X1113333311S...",
-      ".K1113333 1K....".replace(" ", "1"),
+      ".K111333311K....",
     ],
     legs: "wide",
     palette: pal({
@@ -496,13 +496,13 @@ export const HERO_ART: Record<HeroRig, HeroArt> = {
     ],
     torso: [
       "..K11333311K....",
-      ".5K1133331 K....".replace(" ", "1"),
+      ".5K11333311K....",
       "5S1133333311S.X.",
-      ".K11333333 K..X.".replace(" ", "1"),
+      ".K113333331K..X.",
     ],
     attack: [
       "..K11333311K....",
-      ".5K113333 1K....".replace(" ", "1"),
+      ".5K11333311K....",
       "5S113333331S.XXX",
       ".K1133333K...x..",
     ],
