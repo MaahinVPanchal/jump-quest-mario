@@ -246,6 +246,9 @@ export default function GameShell() {
                           {c.canDoubleJump ? " · Double jump" : ""}
                           {c.canDash ? " · Dash" : ""}
                         </p>
+                        <p className="mt-1 text-[8px] uppercase tracking-widest text-nes-ink/70">
+                          Throws: {c.throwable ?? "ember"} · banana → monkey · bell → cat
+                        </p>
                         <p className="mt-2 inline-block border-2 border-nes-ink bg-nes-ink px-2 py-1 text-[8px] uppercase tracking-widest text-nes-coin">
                           Special: {c.special ?? abilityLabel(c.specialAbility)}
                         </p>
