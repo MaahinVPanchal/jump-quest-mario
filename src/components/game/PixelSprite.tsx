@@ -52,6 +52,7 @@ export type SpriteId =
   | "ogre"
   | "piranha"
   | "spiker"
+  | "lobber"
   | "coin"
   | "star"
   | "growthOrb"
@@ -221,6 +222,25 @@ const SPRITES: Record<SpriteId, readonly string[]> = {
   mira: [
     ...recolor(recolor(HERO_HEAD, "R", "C"), "H", "c"),
     ...recolor(recolor(HERO_BODY, "R", "C"), "H", "c"),
+  ],
+  /* Cragspit Gunner — armoured shooter with a shoulder cannon. */
+  lobber: [
+    "................",
+    "......KKKK......",
+    ".....KAAAAK.....",
+    "....KAWWWWAK....",
+    "....KAWKKWAK....",
+    "...KAAAAAAAAK...",
+    "..KAFFFFFFFFAK..",
+    ".KAFFFFFFFFFFAK.",
+    "PPKAFFFFFFFFAKK.",
+    "PPKAFFFFFFFFAKK.",
+    ".KAFFFFFFFFFFAK.",
+    "..KAaaaaaaaaAK..",
+    "..KAaaaaaaaaAK..",
+    "...KKAA..AAKK...",
+    "...KAA....AAK...",
+    "................",
   ],
   spiker: [
     "....K..K..K..K..",
