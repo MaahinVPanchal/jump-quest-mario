@@ -167,7 +167,7 @@ export class LevelScene extends Phaser.Scene {
     const { tiles, heightTiles, widthTiles } = this.level;
     const visual = this.add.container(0, 0).setDepth(5);
     // Dark void behind the floor line so pits read as bottomless, not as sky.
-    const surfaceRow = tiles.findIndex((row) => row.some((v) => v > 0));
+    const surfaceRow = tiles.findIndex((row) => row.filter((v) => v > 0).length > widthTiles * 0.5);
     const voidTop = (surfaceRow < 0 ? heightTiles - 5 : surfaceRow) * TILE;
     this.add
       .rectangle(0, voidTop, widthTiles * TILE, heightTiles * TILE - voidTop, 0x0b0b12)
