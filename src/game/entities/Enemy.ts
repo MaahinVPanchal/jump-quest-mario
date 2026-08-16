@@ -206,14 +206,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     if (this.kind !== "piranha" && this.animTime > 180 && this.mode === "patrol") {
       this.animTime = 0;
       this.frame2 = 1 - this.frame2;
-      const base =
-        this.kind === "walker"
-          ? "walker"
-          : this.kind === "shell"
-            ? "shell"
-            : this.kind === "piranha"
-              ? "piranha"
-              : "flyer";
+      const base = this.kind === "walker" ? "walker" : this.kind === "shell" ? "shell" : "flyer";
       this.setTexture(`${base}_${this.frame2}`);
     }
   }
