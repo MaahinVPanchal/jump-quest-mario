@@ -17,6 +17,8 @@ export interface CharacterData {
   canDoubleJump: boolean;
   canDash: boolean;
   specialAbility: string;
+  /** Signature projectile thrown while powered up. */
+  throwable?: ThrowKind;
   /** Level id that must be cleared before this character is playable. */
   unlockedBy?: string;
   /** Palette overrides applied to the shared pixel rig. */
