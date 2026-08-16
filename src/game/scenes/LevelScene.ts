@@ -477,7 +477,7 @@ export class LevelScene extends Phaser.Scene {
         break;
       case "star": {
         gameState.collectedIds.add(item.uid);
-        if (!gameState.starIds.includes(item.uid)) gameState.starIds.push(item.uid);
+        gameState.collectStar(item.uid);
         audio.play("life");
         this.addScore(SCORE.secret, x, y);
         this.burst(x, y, COLORS.coin, 22);
