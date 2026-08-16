@@ -520,7 +520,88 @@ export const HERO_ART: Record<HeroRig, HeroArt> = {
   },
 };
 
-/** Compose the full 16x16 grid for one hero pose. */
+/**
+ * Authoring resolution of every row string in this file.
+ * Never change this — rows are hand-drawn at 16x16.
+ */
+export const HERO_SOURCE_GRID: number = 16;
+
+/**
+ * Render resolution. Bump this (e.g. 16 -> 24 -> 32) to regenerate every hero
+ * at higher detail without editing a single row: the authored 16x16 grid is
+ * resampled, staircases are rounded off and a shading pass adds depth.
+ * Must be a multiple of 8 and >= HERO_SOURCE_GRID.
+ */
+export const HERO_GRID: number = 24;
+
+/** Darker companion for each colour, used by the auto-shading pass. */
+const SHADE_OF: Record<string, string> = { "1": "2", "3": "4", S: "s", X: "x", "5": "5", W: "2" };
+
+function resample(rows: readonly string[], to: number): string[] {
+  const from = rows.length;
+  const out: string[] = [];
+  for (let y = 0; y < to; y++) {
+    const sy = Math.min(from - 1, Math.floor((y * from) / to));
+    const src = rows[sy]!;
+    let line = "";
+    for (let x = 0; x < to; x++) {
+      const sx = Math.min(src.length - 1, Math.floor((x * from) / to));
+      line += src[sx] ?? ".";
+    }
+    out.push(line);
+  }
+  return out;
+}
+
+/** Round off the hard staircases the resample leaves behind. */
+function deJaggy(rows: string[]): string[] {
+  const g = rows.map((r) => r.split(""));
+  const h = g.length;
+  const w = g[0]!.length;
+  const at = (x: number, y: number): string => (y < 0 || y >= h || x < 0 || x >= w ? "." : g[y]![x]!);
+  const out = g.map((r) => [...r]);
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      if (at(x, y) !== ".") continue;
+      for (const [dx, dy] of [
+        [-1, 0],
+        [1, 0],
+      ] as const) {
+        const side = at(x + dx, y);
+        if (side === "." ) continue;
+        for (const dyy of [-1, 1]) {
+          if (at(x, y + dyy) === side && at(x + dx, y + dyy) === side) {
+            out[y]![x] = side;
+          }
+        }
+      }
+    }
+  }
+  return out.map((r) => r.join(""));
+}
+
+/** Add a one-pixel darker rim under every solid run, for chunky volume. */
+function shade(rows: string[]): string[] {
+  const g = rows.map((r) => r.split(""));
+  const h = g.length;
+  const w = g[0]!.length;
+  const out = g.map((r) => [...r]);
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const c = g[y]![x]!;
+      const dark = SHADE_OF[c];
+      if (!dark || dark === c) continue;
+      const below = y + 1 < h ? g[y + 1]![x]! : ".";
+      const right = x + 1 < w ? g[y]![x + 1]! : ".";
+      if ((below === "." || below === "K") && (right === "." || right === "K" || right === c)) {
+        out[y]![x] = dark;
+      }
+    }
+  }
+  return out.map((r) => r.join(""));
+}
+
+/** Compose the full pose grid, resampled to HERO_GRID. */
 export function heroPose(rig: HeroRig, pose: HeroPose): readonly string[] {
   const art = HERO_ART[rig];
   const legSet = LEG_SETS[art.legs];
@@ -528,9 +609,11 @@ export function heroPose(rig: HeroRig, pose: HeroPose): readonly string[] {
   const legs = legSet[legKey] ?? legSet["idle"]!;
   const torso = pose.startsWith("attack") ? art.attack : art.torso;
   const head = pose === "idle2" ? [blank, ...art.head.slice(0, art.head.length - 1)] : art.head;
-  const rows = [...head, ...torso, ...legs];
-  // Pad every row to 16 cells so the grid stays square.
-  return rows.map((r) => (r.length >= 16 ? r.slice(0, 16) : r + ".".repeat(16 - r.length)));
+  const rows = [...head, ...torso, ...legs].map((r) =>
+    r.length >= HERO_SOURCE_GRID
+      ? r.slice(0, HERO_SOURCE_GRID)
+      : r + ".".repeat(HERO_SOURCE_GRID - r.length),
+  );
+  if (HERO_GRID === HERO_SOURCE_GRID) return rows;
+  return shade(deJaggy(resample(rows, HERO_GRID)));
 }
-
-export const HERO_GRID = 16;

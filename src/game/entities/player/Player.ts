@@ -1,3 +1,4 @@
+import { HERO_GRID } from "@/game/art/heroes";
 import Phaser from "phaser";
 import { COMBAT, PHYSICS } from "../../config";
 import type { InputManager } from "../../systems/input";
@@ -87,10 +88,14 @@ export class Player {
 
   private applyForm(state: PowerState): void {
     this.power = state;
-    const scale = SCALE[state] * (this.character?.sizeScale ?? 1);
+    // Sprites are authored at 16px but rendered at HERO_GRID px, so divide the
+    // display scale (and multiply the body) by that density factor to keep the
+    // hero exactly the same size on screen at any detail level.
+    const density = HERO_GRID / 16;
+    const scale = (SCALE[state] * (this.character?.sizeScale ?? 1)) / density;
     this.sprite.setScale(scale);
-    this.sprite.body?.setSize(20, 30);
-    (this.sprite.body as Phaser.Physics.Arcade.Body).setOffset(6, 18);
+    this.sprite.body?.setSize(20 * density, 30 * density);
+    (this.sprite.body as Phaser.Physics.Arcade.Body).setOffset(6 * density, 18 * density);
     if (this.movement) {
       this.movement.jumpScale = JUMP_SCALE[state];
       // Cat form claws the air: everyone gets an air jump while transformed.
