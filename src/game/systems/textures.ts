@@ -212,7 +212,7 @@ export function buildTextures(scene: Phaser.Scene): void {
         `${character.spritePrefix}_${poseKey(pose)}`,
         32,
         48,
-        (ctx) => paint(ctx, heroPose(character.rig, pose), 2, 0, 16, art.palette),
+        (ctx) => paint(ctx, heroPose(character.rig, pose), 2, 0, 16, art.palette as unknown as Record<string, string>),
         false,
       );
     }
