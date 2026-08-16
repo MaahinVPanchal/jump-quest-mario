@@ -74,6 +74,16 @@ const PALETTE: Record<string, string> = {
   v: "#4c18b0",
   C: "#3cbcfc", // Mira cyan
   c: "#0058f8",
+  D: "#28407c", // ninja navy
+  d: "#101838", // ninja navy shade
+  A: "#b8b8c8", // steel / boots
+  a: "#585868",
+  E: "#00d8c8", // visor teal
+  F: "#f87800", // armour orange
+  L: "#58d818", // tunic green
+  t: "#c07840", // leather tan
+  y: "#c88000", // gold shade
+  T: "#fcd8a8",
 };
 
 function paint(
@@ -109,9 +119,26 @@ const HERO_HEAD: readonly string[] = [
 /** Distinct silhouettes so every hero reads as its own character in-game. */
 export type HeroRig = "riko" | "princess" | "ninja" | "hunter" | "whip" | "ranger";
 
-const HEADS: Record<HeroRig, readonly string[]> = {
-  riko: HERO_HEAD,
-  princess: [
+interface RigArt {
+  head: readonly string[];
+  /** Four torso rows drawn under the head. */
+  torso: readonly string[];
+  /** Palette chars swapped into the shared leg templates. */
+  legBody: string;
+  legBoot: string;
+}
+
+const RIKO_TORSO: readonly string[] = [
+  "..HHHRRHRRHHH...",
+  ".HHHHRRRRRRHHHH.",
+  "SSHHRYRRRRYRHHSS",
+  "SSHRRRRRRRRRRHSS",
+];
+
+const RIGS: Record<HeroRig, RigArt> = {
+  riko: { head: HERO_HEAD, torso: RIKO_TORSO, legBody: "R", legBoot: "H" },
+  princess: {
+    head: [
     ".....Y.Y.Y......",
     "....YYYYYYY.....",
     "...HHHSSSSHH....",
@@ -120,47 +147,95 @@ const HEADS: Record<HeroRig, readonly string[]> = {
     "..HHSSSSSSSSH...",
     "...HSSSSSSSH....",
     "...HHRRRRHH.....",
-  ],
-  ninja: [
-    "....RRRRRRR.....",
-    "...RRRRRRRRR....",
-    "...RRRRRRRRR....",
-    "..RRSSKSSKSSR...",
-    "..RRSSSSSSSSR...",
-    "..RRRRRRRRRRR...",
-    "....RRRRRRR.....",
-    "...HHRRRRHH.....",
-  ],
-  hunter: [
-    "....YYYYYYY.....",
-    "...YYYYYYYYY....",
-    "..YYRRRRRRRYY...",
-    "..YYRWWWWWRYY...",
-    "..YYRRRRRRRYY...",
-    "...YYYYYYYYY....",
-    "....YY...YY.....",
-    "...HHRRRRHH.....",
-  ],
-  whip: [
-    "....YYYYYY......",
-    "...YYYYYYYYY....",
-    "...RRRRRRRRR....",
-    "..YYSSKSSKSSY...",
-    "..YSSSSSSSSY....",
-    "...SSSSSSSS.....",
-    "....SSSSSS......",
-    "...HHRRRRHH.....",
-  ],
-  ranger: [
-    ".....RRR........",
-    "....RRRRRR......",
-    "...RRRRRRRRR....",
-    "..RRRSSKSSKR....",
-    "..RRSSSSSSSR....",
-    "...RSSSSSSR.....",
-    "....SSSSSS......",
-    "...HHRRRRHH.....",
-  ],
+    ],
+    torso: RIKO_TORSO,
+    legBody: "R",
+    legBoot: "H",
+  },
+  /* Night ninja: masked hood, sash, back-slung blade. */
+  ninja: {
+    head: [
+      "....DDDDDD......",
+      "...DddddddD.....",
+      "...DdddddddD....",
+      "..DDTTKTTKTDD...",
+      "..DDTTTTTTTDD...",
+      "..DDddddddddD...",
+      "....DDDDDDD.....",
+      "...DDddddDD.....",
+    ],
+    torso: [
+      "..DDDdddddDDD...",
+      ".DDdddddddddDD.y",
+      "TDDdddRRRdddDDT.",
+      "..DDdddddddDD...",
+    ],
+    legBody: "d",
+    legBoot: "D",
+  },
+  /* Armoured hunter: visored helm, shoulder plates, arm cannon. */
+  hunter: {
+    head: [
+      "....AAAAAA......",
+      "...ARRRRRRA.....",
+      "...ARWWWWRA.....",
+      "...ARRRRRRA.....",
+      "...AAAAAAAA.....",
+      "..FFAAAAAAFF....",
+      "...FFFFFFFF.....",
+      "...AFFFFFFA.....",
+    ],
+    torso: [
+      ".AAFFFFFFFFAA...",
+      "AAFFEEEEEEFFAA..",
+      "AFFEEAAAAEEFFA..",
+      ".AFFFFFFFFFFA...",
+    ],
+    legBody: "F",
+    legBoot: "A",
+  },
+  /* Whip ranger: long blonde hair, leather harness, coiled lash. */
+  whip: {
+    head: [
+      "....YYYYYY......",
+      "...YYYYYYYY.....",
+      "...YTTTTTKY.....",
+      "...YTKTTTTY.....",
+      "....TTTTTT......",
+      "....TTTTTT......",
+      "...HHTTTTHH.....",
+      "..THHHHHHHHT....",
+    ],
+    torso: [
+      "..SSHHHHHHHHSS..",
+      ".SSHHtttttHHSS..",
+      ".SHHtttttttHHS.y",
+      "..HHtttttttHH...",
+    ],
+    legBody: "t",
+    legBoot: "A",
+  },
+  /* Hooded blade scout: pointed cap, tunic, drawn shortsword. */
+  ranger: {
+    head: [
+      ".....GGG........",
+      "....GLLGG.......",
+      "...GLLLLGG......",
+      "...GTTTTKG......",
+      "...GTKTTKT......",
+      "....TTTTTT......",
+      "...GGLLLLGG.....",
+      "..GLLLGLLLG..A..",
+    ],
+    torso: [
+      ".GGGLLLLLLGGG.A.",
+      "GGLLLLLLLLLLGGA.",
+      "tGLLyyyyyyLLGtA.",
+      ".GLLLLLLLLLLLG..",
+    ],
+    legBody: "L",
+    legBoot: "t",
+  },
 };
 
 export function rigForCharacter(c: {
@@ -192,7 +267,13 @@ export type HeroPose =
 
 /** Torso + leg variants keep the classic four-frame run cycle readable. */
 function heroPixels(pose: HeroPose, rig: HeroRig = "riko"): readonly string[] {
+  const art = RIGS[rig];
   const torso =
+    rig !== "riko" && rig !== "princess"
+      ? pose === "land"
+        ? [".".repeat(16), ...art.torso.slice(0, 3)]
+        : art.torso
+      :
     pose === "jump" || pose === "fall"
       ? [
           "S.HHHRRHRRHHH.SS",
@@ -213,7 +294,7 @@ function heroPixels(pose: HeroPose, rig: HeroRig = "riko"): readonly string[] {
           "SSHHRYRRRRYRHHSS",
           "SSHRRRRRRRRRRHSS",
         ];
-  const legs =
+  const rawLegs =
     pose === "walk0"
       ? ["...RRRRRRRRR....", "...RRRR..RRRR...", "...HHH....HHHH..", "..HHHH....HHHHH."]
       : pose === "walk2"
@@ -231,7 +312,14 @@ function heroPixels(pose: HeroPose, rig: HeroRig = "riko"): readonly string[] {
               : pose === "skid"
                 ? ["..RRRRRRRRR.....", ".RRRRR..RRRR....", "HHHH.......HHH..", "HHH.........HHH."]
                 : ["..RRRRRRRRRRRR..", "..RRRR....RRRR..", "..HHH......HHH..", ".HHHH......HHHH."];
-  const head = HEADS[rig];
+  const legs = rawLegs.map((row) =>
+    row
+      .split("R")
+      .join(art.legBody)
+      .split("H")
+      .join(art.legBoot),
+  );
+  const head = art.head;
   // idle2 is the breathing frame: the head settles one pixel row lower.
   const rows = pose === "idle2" ? [".".repeat(16), ...head.slice(0, head.length - 1)] : head;
   return [...rows, ...torso, ...legs];
