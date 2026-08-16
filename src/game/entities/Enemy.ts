@@ -75,6 +75,8 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
   private chargeUntil = 0;
   private nextShotAt = 0;
   private telegraphUntil = 0;
+  /** Next time this enemy may use its signature skill. */
+  private nextSkillAt = 0;
   /** Boss state: remaining hits, hop timer and the theme its art comes from. */
   private hp = 1;
   private enraged = false;
@@ -273,12 +275,14 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
         this.hopAt = time + 1400;
         this.setVelocityY(-420);
       }
+      this.useSkill(time, body);
     } else {
       if (this.kind === "lobber") this.updateLobber(time);
       let speed = this.stats.speed;
       if (this.kind === "ogre" && this.enraged) speed *= 1.6;
       if (this.kind === "spiker") speed *= this.updateSpikerCharge(time);
       this.setVelocityX(this.dir * speed);
+      this.useSkill(time, body);
       const hitWall = body.blocked.left || body.blocked.right;
       const beyondPatrol = Math.abs(this.x - this.homeX) > this.patrol;
       const edge = body.blocked.down && !this.groundAhead();
