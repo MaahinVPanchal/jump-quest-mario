@@ -5,8 +5,8 @@ import { emptySave, listSlots, loadSlot, saveSlot, deleteSlot, SLOT_COUNT } from
 import type { SaveData } from "@/game/types";
 import PixelSprite, { type SpriteId } from "./PixelSprite";
 import { ENEMIES } from "@/game/data/enemies";
-import { CHARACTERS } from "@/game/data/characters";
-import { LEVELS } from "@/game/levels";
+import { CHARACTERS, ROSTER } from "@/game/data/characters";
+import { LEVELS, isLevelUnlocked, WORLD_THEMES } from "@/game/levels";
 
 const PhaserMount = lazy(() => import("./PhaserMount"));
 
@@ -105,10 +105,10 @@ const ENEMY_CARDS: EnemyCard[] = [
   },
 ];
 
-const CHARACTER_CARDS: { id: string; sprite: SpriteId }[] = [
-  { id: "riko", sprite: "riko" },
-  { id: "mira", sprite: "mira" },
-];
+const CHARACTER_CARDS: { id: string; sprite: SpriteId }[] = ROSTER.map((c) => ({
+  id: c.id,
+  sprite: (c.canDoubleJump ? "mira" : "riko") as SpriteId,
+}));
 
 export default function GameShell() {
   const [screen, setScreen] = useState<Screen>("menu");
@@ -122,18 +122,28 @@ export default function GameShell() {
     setSlots(listSlots());
   }, [screen]);
 
-  const play = useCallback((slot: number) => {
-    const existing = loadSlot(slot) ?? emptySave(`Riko ${slot}`);
-    saveSlot(slot, existing);
-    setActiveSlot(slot);
-    setActiveSave(existing);
-    setScreen("playing");
-  }, []);
+  const slotSave = slots[activeSlot - 1] ?? null;
 
-  const unlockedCharacters = new Set(
-    slots.flatMap((s) => s?.unlockedCharacters ?? []).concat(["riko"]),
+  const play = useCallback(
+    (slot: number) => {
+      const existing = loadSlot(slot) ?? emptySave(`Riko ${slot}`);
+      saveSlot(slot, existing);
+      setActiveSlot(slot);
+      setActiveSave(existing);
+      setScreen("playing");
+    },
+    [],
   );
-  const completedLevels = new Set(slots.flatMap((s) => s?.completedLevels ?? []));
+
+  const unlockedCharacters = new Set([...(slotSave?.unlockedCharacters ?? []), "riko"]);
+  const completedLevels = slotSave?.completedLevels ?? [];
+
+  // Keep the current picks legal for the selected slot's progress.
+  useEffect(() => {
+    if (!unlockedCharacters.has(characterId)) setCharacterId("riko");
+    if (!isLevelUnlocked(levelId, completedLevels)) setLevelId(LEVELS[0]!.id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeSlot, slots]);
 
   const exit = useCallback(() => {
     setActiveSave(null);
