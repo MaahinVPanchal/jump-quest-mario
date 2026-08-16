@@ -6,7 +6,7 @@ import { FIRST_LEVEL_ID } from "../levels";
 export interface CheckpointState {
   x: number;
   y: number;
-  power: "small" | "big" | "fire";
+  power: "small" | "big" | "fire" | "monkey" | "cat";
   coins: number;
   score: number;
   timeLeft: number;
