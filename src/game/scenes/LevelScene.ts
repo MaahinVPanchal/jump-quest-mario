@@ -697,6 +697,17 @@ export class LevelScene extends Phaser.Scene {
     return (this.level.tiles[ty]?.[tx] ?? 0) > 0;
   }
 
+  /** Used by pipe plants so they stay down while the hero is standing on the rim. */
+  playerX(): number {
+    return this.player?.sprite.x ?? -9999;
+  }
+
+  private unusedSolidAt(x: number, y: number): boolean {
+    const tx = Math.floor(x / TILE);
+    const ty = Math.floor(y / TILE);
+    return (this.level.tiles[ty]?.[tx] ?? 0) > 0;
+  }
+
   // ------------------------------------------------------------- update
 
   override update(time: number, delta: number): void {
