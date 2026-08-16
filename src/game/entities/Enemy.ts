@@ -317,6 +317,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
 
   /** Returns the speed multiplier for the spiker's patrol / charge rhythm. */
   private updateLobber(time: number): void {
+    void 0;
     const scene = this.scene as Phaser.Scene & {
       playerX?: () => number;
       spawnEnemyShot?: (x: number, y: number, dir: number) => void;
