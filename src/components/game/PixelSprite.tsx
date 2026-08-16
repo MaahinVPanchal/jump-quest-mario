@@ -279,10 +279,13 @@ export default function PixelSprite({
   id,
   px = 4,
   className,
+  tint,
 }: {
   id: SpriteId;
   px?: number;
   className?: string;
+  /** Palette overrides (same keys as the shared palette), used to skin heroes. */
+  tint?: Record<string, string> | undefined;
 }) {
   const ref = useRef<HTMLCanvasElement>(null);
   const rows = SPRITES[id];
@@ -294,15 +297,16 @@ export default function PixelSprite({
     if (!ctx) return;
     ctx.imageSmoothingEnabled = false;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const palette = tint ? { ...PALETTE, ...tint } : PALETTE;
     rows.forEach((row, y) => {
       for (let x = 0; x < row.length; x++) {
-        const fill = PALETTE[row[x] as string];
+        const fill = palette[row[x] as string];
         if (!fill) continue;
         ctx.fillStyle = fill;
         ctx.fillRect(x * px, y * px, px, px);
       }
     });
-  }, [rows, px]);
+  }, [rows, px, tint]);
 
   const w = (rows[0]?.length ?? 16) * px;
   const h = rows.length * px;
