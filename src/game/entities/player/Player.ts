@@ -26,6 +26,7 @@ export class Player {
   private lastFire = 0;
   private animTime = 0;
   private animFrame = 0;
+  private landUntil = 0;
   private transforming = false;
 
   constructor(
@@ -52,6 +53,7 @@ export class Player {
       onLand: () => {
         audio.play("land");
         this.dust(8);
+        this.landUntil = this.scene.time.now + 120;
       },
     };
     this.movement = new MovementController(this.host, input);
@@ -145,23 +147,27 @@ export class Player {
     this.sprite.setFlipX(this.facing < 0);
     this.sprite.setAlpha(time < this.invulnerableUntil && Math.floor(time / 70) % 2 === 0 ? 0.35 : 1);
     this.sprite.setTint(this.power === "fire" ? 0xffd9c2 : 0xffffff);
-    this.animate(delta);
+    this.animate(time, delta);
   }
 
-  private animate(delta: number): void {
+  /** NES four-frame run cycle plus dedicated jump / fall / landing poses. */
+  private animate(time: number, delta: number): void {
     const s = this.movement.state;
     if (s === "jump") return void this.sprite.setTexture("hero_jump");
     if (s === "fall") return void this.sprite.setTexture("hero_fall");
     if (s === "hurt") return void this.sprite.setTexture("hero_hurt");
+    if (time < this.landUntil) return void this.sprite.setTexture("hero_land");
     if (s === "walk" || s === "run") {
-      this.animTime += delta * (s === "run" ? 1.7 : 1);
-      if (this.animTime > 110) {
+      this.animTime += delta * (s === "run" ? 1.8 : 1);
+      if (this.animTime > 90) {
         this.animTime = 0;
-        this.animFrame = 1 - this.animFrame;
+        this.animFrame = (this.animFrame + 1) % 4;
       }
       this.sprite.setTexture(`hero_walk_${this.animFrame}`);
       return;
     }
+    this.animFrame = 0;
+    this.animTime = 0;
     this.sprite.setTexture("hero_idle");
   }
 }
