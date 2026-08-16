@@ -34,9 +34,11 @@ export function createGame({ parent, slot, save, onExit }: StartOptions): Phaser
     backgroundColor: "#5c94fc",
     pixelArt: true,
     roundPixels: true,
+    antialias: false,
     scale: {
-      mode: Phaser.Scale.FIT,
+      mode: Phaser.Scale.NONE,
       autoCenter: Phaser.Scale.CENTER_BOTH,
+      autoRound: true,
     },
     physics: {
       default: "arcade",
@@ -50,6 +52,23 @@ export function createGame({ parent, slot, save, onExit }: StartOptions): Phaser
     audio.stopMusic();
     onExit();
   });
+
+  // Pixel-perfect presentation: snap the canvas to whole device pixels so tiles
+  // and sprites never land on half pixels at any zoom or DPR.
+  const fitPixelPerfect = (): void => {
+    const dpr = window.devicePixelRatio || 1;
+    const raw = Math.min(parent.clientWidth / VIEW.width, parent.clientHeight / VIEW.height);
+    if (!Number.isFinite(raw) || raw <= 0) return;
+    const devicePx = Math.floor(raw * dpr);
+    const zoom = devicePx >= dpr ? devicePx / dpr : raw;
+    game.scale.setZoom(zoom);
+    game.scale.refresh();
+    const canvas = game.canvas;
+    if (canvas) canvas.style.imageRendering = "pixelated";
+  };
+  game.events.once(Phaser.Core.Events.READY, fitPixelPerfect);
+  window.addEventListener("resize", fitPixelPerfect);
+  game.events.once(Phaser.Core.Events.DESTROY, () => window.removeEventListener("resize", fitPixelPerfect));
 
   return game;
 }

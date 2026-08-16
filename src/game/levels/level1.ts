@@ -143,6 +143,8 @@ const enemies: EnemySpawn[] = [
   { type: "walker", x: 128, y: 18, direction: -1, patrol: 128 },
   { type: "shell", x: 150, y: 18, direction: -1, patrol: 160 },
   { type: "flyer", x: 156, y: 11, patrol: 120 },
+  { type: "piranha", x: 130, y: 17 },
+  { type: "piranha", x: 245, y: 17 },
   { type: "walker", x: 180, y: 18, direction: -1, patrol: 96 },
   { type: "walker", x: 184, y: 18, direction: 1, patrol: 96 },
   { type: "shell", x: 190, y: 18, direction: -1, patrol: 128 },

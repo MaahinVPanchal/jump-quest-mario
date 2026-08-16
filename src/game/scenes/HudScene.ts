@@ -47,19 +47,21 @@ export class HudScene extends Phaser.Scene {
   }
 
   create(): void {
-    const col = (x: number, label: string): { label: Phaser.GameObjects.Text; value: Phaser.GameObjects.Text } => {
+    // Five evenly spaced columns across the viewport.
+    const col = (index: number, label: string): Phaser.GameObjects.Text => {
+      const x = Math.round((VIEW.width / 5) * (index + 0.5));
       const l = this.add.text(x, 20, label, LABEL).setOrigin(0.5, 0);
       const v = this.add.text(x, 48, "", VALUE).setOrigin(0.5, 0);
       for (const t of [l, v]) t.setShadow(3, 3, "#000000", 0, true, true);
-      return { label: l, value: v };
+      return v;
     };
 
-    this.score = col(160, "RIKO").value;
+    this.score = col(0, "SCORE");
     this.score.setText("000000");
-    this.coins = col(400, "COINS").value;
-    this.world = col(640, "WORLD").value;
-    this.timeText = col(880, "TIME").value;
-    this.lives = col(1120, "LIVES").value;
+    this.coins = col(1, "COINS");
+    this.world = col(2, "WORLD");
+    this.timeText = col(3, "TIME");
+    this.lives = col(4, "LIVES");
 
     this.combo = this.add.text(VIEW.width / 2, 84, "", { ...VALUE, color: "#fcd83c" }).setOrigin(0.5, 0);
     this.combo.setShadow(3, 3, "#000000", 0, true, true);
@@ -84,9 +86,9 @@ export class HudScene extends Phaser.Scene {
   private onUpdate(data: HudPayload): void {
     this.targetScore = data.score;
     this.coins.setText(`x${`${data.coins}`.padStart(2, "0")}`);
-    this.timeText.setText(`${data.time}`);
+    this.timeText.setText(`${data.time}`.padStart(3, "0"));
     this.timeText.setColor(data.time <= 30 ? "#ff8080" : "#ffffff");
-    this.lives.setText(`x${data.lives}`);
+    this.lives.setText(`x${`${Math.max(0, data.lives)}`.padStart(2, "0")}`);
     this.world.setText(`${data.world}`);
     this.combo.setText(data.combo > 1 ? `COMBO x${data.combo}` : "");
   }

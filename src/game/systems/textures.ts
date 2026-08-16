@@ -63,6 +63,12 @@ const PALETTE: Record<string, string> = {
   Y: "#fcd83c",
   B: "#d84000", // goomba body
   b: "#a02800",
+  G: "#00a800", // koopa shell green
+  g: "#007800",
+  O: "#f8b800", // koopa skin / feet
+  P: "#e03c28", // piranha head
+  p: "#a01810",
+  N: "#00a800", // piranha stem
 };
 
 function paint(ctx: Ctx, rows: readonly string[], px: number, ox = 0, oy = 0): void {
@@ -88,8 +94,10 @@ const HERO_HEAD: readonly string[] = [
   "...HHRRHRRH.....",
 ];
 
+export type HeroPose = "idle" | "walk0" | "walk1" | "walk2" | "walk3" | "jump" | "fall" | "land" | "hurt";
+
 /** Torso + leg variants keep the classic four-frame run cycle readable. */
-function heroPixels(pose: "idle" | "walk0" | "walk1" | "jump" | "fall" | "hurt"): readonly string[] {
+function heroPixels(pose: HeroPose): readonly string[] {
   const torso =
     pose === "jump" || pose === "fall"
       ? [
@@ -98,7 +106,14 @@ function heroPixels(pose: "idle" | "walk0" | "walk1" | "jump" | "fall" | "hurt")
           "SSHHRYRRRRYRHH.S",
           "..HRRRRRRRRRRH..",
         ]
-      : [
+      : pose === "land"
+        ? [
+            "................",
+            "SSHHHRRRRRRHHHSS",
+            "SSHHRYRRRRYRHHSS",
+            "SSHRRRRRRRRRRHSS",
+          ]
+        : [
           "..HHHRRHRRHHH...",
           ".HHHHRRRRRRHHHH.",
           "SSHHRYRRRRYRHHSS",
@@ -107,13 +122,17 @@ function heroPixels(pose: "idle" | "walk0" | "walk1" | "jump" | "fall" | "hurt")
   const legs =
     pose === "walk0"
       ? ["...RRRRRRRRR....", "...RRRR..RRRR...", "...HHH....HHHH..", "..HHHH....HHHHH."]
-      : pose === "walk1"
+      : pose === "walk2"
         ? ["....RRRRRRRRR...", "..RRRR...RRRR...", ".HHHH.....HHH...", "HHHHH....HHHH..."]
-        : pose === "jump"
+        : pose === "walk1" || pose === "walk3"
+          ? ["..RRRRRRRRRRR...", "..RRRRRRRRRR....", "...HHHH..HHH....", "..HHHH...HHHH..."]
+          : pose === "jump"
           ? ["..RRRRRRRRRR....", "..RRRR...RRRR...", ".HHHH.....HHH...", "HHHH.....HHHHH.."]
           : pose === "fall"
             ? ["..RRRRRRRRRR....", "..RRR.....RRRR..", "..HHH.....HHH...", ".HHHH....HHHHH.."]
-            : pose === "hurt"
+            : pose === "land"
+              ? ["..RRRRRRRRRRRR..", "..RRRRRRRRRRRR..", ".HHHHH....HHHHH.", "HHHHHH....HHHHHH"]
+              : pose === "hurt"
               ? ["..RRRRRRRRRR....", ".RRRR.....RRRR..", "HHHH.......HHHH.", "HHH.........HHH."]
               : ["..RRRRRRRRRRRR..", "..RRRR....RRRR..", "..HHH......HHH..", ".HHHH......HHHH."];
   return [...HERO_HEAD, ...torso, ...legs];
@@ -204,13 +223,16 @@ export function buildTextures(scene: Phaser.Scene): void {
   });
 
   // ---- hero ----
-  const hero = (key: string, pose: Parameters<typeof heroPixels>[0]): void =>
+  const hero = (key: string, pose: HeroPose): void =>
     make(scene, key, 32, 48, (ctx) => paint(ctx, heroPixels(pose), 2, 0, 16), false);
   hero("hero_idle", "idle");
   hero("hero_walk_0", "walk0");
   hero("hero_walk_1", "walk1");
+  hero("hero_walk_2", "walk2");
+  hero("hero_walk_3", "walk3");
   hero("hero_jump", "jump");
   hero("hero_fall", "fall");
+  hero("hero_land", "land");
   hero("hero_hurt", "hurt");
 
   // ---- enemies ----
@@ -266,33 +288,89 @@ export function buildTextures(scene: Phaser.Scene): void {
     false,
   );
 
-  const shell = (ctx: Ctx, step: number): void => {
-    ctx.fillStyle = hex(0x8a3a2a);
-    roundRect(ctx, 6 + step, 26, 7, 5, 2);
-    roundRect(ctx, 19 - step, 26, 7, 5, 2);
-    ctx.fillStyle = hex(COLORS.shell);
-    roundRect(ctx, 2, 10, 28, 18, 9);
-    ctx.fillStyle = hex(0xf6a58c);
-    for (let i = 0; i < 3; i++) roundRect(ctx, 6 + i * 8, 14, 6, 9, 3);
-    ctx.fillStyle = hex(0xffd7a1);
-    roundRect(ctx, 21, 2, 10, 10, 5);
-    ctx.fillStyle = hex(0x1d2430);
-    ctx.beginPath();
-    ctx.arc(27, 6, 1.9, 0, Math.PI * 2);
-    ctx.fill();
-  };
-  make(scene, "shell_0", 32, 32, (ctx) => shell(ctx, 2));
-  make(scene, "shell_1", 32, 32, (ctx) => shell(ctx, -2));
-  make(scene, "shell_hidden", 32, 32, (ctx) => {
-    ctx.fillStyle = hex(0xb04a34);
-    roundRect(ctx, 2, 8, 28, 22, 10);
-    ctx.fillStyle = hex(COLORS.shell);
-    roundRect(ctx, 5, 11, 22, 16, 8);
-    ctx.fillStyle = hex(0xf6a58c);
-    ctx.beginPath();
-    ctx.arc(16, 19, 5, 0, Math.PI * 2);
-    ctx.fill();
-  });
+  // Shelled patroller: yellow head, green domed shell, alternating boots.
+  const koopaTop: readonly string[] = [
+    "....KKKK........",
+    "...KOOOOK.......",
+    "...KOWKOK.......",
+    "...KOOOOK.......",
+    "....KOOKKK......",
+    "...KKOOOOKK.....",
+    "..KKGGGGGGKKK...",
+    ".KGGgGGgGGgGGK..",
+    "KGgGGgGGgGGgGGK.",
+    "KGGgGGgGGgGGgGK.",
+    "KYYYYYYYYYYYYYK.",
+    ".KKKKKKKKKKKKK..",
+  ];
+  const koopaFeet = (swap: boolean): readonly string[] =>
+    swap
+      ? ["..KOOK....KOOK..", "..KOOOK...KOOK..", "................", "................"]
+      : ["..KOOK....KOOK..", "..KOOK...KOOOK..", "................", "................"];
+  make(scene, "shell_0", 32, 32, (ctx) => paint(ctx, [...koopaTop, ...koopaFeet(false)], 2), false);
+  make(scene, "shell_1", 32, 32, (ctx) => paint(ctx, [...koopaTop, ...koopaFeet(true)], 2), false);
+  make(
+    scene,
+    "shell_hidden",
+    32,
+    32,
+    (ctx) =>
+      paint(
+        ctx,
+        [
+          "................",
+          "................",
+          "................",
+          "................",
+          "....KKKKKKK.....",
+          "..KKGGGGGGGKK...",
+          ".KGGgGGgGGgGGK..",
+          "KGgGGgGGgGGgGGK.",
+          "KGGgGGgGGgGGgGK.",
+          "KGgGGgGGgGGgGGK.",
+          "KYYYYYYYYYYYYYK.",
+          ".KKKKKKKKKKKKK..",
+          "................",
+          "................",
+          "................",
+          "................",
+        ],
+        2,
+      ),
+    false,
+  );
+
+  // Pipe-dwelling biter: toothy head on a green stem, 16x24 grid.
+  const piranhaHead = (open: boolean): readonly string[] => [
+    "....PPPPPPPP....",
+    "..PPWWPPPPWWPP..",
+    "..PPPPPPPPPPPP..",
+    ".PPPPPPPPPPPPPP.",
+    open ? ".PWPWPWPWPWPWWP." : ".PPPPPPPPPPPPPP.",
+    open ? ".WKKKKKKKKKKKKW." : ".PWPWPWPWPWPWWP.",
+    open ? ".WKKKKKKKKKKKKW." : ".PWPWPWPWPWPWWP.",
+    open ? ".PWPWPWPWPWPWWP." : ".PPPPPPPPPPPPPP.",
+    ".PPPPPPPPPPPPPP.",
+    "..PPPPPPPPPPPP..",
+    "..PPWWPPPPWWPP..",
+    "....PPPPPPPP....",
+  ];
+  const piranhaStem: readonly string[] = [
+    ".....NNNNNN.....",
+    ".....NNNNNN.....",
+    ".....NNNNNN.....",
+    ".....NNNNNN.....",
+    ".....NNNNNN.....",
+    ".....NNNNNN.....",
+    ".....NNNNNN.....",
+    ".....NNNNNN.....",
+    ".....NNNNNN.....",
+    ".....NNNNNN.....",
+    ".....NNNNNN.....",
+    ".....NNNNNN.....",
+  ];
+  make(scene, "piranha_0", 32, 48, (ctx) => paint(ctx, [...piranhaHead(true), ...piranhaStem], 2), false);
+  make(scene, "piranha_1", 32, 48, (ctx) => paint(ctx, [...piranhaHead(false), ...piranhaStem], 2), false);
 
   const flyer = (ctx: Ctx, up: boolean): void => {
     ctx.fillStyle = hex(0xe4c2ff);
