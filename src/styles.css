@@ -59,10 +59,22 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  --color-meadow: var(--meadow);
+  --color-meadow-deep: var(--meadow-deep);
+  --color-ember: var(--ember);
+  --color-sky-soft: var(--sky-soft);
+  --color-dusk: var(--dusk);
+  --color-dusk-soft: var(--dusk-soft);
 }
 
 :root {
   --radius: 0.625rem;
+  --meadow: oklch(0.78 0.16 145);
+  --meadow-deep: oklch(0.52 0.13 155);
+  --ember: oklch(0.74 0.18 48);
+  --sky-soft: oklch(0.88 0.07 220);
+  --dusk: oklch(0.24 0.05 250);
+  --dusk-soft: oklch(0.32 0.05 250);
   --background: oklch(1 0 0);
   --foreground: oklch(0.129 0.042 264.695);
   --card: oklch(1 0 0);
