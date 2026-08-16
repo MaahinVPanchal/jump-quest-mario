@@ -265,17 +265,6 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     }
 
     if (this.kind !== "piranha") this.setFlipX(this.dir > 0);
-    if (this.kind === "ogre" && source !== "fire") {
-      this.hp -= source === "shell" ? 2 : 1;
-      if (this.hp > 0) {
-        // First stomp cracks its armour: it turns enraged and speeds up.
-        this.enraged = true;
-        this.setTint(0xff9c6c);
-        this.setVelocityY(-120);
-        this.scene.tweens.add({ targets: this, alpha: 0.3, yoyo: true, repeat: 2, duration: 60 });
-        return false;
-      }
-    }
     if (this.kind === "boss") {
       this.setTexture(bossKey(this.bossTheme, Math.floor(time / 220) % 2));
       return;
