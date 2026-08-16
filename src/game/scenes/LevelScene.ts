@@ -1,6 +1,8 @@
 import Phaser from "phaser";
 import { CAMERA, COLORS, COMBAT, PHYSICS, SCORE, TILE, VIEW } from "../config";
 import { LEVEL_1 } from "../levels/level1";
+import { getLevel } from "../levels";
+import { CHARACTERS, DEFAULT_CHARACTER } from "../data/characters";
 import type { LevelData, LevelResult, MovingPlatformSpawn } from "../types";
 import { InputManager } from "../systems/input";
 import { audio } from "../systems/audio";
@@ -48,6 +50,7 @@ export class LevelScene extends Phaser.Scene {
   }
 
   create(): void {
+    this.level = getLevel(gameState.levelId);
     const level = this.level;
     this.finished = false;
     this.respawning = false;
@@ -62,7 +65,7 @@ export class LevelScene extends Phaser.Scene {
     this.physics.world.setBounds(0, 0, worldW, worldH + 200);
     this.physics.world.gravity.y = PHYSICS.gravity;
     this.cameras.main.setBounds(0, 0, worldW, worldH);
-    this.cameras.main.setBackgroundColor(COLORS.sky);
+    this.cameras.main.setBackgroundColor(level.skyColor ?? COLORS.sky);
 
     this.buildParallax(worldW);
     this.buildTerrain();
@@ -112,15 +115,22 @@ export class LevelScene extends Phaser.Scene {
     };
     this.timeLeft = gameState.checkpoint ? start.timeLeft : level.timeLimit;
 
-    this.player = new Player(this, start.x, start.y, this.controls, {
-      onFire: (x, y, dir) => this.spawnFireball(x, y, dir),
-      onDeath: () => this.handleDeath(),
-      onDamage: () => {
-        gameState.damageTaken += 1;
-        this.shake(CAMERA.shakeBig);
+    this.player = new Player(
+      this,
+      start.x,
+      start.y,
+      this.controls,
+      {
+        onFire: (x, y, dir) => this.spawnFireball(x, y, dir),
+        onDeath: () => this.handleDeath(),
+        onDamage: () => {
+          gameState.damageTaken += 1;
+          this.shake(CAMERA.shakeBig);
+        },
+        onPowerChange: () => this.emitHud(),
       },
-      onPowerChange: () => this.emitHud(),
-    });
+      CHARACTERS[gameState.characterId] ?? DEFAULT_CHARACTER,
+    );
     if (start.power === "big") this.player.grow();
     if (start.power === "fire") this.player.giveFire();
 
@@ -134,6 +144,11 @@ export class LevelScene extends Phaser.Scene {
     audio.startMusic("level");
 
     this.game.events.emit(GameEvent.Toast, `World ${level.world}-${level.level}  ${level.name}`);
+    if (this.starsRequired > 0) {
+      this.time.delayedCall(2200, () =>
+        this.toast(`Collect ${this.starsRequired} Sky Stars to open the goal`),
+      );
+    }
     this.events.on(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.scene.stop("Hud");
       audio.stopMusic();
