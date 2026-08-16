@@ -79,3 +79,15 @@ describe("HUD formatting", () => {
     expect(formatCombo(3)).toBe("COMBO x3");
   });
 });
+
+describe("formatStars", () => {
+  it("renders collected over required", () => {
+    expect(formatStars(0, 5)).toBe("0/5");
+    expect(formatStars(3, 5)).toBe("3/5");
+  });
+  it("clamps overflow and bad input", () => {
+    expect(formatStars(9, 5)).toBe("5/5");
+    expect(formatStars(-2, 5)).toBe("0/5");
+    expect(formatStars(Number.NaN, 5)).toBe("0/5");
+  });
+});
