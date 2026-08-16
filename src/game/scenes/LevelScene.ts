@@ -166,6 +166,14 @@ export class LevelScene extends Phaser.Scene {
     this.terrain = this.physics.add.staticGroup();
     const { tiles, heightTiles, widthTiles } = this.level;
     const visual = this.add.container(0, 0).setDepth(5);
+    // Dark void behind the floor line so pits read as bottomless, not as sky.
+    const surfaceRow = tiles.findIndex((row) => row.filter((v) => v > 0).length > widthTiles * 0.5);
+    const voidTop = (surfaceRow < 0 ? heightTiles - 5 : surfaceRow) * TILE;
+    const voidHeight = heightTiles * TILE - voidTop;
+    for (let x = 0; x < widthTiles * TILE; x += 1024) {
+      const w = Math.min(1024, widthTiles * TILE - x);
+      this.add.rectangle(x, voidTop, w, voidHeight, 0x0b0b12).setOrigin(0, 0).setDepth(4);
+    }
     for (let y = 0; y < heightTiles; y++) {
       const row = tiles[y]!;
       let runStart = -1;

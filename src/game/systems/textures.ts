@@ -52,62 +52,71 @@ function roundRect(ctx: Ctx, x: number, y: number, w: number, h: number, r: numb
   ctx.fill();
 }
 
-function heroBody(ctx: Ctx, opts: { legOffset: number; arm: number; squash?: number; hurt?: boolean }): void {
-  const { legOffset, arm } = opts;
-  const s = opts.squash ?? 1;
-  ctx.save();
-  ctx.translate(16, 44);
-  ctx.scale(1 / s, s);
-  ctx.translate(-16, -44);
+/** NES-era pixel painter: each char of each row is one fat pixel. */
+const PALETTE: Record<string, string> = {
+  R: "#d82800", // cap / shirt red
+  r: "#a01000", // red shade
+  H: "#883000", // brown overalls / hair / boots
+  S: "#fca044", // skin
+  K: "#000000",
+  W: "#ffffff",
+  Y: "#fcd83c",
+  B: "#d84000", // goomba body
+  b: "#a02800",
+};
 
-  // legs
-  ctx.fillStyle = hex(0x2b2f3a);
-  roundRect(ctx, 9 + legOffset, 34, 6, 10, 3);
-  roundRect(ctx, 17 - legOffset, 34, 6, 10, 3);
-  // boots
-  ctx.fillStyle = hex(COLORS.heroAccent);
-  roundRect(ctx, 8 + legOffset, 40, 8, 5, 2);
-  roundRect(ctx, 16 - legOffset, 40, 8, 5, 2);
-  // torso
-  ctx.fillStyle = hex(opts.hurt ? 0xff8f9b : COLORS.hero);
-  roundRect(ctx, 8, 20, 16, 17, 6);
-  // scarf
-  ctx.fillStyle = hex(COLORS.heroAccent);
-  roundRect(ctx, 7, 18, 18, 6, 3);
-  ctx.beginPath();
-  ctx.moveTo(23, 20);
-  ctx.lineTo(31, 22 - arm);
-  ctx.lineTo(24, 27);
-  ctx.closePath();
-  ctx.fill();
-  // arms
-  ctx.fillStyle = hex(opts.hurt ? 0xff8f9b : COLORS.heroDark);
-  roundRect(ctx, 4, 23 - arm, 6, 11, 3);
-  roundRect(ctx, 22, 23 + arm, 6, 11, 3);
-  // gloves
-  ctx.fillStyle = hex(0xfdf6e3);
-  roundRect(ctx, 3, 32 - arm, 7, 6, 3);
-  roundRect(ctx, 22, 32 + arm, 7, 6, 3);
-  // head
-  ctx.fillStyle = hex(0xffe0bd);
-  roundRect(ctx, 6, 2, 20, 19, 8);
-  // goggles
-  ctx.fillStyle = hex(COLORS.heroDark);
-  roundRect(ctx, 5, 3, 22, 6, 3);
-  ctx.fillStyle = hex(0x9be7ff);
-  roundRect(ctx, 8, 3, 6, 5, 2);
-  roundRect(ctx, 18, 3, 6, 5, 2);
-  // eyes
-  ctx.fillStyle = hex(0x232733);
-  roundRect(ctx, 11, 11, 3, 5, 1.5);
-  roundRect(ctx, 19, 11, 3, 5, 1.5);
-  // smile
-  ctx.strokeStyle = hex(0xc98a63);
-  ctx.lineWidth = 1.6;
-  ctx.beginPath();
-  ctx.arc(16, 16, 4, 0.2 * Math.PI, 0.8 * Math.PI);
-  ctx.stroke();
-  ctx.restore();
+function paint(ctx: Ctx, rows: readonly string[], px: number, ox = 0, oy = 0): void {
+  rows.forEach((row, y) => {
+    for (let x = 0; x < row.length; x++) {
+      const c = row[x]!;
+      const fill = PALETTE[c];
+      if (!fill) continue;
+      ctx.fillStyle = fill;
+      ctx.fillRect(ox + x * px, oy + y * px, px, px);
+    }
+  });
+}
+
+const HERO_HEAD: readonly string[] = [
+  "....RRRRR.......",
+  "...RRRRRRRRRR...",
+  "...HHHSSKS......",
+  "..HSHSSSKSSS....",
+  "..HSHHSSSKSSS...",
+  "..HHSSSSSKKKK...",
+  "....SSSSSSSS....",
+  "...HHRRHRRH.....",
+];
+
+/** Torso + leg variants keep the classic four-frame run cycle readable. */
+function heroPixels(pose: "idle" | "walk0" | "walk1" | "jump" | "fall" | "hurt"): readonly string[] {
+  const torso =
+    pose === "jump" || pose === "fall"
+      ? [
+          "S.HHHRRHRRHHH.SS",
+          "SSHHHRRRRRRHHHSS",
+          "SSHHRYRRRRYRHH.S",
+          "..HRRRRRRRRRRH..",
+        ]
+      : [
+          "..HHHRRHRRHHH...",
+          ".HHHHRRRRRRHHHH.",
+          "SSHHRYRRRRYRHHSS",
+          "SSHRRRRRRRRRRHSS",
+        ];
+  const legs =
+    pose === "walk0"
+      ? ["...RRRRRRRRR....", "...RRRR..RRRR...", "...HHH....HHHH..", "..HHHH....HHHHH."]
+      : pose === "walk1"
+        ? ["....RRRRRRRRR...", "..RRRR...RRRR...", ".HHHH.....HHH...", "HHHHH....HHHH..."]
+        : pose === "jump"
+          ? ["..RRRRRRRRRR....", "..RRRR...RRRR...", ".HHHH.....HHH...", "HHHH.....HHHHH.."]
+          : pose === "fall"
+            ? ["..RRRRRRRRRR....", "..RRR.....RRRR..", "..HHH.....HHH...", ".HHHH....HHHHH.."]
+            : pose === "hurt"
+              ? ["..RRRRRRRRRR....", ".RRRR.....RRRR..", "HHHH.......HHHH.", "HHH.........HHH."]
+              : ["..RRRRRRRRRRRR..", "..RRRR....RRRR..", "..HHH......HHH..", ".HHHH......HHHH."];
+  return [...HERO_HEAD, ...torso, ...legs];
 }
 
 /** All artwork is drawn procedurally here - the build ships no external art. */
@@ -195,39 +204,67 @@ export function buildTextures(scene: Phaser.Scene): void {
   });
 
   // ---- hero ----
-  make(scene, "hero_idle", 32, 48, (ctx) => heroBody(ctx, { legOffset: 0, arm: 0 }), false);
-  make(scene, "hero_walk_0", 32, 48, (ctx) => heroBody(ctx, { legOffset: 3, arm: 2 }), false);
-  make(scene, "hero_walk_1", 32, 48, (ctx) => heroBody(ctx, { legOffset: -3, arm: -2 }), false);
-  make(scene, "hero_jump", 32, 48, (ctx) => heroBody(ctx, { legOffset: 2, arm: 4, squash: 1.08 }), false);
-  make(scene, "hero_fall", 32, 48, (ctx) => heroBody(ctx, { legOffset: -2, arm: -4, squash: 0.94 }), false);
-  make(scene, "hero_hurt", 32, 48, (ctx) => heroBody(ctx, { legOffset: 4, arm: -3, hurt: true }), false);
+  const hero = (key: string, pose: Parameters<typeof heroPixels>[0]): void =>
+    make(scene, key, 32, 48, (ctx) => paint(ctx, heroPixels(pose), 2, 0, 16), false);
+  hero("hero_idle", "idle");
+  hero("hero_walk_0", "walk0");
+  hero("hero_walk_1", "walk1");
+  hero("hero_jump", "jump");
+  hero("hero_fall", "fall");
+  hero("hero_hurt", "hurt");
 
   // ---- enemies ----
-  const walker = (ctx: Ctx, step: number): void => {
-    ctx.fillStyle = hex(0x35622a);
-    roundRect(ctx, 5 + step, 24, 7, 6, 3);
-    roundRect(ctx, 18 - step, 24, 7, 6, 3);
-    ctx.fillStyle = hex(COLORS.walker);
-    roundRect(ctx, 3, 8, 26, 18, 9);
-    ctx.fillStyle = hex(0xb7ea7c);
-    roundRect(ctx, 7, 11, 18, 6, 3);
-    // leaf sprout
-    ctx.fillStyle = hex(0x3f8f36);
-    ctx.beginPath();
-    ctx.ellipse(16, 6, 7, 4, -0.5, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = hex(0x1d2430);
-    ctx.beginPath();
-    ctx.arc(11, 17, 2.6, 0, Math.PI * 2);
-    ctx.arc(21, 17, 2.6, 0, Math.PI * 2);
-    ctx.fill();
-  };
-  make(scene, "walker_0", 32, 32, (ctx) => walker(ctx, 2));
-  make(scene, "walker_1", 32, 32, (ctx) => walker(ctx, -2));
-  make(scene, "walker_flat", 32, 32, (ctx) => {
-    ctx.fillStyle = hex(COLORS.walker);
-    roundRect(ctx, 3, 22, 26, 9, 4);
-  });
+  // Mushroom-shaped stomper: brown dome, white eyes with hard pupils, two dark feet.
+  const walkerBody: readonly string[] = [
+    ".....KKKKKK.....",
+    "...KKBBBBBBKK...",
+    "..KBBBBBBBBBBK..",
+    "..KBBBBBBBBBBK..",
+    ".KBWWKBBBBKWWBK.",
+    ".KBWKKBBBBKKWBK.",
+    ".KBWKKBBBBKKWBK.",
+    ".KBBBBBBBBBBBBK.",
+    "KBBBBBBBBBBBBBBK",
+    "KBbbbbbbbbbbbbBK",
+    "KBbbbbbbbbbbbbBK",
+    "KWWWWWKKKKWWWWWK",
+  ];
+  const walkerFeet = (swap: boolean): readonly string[] =>
+    swap
+      ? [".KKKKK.....KKKK.", "KKKKK.......KKK.", "................", "................"]
+      : [".KKKK.....KKKKK.", ".KKK.......KKKKK", "................", "................"];
+  make(scene, "walker_0", 32, 32, (ctx) => paint(ctx, [...walkerBody, ...walkerFeet(false)], 2), false);
+  make(scene, "walker_1", 32, 32, (ctx) => paint(ctx, [...walkerBody, ...walkerFeet(true)], 2), false);
+  make(
+    scene,
+    "walker_flat",
+    32,
+    32,
+    (ctx) =>
+      paint(
+        ctx,
+        [
+          "................",
+          "................",
+          "................",
+          "................",
+          "................",
+          "................",
+          "................",
+          "................",
+          "................",
+          "................",
+          "..KKKKKKKKKKKK..",
+          ".KBBBBBBBBBBBBK.",
+          "KWWWWWKKKKWWWWWK",
+          "KKKKKKKKKKKKKKKK",
+          "................",
+          "................",
+        ],
+        2,
+      ),
+    false,
+  );
 
   const shell = (ctx: Ctx, step: number): void => {
     ctx.fillStyle = hex(0x8a3a2a);
