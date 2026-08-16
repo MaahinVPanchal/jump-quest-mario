@@ -680,6 +680,9 @@ export class LevelScene extends Phaser.Scene {
     keyboard?.on("keydown-F2", () => this.debugText?.setVisible(!this.debugText.visible));
     keyboard?.on("keydown-F3", () => this.player.giveFire());
     keyboard?.on("keydown-F4", () => this.player.kill());
+    keyboard?.on("keydown-F5", () => {
+      this.player.sprite.setPosition(this.player.sprite.x + 640, this.player.sprite.y - 40);
+    });
     keyboard?.on("keydown-F8", () => {
       for (let i = 0; i < 10; i++) gameState.addCoin();
       this.emitHud();
