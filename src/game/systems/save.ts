@@ -19,7 +19,7 @@ export function emptySave(name = "Player"): SaveData {
     bestTimes: {},
     relics: [],
     unlockedCharacters: ["riko"],
-    settings: { master: 0.8, music: 0.5, sfx: 0.8, screenShake: true },
+    settings: { master: 0.8, music: 0.5, sfx: 0.8, screenShake: true, pixelPerfect: true },
   };
 }
 
