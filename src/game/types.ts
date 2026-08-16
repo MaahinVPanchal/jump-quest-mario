@@ -15,6 +15,8 @@ export interface CharacterData {
   specialAbility: string;
   /** Level id that must be cleared before this character is playable. */
   unlockedBy?: string;
+  /** Palette overrides applied to the shared pixel rig. */
+  tint?: Record<string, string>;
 }
 
 export type EnemyKind = "walker" | "shell" | "flyer" | "piranha" | "spiker";
@@ -106,6 +108,8 @@ export interface LevelData {
   skyColor?: number;
   /** Next level in the campaign. */
   next?: string;
+  /** Building-set label used by the level briefing UI. */
+  buildSet?: string;
 }
 
 export interface LevelResult {
@@ -133,6 +137,10 @@ export interface SaveData {
   completedLevels: string[];
   bestScores: Record<string, number>;
   bestTimes: Record<string, number>;
+  /** Sky Stars collected per level id. */
+  levelStars: Record<string, number>;
+  /** Every star id ever collected, so progress survives a refresh. */
+  starIds: string[];
   relics: string[];
   unlockedCharacters: string[];
   settings: {
