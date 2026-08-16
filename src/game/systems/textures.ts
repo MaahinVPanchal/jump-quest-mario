@@ -532,6 +532,69 @@ export function buildTextures(scene: Phaser.Scene): void {
     ctx.arc(8, 8, 4.6, 0, Math.PI * 2);
     ctx.fill();
   });
+
+  // Banana power-up: turns the hero into the monkey form.
+  make(scene, "item_banana", 28, 28, (ctx) => {
+    ctx.fillStyle = hex(0x2a1a06);
+    ctx.beginPath();
+    ctx.arc(14, 15, 13, 0.15 * Math.PI, 0.95 * Math.PI);
+    ctx.arc(14, 11, 11, 0.95 * Math.PI, 0.15 * Math.PI, true);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = hex(0xfcd83c);
+    ctx.beginPath();
+    ctx.arc(14, 14, 11, 0.15 * Math.PI, 0.95 * Math.PI);
+    ctx.arc(14, 11, 9, 0.95 * Math.PI, 0.15 * Math.PI, true);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = hex(0x8a5a00);
+    ctx.fillRect(3, 6, 4, 4);
+    ctx.fillRect(21, 6, 4, 4);
+  });
+
+  // Cat bell power-up: unlocks the clawed cat form.
+  make(scene, "item_bell", 28, 28, (ctx) => {
+    ctx.fillStyle = hex(0x2a1a06);
+    ctx.fillRect(4, 4, 20, 20);
+    ctx.fillStyle = hex(0xfcd83c);
+    ctx.fillRect(6, 8, 16, 14);
+    ctx.fillStyle = hex(0xfff3a8);
+    ctx.fillRect(8, 10, 5, 5);
+    ctx.fillStyle = hex(0x2a1a06);
+    ctx.fillRect(11, 17, 6, 6);
+    ctx.fillRect(12, 2, 4, 5);
+  });
+
+  // Alternate throwables — one signature shot per hero / form.
+  const shot = (key: string, core: number, rim: number, square = false) =>
+    make(scene, key, 16, 16, (ctx) => {
+      ctx.fillStyle = hex(rim);
+      if (square) ctx.fillRect(1, 1, 14, 14);
+      else {
+        ctx.beginPath();
+        ctx.arc(8, 8, 7.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.fillStyle = hex(core);
+      if (square) ctx.fillRect(3, 3, 10, 10);
+      else {
+        ctx.beginPath();
+        ctx.arc(8, 8, 4.6, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    });
+  shot("shot_banana", 0xfcd83c, 0x8a5a00);
+  shot("shot_claw", 0xfcfcfc, 0x00b8f8);
+  shot("shot_hammer", 0xa8a8a8, 0x502000, true);
+  shot("shot_egg", 0xfcfcfc, 0x00a844);
+  shot("shot_star", 0xfcfcfc, 0xfcd83c);
+  shot("shot_pellet", 0xfcd83c, 0xa44400);
+  shot("shot_beam", 0x00b8f8, 0xfcfcfc, true);
+  shot("shot_bubble", 0xb8f8f8, 0x0058f8);
+  shot("shot_shell", 0x00a844, 0x006810, true);
+  shot("shot_shadow", 0x7c3cfc, 0x181818);
+  shot("shot_vine", 0xa8f800, 0x006810, true);
+  shot("shot_ice", 0xb8f8f8, 0x3cbcfc, true);
   make(scene, "particle", 8, 8, (ctx) => {
     ctx.fillStyle = "#ffffff";
     ctx.fillRect(0, 0, 8, 8);
