@@ -3,19 +3,36 @@ import { COMBAT, PHYSICS } from "../../config";
 import type { InputManager } from "../../systems/input";
 import { audio } from "../../systems/audio";
 import { MovementController } from "./MovementController";
-import type { CharacterData } from "../../types";
+import type { CharacterData, ThrowKind } from "../../types";
 import { DEFAULT_CHARACTER } from "../../data/characters";
 
-export type PowerState = "small" | "big" | "fire";
+export type PowerState = "small" | "big" | "fire" | "monkey" | "cat";
 
 export interface PlayerHooks {
-  onFire: (x: number, y: number, dir: number) => void;
+  onFire: (x: number, y: number, dir: number, kind: ThrowKind) => void;
   onDeath: () => void;
   onDamage: () => void;
   onPowerChange: (state: PowerState) => void;
 }
 
-const SCALE: Record<PowerState, number> = { small: 1.4, big: 2, fire: 2 };
+const SCALE: Record<PowerState, number> = { small: 1.4, big: 2, fire: 2, monkey: 1.9, cat: 1.9 };
+
+/** Extra jump height granted by the animal forms. */
+const JUMP_SCALE: Record<PowerState, number> = {
+  small: 1,
+  big: 1,
+  fire: 1,
+  monkey: 1.18,
+  cat: 1.3,
+};
+
+const FORM_TINT: Record<PowerState, number> = {
+  small: 0xffffff,
+  big: 0xffffff,
+  fire: 0xffd9c2,
+  monkey: 0xffe28a,
+  cat: 0xc8f0ff,
+};
 
 /** Thin façade: state + wiring only; behaviour lives in the controllers. */
 export class Player {
@@ -73,6 +90,9 @@ export class Player {
     this.sprite.setScale(scale);
     this.sprite.body?.setSize(20, 30);
     (this.sprite.body as Phaser.Physics.Arcade.Body).setOffset(6, 18);
+    this.movement.jumpScale = JUMP_SCALE[state];
+    // Cat form claws the air: everyone gets an air jump while transformed.
+    this.movement.canDoubleJump = this.character.canDoubleJump || state === "cat";
     this.hooks.onPowerChange(state);
   }
 
@@ -82,6 +102,17 @@ export class Player {
 
   get isBig(): boolean {
     return this.power !== "small";
+  }
+
+  /** Every powered form can throw; the projectile differs per form and hero. */
+  get canThrow(): boolean {
+    return this.power === "fire" || this.power === "monkey" || this.power === "cat";
+  }
+
+  get throwKind(): ThrowKind {
+    if (this.power === "monkey") return "banana";
+    if (this.power === "cat") return "claw";
+    return this.character.throwable ?? "ember";
   }
 
   grow(): void {
@@ -98,6 +129,24 @@ export class Player {
     this.transforming = true;
     if (this.power === "small") this.sprite.y -= 6;
     this.applyForm("fire");
+    this.scene.time.delayedCall(220, () => (this.transforming = false));
+    audio.play("powerup");
+  }
+
+  /** Banana: monkey form — higher jumps and thrown bananas. */
+  giveMonkey(): void {
+    this.transforming = true;
+    if (this.power === "small") this.sprite.y -= 6;
+    this.applyForm("monkey");
+    this.scene.time.delayedCall(220, () => (this.transforming = false));
+    audio.play("powerup");
+  }
+
+  /** Cat bell: cat form — claw shots, an air jump and the highest leap. */
+  giveCat(): void {
+    this.transforming = true;
+    if (this.power === "small") this.sprite.y -= 6;
+    this.applyForm("cat");
     this.scene.time.delayedCall(220, () => (this.transforming = false));
     audio.play("powerup");
   }
@@ -146,15 +195,16 @@ export class Player {
     }
     this.movement.update(time, delta);
 
-    if (this.power === "fire" && this.input.justPressed("ATTACK") && time - this.lastFire > COMBAT.fireCooldownMs) {
+    const cooldown = this.power === "cat" ? COMBAT.fireCooldownMs * 0.6 : COMBAT.fireCooldownMs;
+    if (this.canThrow && this.input.justPressed("ATTACK") && time - this.lastFire > cooldown) {
       this.lastFire = time;
-      this.hooks.onFire(this.sprite.x + this.facing * 14, this.sprite.y - 26, this.facing);
+      this.hooks.onFire(this.sprite.x + this.facing * 14, this.sprite.y - 26, this.facing, this.throwKind);
       audio.play("shoot");
     }
 
     this.sprite.setFlipX(this.facing < 0);
     this.sprite.setAlpha(time < this.invulnerableUntil && Math.floor(time / 70) % 2 === 0 ? 0.35 : 1);
-    this.sprite.setTint(this.power === "fire" ? 0xffd9c2 : 0xffffff);
+    this.sprite.setTint(FORM_TINT[this.power]);
     this.animate(time, delta);
   }
 
