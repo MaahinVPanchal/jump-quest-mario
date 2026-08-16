@@ -157,6 +157,8 @@ export class LevelScene extends Phaser.Scene {
 
     this.scene.launch("Hud");
     this.emitHud();
+    // The HUD scene boots a tick later, so push the first payload again once it exists.
+    this.time.delayedCall(0, () => this.emitHud());
     audio.startMusic("level");
 
     this.game.events.emit(GameEvent.Toast, `World ${level.world}-${level.level}  ${level.name}`);
