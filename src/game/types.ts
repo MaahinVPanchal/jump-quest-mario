@@ -1,12 +1,26 @@
+import type { HeroRig } from "./art/heroes";
+
 export interface CharacterData {
   id: string;
   name: string;
+  /** Pixel rig used for this hero's sprite set (shared by game + UI). */
+  rig: HeroRig;
   /** Texture key prefix for this character's sprite set. */
   spritePrefix: string;
+  /** One-line role shown on the character card. */
+  role: string;
   /** Short archetype label shown on the select screen. */
   archetype?: string;
   /** Signature move name, shown in caps on the select screen. */
   special?: string;
+  /** Signature attack name, shown next to the weapon icon. */
+  attackName: string;
+  /** Card palette so no two heroes read the same at a glance. */
+  colors: { primary: string; secondary: string; accent: string };
+  /** 0-10 card stats. */
+  stats: { speed: number; jump: number; health: number; airControl: number };
+  /** Sprite scale multiplier — keeps Krogar huge and Shroomy tiny. */
+  sizeScale: number;
   blurb: string;
   speed: number;
   acceleration: number;
@@ -40,7 +54,20 @@ export interface EnemyData {
   weakness: string[];
 }
 
+/** One projectile look per hero. */
+export type AttackVisual =
+  | "fireball"
+  | "greenbolt"
+  | "heart"
+  | "flame"
+  | "pellet"
+  | "slash"
+  | "plasma"
+  | "axe"
+  | "kunai";
+
 export type ThrowKind =
+  | AttackVisual
   | "ember"
   | "banana"
   | "claw"

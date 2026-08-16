@@ -3,7 +3,7 @@ import { ClientOnly } from "@tanstack/react-router";
 import { lazy, Suspense } from "react";
 import { emptySave, loadSlot, saveSlot } from "@/game/save-facade";
 import type { SaveData } from "@/game/types";
-import PixelSprite, { type SpriteId } from "./PixelSprite";
+import PixelSprite, { HeroSprite, type SpriteId } from "./PixelSprite";
 import { ENEMIES } from "@/game/data/enemies";
 import { CHARACTERS, ROSTER } from "@/game/data/characters";
 import { LEVELS } from "@/game/levels";
@@ -20,7 +20,7 @@ const CONTROLS: [string, string][] = [
   ["Enter a tunnel", "Down / S on top of a pipe"],
   ["Restart from checkpoint", "R"],
   ["Pause", "Esc"],
-  ["Debug (dev only)", "F1 hitboxes · F2 stats · F10 invincible"],
+  ["Debug (dev only)", "F1 hitboxes · F2 stats · F9 sanity check · F10 invincible"],
 ];
 
 const POWER_UPS: { id: SpriteId; name: string; text: string }[] = [
@@ -43,17 +43,6 @@ const POWER_UPS: { id: SpriteId; name: string; text: string }[] = [
   { id: "oneUp", name: "Ember Heart", text: "Hidden 1-Up. Adds a life to your run." },
   { id: "relic", name: "Golden Relic", text: "Three per level, tucked into secret routes." },
 ];
-
-/** Pick the pixel rig that best matches a hero's archetype / special move. */
-function rigFor(c: { archetype?: string; specialAbility?: string; canDoubleJump?: boolean }): SpriteId {
-  const tag = `${c.archetype ?? ""} ${c.specialAbility ?? ""}`;
-  if (/Princess|Doll|Dancer|Royal|Crown/i.test(tag)) return "princess";
-  if (/Ninja|Shadow|Shade|Stealth|Ghost|Night/i.test(tag)) return "ninja";
-  if (/Hunter|Armour|Armor|Beam|Cannon|Iron|Guard|Blaster/i.test(tag)) return "hunter";
-  if (/Whip|Ranger|Vine|Lash|Hammer|Brawl/i.test(tag)) return "whip";
-  if (/Blade|Scout|Sword|Slash|Claw|Explorer/i.test(tag)) return "ranger";
-  return c.canDoubleJump ? "mira" : "riko";
-}
 
 type EnemyCard = {
   id: SpriteId;
@@ -214,69 +203,38 @@ export default function GameShell() {
 
         {screen === "roster" && (
           <section className="w-full space-y-6">
-            {/* Hero roster - every hero is playable, arcade select-screen style */}
+            {/* Hero roster — compact arcade cards, one per fighter */}
             <div className="border-4 border-nes-ink bg-nes-ink p-4 shadow-[8px_8px_0_0_var(--nes-brick-dark)]">
               <h2 className="text-center text-xs uppercase tracking-[0.3em] text-nes-coin">
                 Select your hero
               </h2>
               <p className="mt-2 text-center text-[8px] uppercase tracking-widest text-nes-paper/70">
-                {ROSTER.length} original fighters · every one playable
+                {ROSTER.length} fighters · 5 classic archetypes · 4 originals
               </p>
-              <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                {ROSTER.map((c) => {
-                  const selected = characterId === c.id;
-                  return (
-                    <button
-                      key={c.id}
-                      type="button"
-                      onClick={() => setCharacterId(c.id)}
-                      className={`flex items-start gap-3 border-4 p-3 text-left transition ${
-                        selected
-                          ? "border-nes-paper bg-nes-coin"
-                          : "border-nes-ink bg-nes-coin/80 hover:bg-nes-coin active:translate-y-[2px]"
-                      }`}
-                    >
-                      <PixelSprite id={rigFor(c)} px={3} tint={c.tint} />
-                      <div className="min-w-0">
-                        <p className="text-[9px] uppercase tracking-widest text-nes-brick-dark">
-                          {c.name} · {c.archetype ?? abilityLabel(c.specialAbility)}
-                        </p>
-                        <p className="mt-1 text-[8px] leading-5">{c.blurb}</p>
-                        <p className="mt-2 text-[8px] uppercase tracking-widest text-nes-ink/70">
-                          SPD {c.speed} · JMP {c.jumpForce} · HP {c.maxHealth}
-                          {c.canDoubleJump ? " · Double jump" : ""}
-                          {c.canDash ? " · Dash" : ""}
-                        </p>
-                        <p className="mt-1 text-[8px] uppercase tracking-widest text-nes-ink/70">
-                          Throws: {c.throwable ?? "ember"} · banana → monkey · bell → cat
-                        </p>
-                        <p className="mt-2 inline-block border-2 border-nes-ink bg-nes-ink px-2 py-1 text-[8px] uppercase tracking-widest text-nes-coin">
-                          Special: {c.special ?? abilityLabel(c.specialAbility)}
-                        </p>
-                        {selected ? (
-                          <p className="mt-2 text-[8px] uppercase tracking-widest text-nes-brick-dark">
-                            ★ Selected
-                          </p>
-                        ) : null}
-                      </div>
-                    </button>
-                  );
-                })}
+              <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {ROSTER.map((c) => (
+                  <HeroCard
+                    key={c.id}
+                    hero={c}
+                    selected={characterId === c.id}
+                    onSelect={() => setCharacterId(c.id)}
+                  />
+                ))}
               </div>
             </div>
 
             {/* Selected hero forms */}
             <div className="border-4 border-nes-ink bg-nes-paper p-5 shadow-[6px_6px_0_0_var(--nes-ink)]">
               <h2 className="text-center text-xs uppercase tracking-widest text-nes-ink">
-                {hero.name} · power forms
+                {hero.name} · {hero.role}
               </h2>
               <div className="mt-5 flex flex-wrap items-center justify-center gap-8">
                 <PixelSprite id="star" px={4} />
-                {(["riko", "rikoBig", "rikoFire"] as SpriteId[]).map((id, i) => (
-                  <div key={id} className="flex flex-col items-center gap-2">
-                    <PixelSprite id={id} px={i === 0 ? 3 : 4} tint={i === 2 ? undefined : hero.tint} />
+                {(["idle", "walk1", "jump", "attack1"] as const).map((pose, i) => (
+                  <div key={pose} className="flex flex-col items-center gap-2">
+                    <HeroSprite rig={hero.rig} pose={pose} px={4} />
                     <p className="text-[8px] uppercase tracking-widest text-nes-brick-dark">
-                      {["Small", "Big", "Fire"][i]}
+                      {["Idle", "Run", "Jump", "Attack"][i]}
                     </p>
                   </div>
                 ))}
@@ -367,6 +325,90 @@ export default function GameShell() {
         )}
       </div>
     </main>
+  );
+}
+
+/** Darkens a hero colour until it reads against the light card paper. */
+function onPaper(hex: string): string {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
+  if (!m) return hex;
+  let [r, g, b] = [0, 2, 4].map((i) => parseInt(m[1]!.slice(i, i + 2), 16)) as [number, number, number];
+  let lum = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+  while (lum > 0.55) {
+    r = Math.round(r * 0.72);
+    g = Math.round(g * 0.72);
+    b = Math.round(b * 0.72);
+    lum = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+  }
+  return `#${[r, g, b].map((v) => v.toString(16).padStart(2, "0")).join("")}`;
+}
+
+/** Compact pixel character card: sprite, name, role, stats, attack, special. */
+function HeroCard({
+  hero,
+  selected,
+  onSelect,
+}: {
+  hero: (typeof ROSTER)[number];
+  selected: boolean;
+  onSelect: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      aria-pressed={selected}
+      className={`flex flex-col items-stretch gap-2 border-4 p-3 text-left transition ${
+        selected
+          ? "border-nes-coin bg-nes-paper shadow-[0_0_0_4px_var(--nes-brick-dark)]"
+          : "border-nes-ink bg-nes-paper/90 hover:bg-nes-paper active:translate-y-[2px]"
+      }`}
+    >
+      <div
+        className="flex h-24 items-end justify-center border-2 border-nes-ink"
+        style={{
+          background: `linear-gradient(180deg, ${hero.colors.secondary}33, ${hero.colors.primary}55)`,
+        }}
+      >
+        <HeroSprite rig={hero.rig} px={5} />
+      </div>
+      <p className="text-[11px] uppercase tracking-widest" style={{ color: onPaper(hero.colors.primary) }}>
+        {hero.name}
+      </p>
+      <p className="text-[8px] uppercase tracking-widest text-nes-brick-dark">{hero.role}</p>
+      <StatBar label="SPD" value={hero.stats.speed} color={onPaper(hero.colors.primary)} />
+      <StatBar label="JMP" value={hero.stats.jump} color={onPaper(hero.colors.secondary)} />
+      <p className="text-[8px] uppercase tracking-widest">
+        HP {"\u2665".repeat(hero.stats.health)}
+      </p>
+      <p className="text-[8px] uppercase tracking-widest">&#9876; {hero.attackName}</p>
+      <p
+        className="inline-block border-2 border-nes-ink px-2 py-1 text-[8px] uppercase tracking-widest"
+        style={{ background: hero.colors.accent, color: "#101018" }}
+      >
+        &#9733; {hero.special}
+      </p>
+      <p className="text-[8px] uppercase tracking-widest text-nes-brick-dark">
+        {selected ? "\u25B6 Selected" : "\u00A0"}
+      </p>
+    </button>
+  );
+}
+
+function StatBar({ label, value, color }: { label: string; value: number; color: string }) {
+  return (
+    <p className="flex items-center gap-2 text-[8px] uppercase tracking-widest">
+      <span className="w-7">{label}</span>
+      <span className="flex gap-[2px]">
+        {Array.from({ length: 10 }, (_, i) => (
+          <span
+            key={i}
+            className="h-2 w-2 border border-nes-ink"
+            style={{ background: i < value ? color : "transparent" }}
+          />
+        ))}
+      </span>
+    </p>
   );
 }
 

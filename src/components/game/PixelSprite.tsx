@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { HERO_ART, heroPose, type HeroPose, type HeroRig } from "@/game/art/heroes";
 
 /** Shared NES-ish palette for the React-side roster art. */
 const PALETTE: Record<string, string> = {
@@ -464,6 +465,54 @@ export default function PixelSprite({
       height={h}
       className={className}
       style={{ imageRendering: "pixelated", width: w, height: h }}
+      aria-hidden
+    />
+  );
+}
+
+/**
+ * Renders a playable hero from the same art registry the game uses, so the
+ * select screen and the level always show the identical sprite.
+ */
+export function HeroSprite({
+  rig,
+  pose = "idle",
+  px = 4,
+  className,
+}: {
+  rig: HeroRig;
+  pose?: HeroPose;
+  px?: number;
+  className?: string;
+}) {
+  const ref = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const canvas = ref.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.imageSmoothingEnabled = false;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const palette = HERO_ART[rig].palette as unknown as Record<string, string>;
+    heroPose(rig, pose).forEach((row, y) => {
+      for (let x = 0; x < row.length; x++) {
+        const fill = palette[row[x] as string];
+        if (!fill) continue;
+        ctx.fillStyle = fill;
+        ctx.fillRect(x * px, y * px, px, px);
+      }
+    });
+  }, [rig, pose, px]);
+
+  const size = 16 * px;
+  return (
+    <canvas
+      ref={ref}
+      width={size}
+      height={size}
+      className={className}
+      style={{ imageRendering: "pixelated", width: size, height: size }}
       aria-hidden
     />
   );
