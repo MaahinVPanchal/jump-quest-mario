@@ -101,6 +101,7 @@ export class HudScene extends Phaser.Scene {
   }
 
   private onUpdate(data: HudPayload): void {
+    console.log("HUDUPD", JSON.stringify(data));
     this.targetScore = data.score;
     this.coins.setText(formatCoins(data.coins));
     this.timeText.setText(formatTime(data.time));
