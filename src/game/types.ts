@@ -3,6 +3,10 @@ export interface CharacterData {
   name: string;
   /** Texture key prefix for this character's sprite set. */
   spritePrefix: string;
+  /** Short archetype label shown on the select screen. */
+  archetype?: string;
+  /** Signature move name, shown in caps on the select screen. */
+  special?: string;
   blurb: string;
   speed: number;
   acceleration: number;
