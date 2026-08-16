@@ -73,7 +73,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
               ? "spiker_0"
               : spawn.type === "boss"
                 ? bossKey(themeById(spawn.variant ?? "meadow").id, 0)
-                : "flyer_0";
+                : "ogre_0";
     const y = spawn.type === "piranha" ? spawn.y * TILE + 48 : spawn.y * TILE + TILE;
     super(scene, spawn.x * TILE + TILE / 2, y, key);
     this.kind = spawn.type;
@@ -204,7 +204,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     if (this.kind === "piranha") {
       this.updatePiranha(delta);
       body.updateFromGameObject();
-    } else if (this.kind === "flyer") {
+    } else if (this.kind === "ogre") {
       this.x += this.dir * this.stats.speed * (delta / 1000);
       if (Math.abs(this.x - this.homeX) > this.patrol) this.dir *= -1;
       this.y = this.homeY + Math.sin(time / 520 + this.phase) * 52;
@@ -265,7 +265,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
             ? "shell"
             : this.kind === "spiker"
               ? "spiker"
-              : "flyer";
+              : "ogre";
       this.setTexture(`${base}_${this.frame2}`);
     }
   }

@@ -49,7 +49,7 @@ export type SpriteId =
   | "catBell"
   | "walker"
   | "shell"
-  | "flyer"
+  | "ogre"
   | "piranha"
   | "spiker"
   | "coin"
@@ -276,7 +276,7 @@ const SPRITES: Record<SpriteId, readonly string[]> = {
     "...WWW....WWW...",
     "................",
   ],
-  flyer: [
+  ogre: [
     "................",
     "................",
     "...MM....MM.....",

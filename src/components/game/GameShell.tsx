@@ -83,8 +83,8 @@ const ENEMY_CARDS: EnemyCard[] = [
     tip: "Kick a shell down a lane of Sprout Walkers for a rapid score chain — it also clears Emberjaw Blooms.",
   },
   {
-    id: "flyer",
-    key: "flyer",
+    id: "ogre",
+    key: "ogre",
     text: "Hovers in a wave pattern. Time your jump or use fire.",
     behaviour:
       "Drifts at 60 px/s along a 160 px sine wave, ignoring the ground entirely, so it crosses gaps and pits.",

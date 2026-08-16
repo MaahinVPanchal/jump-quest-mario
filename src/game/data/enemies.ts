@@ -25,8 +25,8 @@ export const ENEMIES: Record<EnemyKind, EnemyData> = {
     score: 200,
     weakness: ["stomp", "fire"],
   },
-  flyer: {
-    id: "flyer",
+  ogre: {
+    id: "ogre",
     name: "Puffwing",
     health: 1,
     speed: 60,

@@ -385,7 +385,7 @@ export function buildTextures(scene: Phaser.Scene): void {
     ctx.ellipse(6, up ? 10 : 20, 8, 5, up ? -0.6 : 0.6, 0, Math.PI * 2);
     ctx.ellipse(26, up ? 10 : 20, 8, 5, up ? 0.6 : -0.6, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = hex(COLORS.flyer);
+    ctx.fillStyle = hex(COLORS.ogre);
     ctx.beginPath();
     ctx.arc(16, 16, 10, 0, Math.PI * 2);
     ctx.fill();
