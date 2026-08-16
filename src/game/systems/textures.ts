@@ -41,15 +41,6 @@ function make(
   scene.textures.addCanvas(key, canvas);
 }
 
-/** Hard 1px-style outline used by the console-era sprites. */
-function outline(ctx: Ctx, x: number, y: number, w: number, h: number, color: string): void {
-  ctx.fillStyle = color;
-  ctx.fillRect(x, y, w, 2);
-  ctx.fillRect(x, y + h - 2, w, 2);
-  ctx.fillRect(x, y, 2, h);
-  ctx.fillRect(x + w - 2, y, 2, h);
-}
-
 function roundRect(ctx: Ctx, x: number, y: number, w: number, h: number, r: number): void {
   ctx.beginPath();
   ctx.moveTo(x + r, y);

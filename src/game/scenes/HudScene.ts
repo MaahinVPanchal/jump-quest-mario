@@ -13,15 +13,19 @@ interface HudPayload {
   relics: number;
 }
 
+// Arcade-era HUD: monospace caps, hard black shadow, no chrome.
+const MONO = "'Courier New', 'Lucida Console', monospace";
+
 const LABEL = {
-  fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif",
-  fontSize: "16px",
+  fontFamily: MONO,
+  fontSize: "22px",
+  fontStyle: "bold",
   color: "#ffffff",
 } as const;
 
 const VALUE = {
-  fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif",
-  fontSize: "22px",
+  fontFamily: MONO,
+  fontSize: "24px",
   fontStyle: "bold",
   color: "#ffffff",
 } as const;
@@ -44,29 +48,28 @@ export class HudScene extends Phaser.Scene {
   }
 
   create(): void {
-    const panel = this.add.graphics();
-    panel.fillStyle(0x101828, 0.55);
-    panel.fillRoundedRect(16, 12, VIEW.width - 32, 62, 14);
+    const col = (x: number, label: string): { label: Phaser.GameObjects.Text; value: Phaser.GameObjects.Text } => {
+      const l = this.add.text(x, 20, label, LABEL).setOrigin(0.5, 0);
+      const v = this.add.text(x, 48, "", VALUE).setOrigin(0.5, 0);
+      for (const t of [l, v]) t.setShadow(3, 3, "#000000", 0, true, true);
+      return { label: l, value: v };
+    };
 
-    this.add.text(36, 22, "RIKO", LABEL).setAlpha(0.8);
-    this.lives = this.add.text(36, 40, "x3", VALUE);
+    this.score = col(160, "SCORE").value;
+    this.coins = col(400, "COINS").value;
+    this.world = this.add.text(640, 20, "WORLD", LABEL).setOrigin(0.5, 0);
+    this.world.setShadow(3, 3, "#000000", 0, true, true);
+    this.power = col(640, "").value;
+    this.timeText = col(880, "TIME").value;
+    this.lives = col(1120, "LIVES").value;
 
-    this.world = this.add.text(VIEW.width / 2, 22, "WORLD 1-1", LABEL).setOrigin(0.5, 0).setAlpha(0.8);
-    this.power = this.add.text(VIEW.width / 2, 42, "SMALL", VALUE).setOrigin(0.5, 0);
-
-    this.add.text(VIEW.width - 420, 22, "SCORE", LABEL).setAlpha(0.8);
-    this.score = this.add.text(VIEW.width - 420, 40, "0", VALUE);
-    this.add.text(VIEW.width - 250, 22, "RELICS", LABEL).setAlpha(0.8);
-    this.coins = this.add.text(VIEW.width - 250, 40, "0", VALUE);
-    this.add.text(VIEW.width - 110, 22, "TIME", LABEL).setAlpha(0.8);
-    this.timeText = this.add.text(VIEW.width - 110, 40, "300", VALUE);
-
-    this.combo = this.add.text(VIEW.width / 2, 88, "", { ...VALUE, color: "#ffd447" }).setOrigin(0.5, 0);
+    this.combo = this.add.text(VIEW.width / 2, 84, "", { ...VALUE, color: "#fcd83c" }).setOrigin(0.5, 0);
+    this.combo.setShadow(3, 3, "#000000", 0, true, true);
     this.toast = this.add
       .text(VIEW.width / 2, VIEW.height - 90, "", {
         ...LABEL,
         fontSize: "20px",
-        backgroundColor: "rgba(16,24,40,0.72)",
+        backgroundColor: "#000000",
         padding: { x: 16, y: 8 },
       })
       .setOrigin(0.5)
@@ -82,12 +85,12 @@ export class HudScene extends Phaser.Scene {
 
   private onUpdate(data: HudPayload): void {
     this.targetScore = data.score;
-    this.coins.setText(`${data.coins}c / ${data.relics}R`);
+    this.coins.setText(`${data.coins}`);
     this.timeText.setText(`${data.time}`);
     this.timeText.setColor(data.time <= 30 ? "#ff8080" : "#ffffff");
-    this.lives.setText(`x${data.lives}`);
+    this.lives.setText(`${data.lives}`);
     this.world.setText(`WORLD ${data.world}`);
-    this.power.setText(data.power.toUpperCase());
+    this.power.setText(`${data.power.toUpperCase()}  ${data.relics}R`);
     this.combo.setText(data.combo > 1 ? `COMBO x${data.combo}` : "");
   }
 
@@ -104,7 +107,7 @@ export class HudScene extends Phaser.Scene {
         this.targetScore > this.displayedScore
           ? Math.min(step, this.targetScore - this.displayedScore)
           : -Math.min(step, this.displayedScore - this.targetScore);
-      this.score.setText(`${this.displayedScore}`);
+      this.score.setText(`${this.displayedScore}`.padStart(6, "0"));
     }
   }
 }
