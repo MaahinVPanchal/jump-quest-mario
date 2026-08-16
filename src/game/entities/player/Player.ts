@@ -46,6 +46,7 @@ export class Player {
   private animTime = 0;
   private animFrame = 0;
   private landUntil = 0;
+  private attackUntil = 0;
   private transforming = false;
   readonly character: CharacterData;
   private prefix: string;
@@ -86,7 +87,7 @@ export class Player {
 
   private applyForm(state: PowerState): void {
     this.power = state;
-    const scale = SCALE[state];
+    const scale = SCALE[state] * (this.character?.sizeScale ?? 1);
     this.sprite.setScale(scale);
     this.sprite.body?.setSize(20, 30);
     (this.sprite.body as Phaser.Physics.Arcade.Body).setOffset(6, 18);
@@ -114,7 +115,7 @@ export class Player {
   get throwKind(): ThrowKind {
     if (this.power === "monkey") return "banana";
     if (this.power === "cat") return "claw";
-    return this.character.throwable ?? "ember";
+    return this.character.throwable ?? "fireball";
   }
 
   grow(): void {
@@ -201,6 +202,7 @@ export class Player {
     if (this.canThrow && this.input.justPressed("ATTACK") && time - this.lastFire > cooldown) {
       this.lastFire = time;
       this.hooks.onFire(this.sprite.x + this.facing * 14, this.sprite.y - 26, this.facing, this.throwKind);
+      this.attackUntil = time + 240;
       audio.play("shoot");
     }
 
@@ -213,6 +215,11 @@ export class Player {
   /** NES four-frame run cycle plus dedicated jump / fall / landing poses. */
   private animate(time: number, delta: number): void {
     const s = this.movement.state;
+    // Weapon poses win over everything except death: the swing must be visible.
+    if (time < this.attackUntil) {
+      const frame = Math.min(2, Math.floor((240 - (this.attackUntil - time)) / 80));
+      return void this.sprite.setTexture(`${this.prefix}_attack_${frame}`);
+    }
     if (s === "jump") return void this.sprite.setTexture(`${this.prefix}_jump`);
     if (s === "fall") return void this.sprite.setTexture(`${this.prefix}_fall`);
     if (s === "hurt") return void this.sprite.setTexture(`${this.prefix}_hurt`);
