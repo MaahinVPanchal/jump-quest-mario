@@ -92,7 +92,6 @@ export class HudScene extends Phaser.Scene {
       .setOrigin(0.5)
       .setAlpha(0);
 
-    console.log("HUDBIND", GameEvent.HudUpdate);
     this.game.events.on(GameEvent.HudUpdate, this.onUpdate, this);
     this.game.events.on(GameEvent.Toast, this.showToast, this);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
@@ -102,7 +101,6 @@ export class HudScene extends Phaser.Scene {
   }
 
   private onUpdate(data: HudPayload): void {
-    console.log("HUDUPD", JSON.stringify(data));
     this.targetScore = data.score;
     this.coins.setText(formatCoins(data.coins));
     this.timeText.setText(formatTime(data.time));

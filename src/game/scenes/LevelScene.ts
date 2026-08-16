@@ -556,7 +556,6 @@ export class LevelScene extends Phaser.Scene {
   }
 
   private emitHud(): void {
-    console.log("HUDEMIT", GameEvent.HudUpdate);
     this.game.events.emit(GameEvent.HudUpdate, {
       coins: gameState.coins,
       score: gameState.score,
@@ -621,7 +620,6 @@ export class LevelScene extends Phaser.Scene {
       delay: 1000,
       loop: true,
       callback: () => {
-        console.log("TICK", this.finished, this.respawning, this.transitioning, this.scene.isPaused());
         if (this.finished || this.respawning || this.transitioning) return;
         if (this.scene.isPaused()) return;
         this.timeLeft -= 1;
