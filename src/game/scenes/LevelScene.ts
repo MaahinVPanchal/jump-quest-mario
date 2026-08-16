@@ -3,7 +3,7 @@ import { CAMERA, COLORS, COMBAT, PHYSICS, SCORE, TILE, VIEW } from "../config";
 import { LEVEL_1 } from "../levels/level1";
 import { getLevel } from "../levels";
 import { CHARACTERS, DEFAULT_CHARACTER } from "../data/characters";
-import type { LevelData, LevelResult, MovingPlatformSpawn } from "../types";
+import type { LevelData, LevelResult, MovingPlatformSpawn, ThrowKind } from "../types";
 import { InputManager } from "../systems/input";
 import { audio } from "../systems/audio";
 import { gameState } from "../systems/state";

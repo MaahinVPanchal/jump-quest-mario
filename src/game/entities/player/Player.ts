@@ -90,9 +90,11 @@ export class Player {
     this.sprite.setScale(scale);
     this.sprite.body?.setSize(20, 30);
     (this.sprite.body as Phaser.Physics.Arcade.Body).setOffset(6, 18);
-    this.movement.jumpScale = JUMP_SCALE[state];
-    // Cat form claws the air: everyone gets an air jump while transformed.
-    this.movement.canDoubleJump = this.character.canDoubleJump || state === "cat";
+    if (this.movement) {
+      this.movement.jumpScale = JUMP_SCALE[state];
+      // Cat form claws the air: everyone gets an air jump while transformed.
+      this.movement.canDoubleJump = this.character.canDoubleJump || state === "cat";
+    }
     this.hooks.onPowerChange(state);
   }
 
