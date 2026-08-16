@@ -65,10 +65,25 @@
   --color-sky-soft: var(--sky-soft);
   --color-dusk: var(--dusk);
   --color-dusk-soft: var(--dusk-soft);
+  --color-nes-sky: var(--nes-sky);
+  --color-nes-brick: var(--nes-brick);
+  --color-nes-brick-dark: var(--nes-brick-dark);
+  --color-nes-coin: var(--nes-coin);
+  --color-nes-pipe: var(--nes-pipe);
+  --color-nes-ink: var(--nes-ink);
+  --color-nes-paper: var(--nes-paper);
+  --font-pixel: "Press Start 2P", "Courier New", monospace;
 }
 
 :root {
   --radius: 0.625rem;
+  --nes-sky: oklch(0.72 0.16 259);
+  --nes-brick: oklch(0.63 0.19 44);
+  --nes-brick-dark: oklch(0.42 0.15 42);
+  --nes-coin: oklch(0.88 0.17 88);
+  --nes-pipe: oklch(0.66 0.21 145);
+  --nes-ink: oklch(0.15 0.02 260);
+  --nes-paper: oklch(0.97 0.01 250);
   --meadow: oklch(0.78 0.16 145);
   --meadow-deep: oklch(0.52 0.13 155);
   --ember: oklch(0.74 0.18 48);
