@@ -203,7 +203,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
 
     if (this.kind !== "piranha") this.setFlipX(this.dir > 0);
     this.animTime += delta;
-    if (this.animTime > (this.kind === "piranha" ? 260 : 180) && this.mode === "patrol") {
+    if (this.kind !== "piranha" && this.animTime > 180 && this.mode === "patrol") {
       this.animTime = 0;
       this.frame2 = 1 - this.frame2;
       const base =

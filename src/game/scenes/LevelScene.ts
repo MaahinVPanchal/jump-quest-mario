@@ -431,6 +431,8 @@ export class LevelScene extends Phaser.Scene {
       audio.play("block");
       return;
     }
+    // A shell we just kicked can't clip us on the same frame.
+    if (!enemy.canHurt(this.time.now)) return;
     if (this.invincible) {
       this.defeatEnemy(enemy, "fire");
       return;
@@ -643,11 +645,13 @@ export class LevelScene extends Phaser.Scene {
     if (this.transitioning) return;
     this.transitioning = true;
     audio.play("pipe");
+    this.suppressPipePlants(1400);
     this.player.lockControls(true);
     this.cameras.main.fadeOut(280);
     this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {
       this.player.sprite.setPosition(target.x * TILE + TILE / 2, target.y * TILE + TILE);
       this.player.sprite.setVelocity(0, 0);
+      this.suppressPipePlants(1400);
       this.cameras.main.fadeIn(280);
       this.time.delayedCall(300, () => {
         this.player.lockControls(false);
@@ -695,6 +699,11 @@ export class LevelScene extends Phaser.Scene {
     const tx = Math.floor(x / TILE);
     const ty = Math.floor(y / TILE);
     return (this.level.tiles[ty]?.[tx] ?? 0) > 0;
+  }
+
+  /** Keeps every pipe plant tucked away while the hero enters or exits a pipe. */
+  private suppressPipePlants(ms: number): void {
+    for (const e of this.enemies.getChildren() as Enemy[]) e.suppress(ms);
   }
 
   /** Used by pipe plants so they stay down while the hero is standing on the rim. */
