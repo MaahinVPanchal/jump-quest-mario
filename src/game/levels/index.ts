@@ -1,20 +1,16 @@
 import type { LevelData } from "../types";
 import { LEVEL_1 } from "./level1";
-import { LEVEL_2 } from "./level2";
 import { buildLevel, WORLD_THEMES } from "./generate";
+import { STAGE_THEMES } from "./themes";
 
-/** Stage counts per world - world 8 runs long so the campaign totals 50 stages. */
-export const WORLD_SIZES = [6, 6, 6, 6, 6, 6, 6, 8];
+/** Ten hand-themed stages, one per world. */
+export const WORLD_SIZES = STAGE_THEMES.map(() => 1);
 
 function buildCampaign(): LevelData[] {
   const out: LevelData[] = [];
-  WORLD_SIZES.forEach((count, w) => {
-    for (let l = 1; l <= count; l++) {
-      const world = w + 1;
-      if (world === 1 && l === 1) out.push(LEVEL_1);
-      else if (world === 2 && l === 1) out.push(LEVEL_2);
-      else out.push(buildLevel(world, l));
-    }
+  STAGE_THEMES.forEach((theme) => {
+    if (theme.world === 1) out.push({ ...LEVEL_1, themeId: theme.id, buildSet: theme.buildSet });
+    else out.push(buildLevel(theme.world, 1));
   });
   // Chain each stage to the next so completing one unlocks the following one.
   out.forEach((level, i) => {
