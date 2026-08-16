@@ -47,7 +47,7 @@ export class LevelScene extends Phaser.Scene {
     super("Level");
   }
 
-  override create(): void {
+  create(): void {
     const level = this.level;
     this.finished = false;
     this.respawning = false;

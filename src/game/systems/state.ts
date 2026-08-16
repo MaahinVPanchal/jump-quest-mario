@@ -16,7 +16,7 @@ export class GameState {
   slot = 1;
   save: SaveData = emptySave();
   characterId = "riko";
-  lives = RULES.startingLives;
+  lives: number = RULES.startingLives;
   coins = 0;
   score = 0;
   levelCoins = 0;
