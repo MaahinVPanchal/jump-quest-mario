@@ -341,7 +341,7 @@ export default function GameShell() {
                           : "Reach the goal flag before the timer runs out."}
                       </p>
                       <div className="mt-2 flex items-center gap-2">
-                        {level.starsRequired ? <PixelSprite id="star" px={2} /> : <PixelSprite id="coin" px={2} />}
+                        {level.starsRequired ? <PixelSprite id="star" px={3} /> : <PixelSprite id="coin" px={3} />}
                         <span className="text-[8px] uppercase tracking-widest opacity-70">
                           {locked ? `Clear ${prev?.id} first` : `${level.timeLimit}s · ${level.enemies.length} enemies`}
                         </span>
