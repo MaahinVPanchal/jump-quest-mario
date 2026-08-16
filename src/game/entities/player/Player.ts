@@ -13,7 +13,7 @@ export interface PlayerHooks {
   onPowerChange: (state: PowerState) => void;
 }
 
-const SCALE: Record<PowerState, number> = { small: 0.9, big: 1.3, fire: 1.3 };
+const SCALE: Record<PowerState, number> = { small: 1.4, big: 2, fire: 2 };
 
 /** Thin façade: state + wiring only; behaviour lives in the controllers. */
 export class Player {
@@ -61,8 +61,8 @@ export class Player {
     this.power = state;
     const scale = SCALE[state];
     this.sprite.setScale(scale);
-    this.sprite.body?.setSize(20, 44);
-    (this.sprite.body as Phaser.Physics.Arcade.Body).setOffset(6, 4);
+    this.sprite.body?.setSize(20, 30);
+    (this.sprite.body as Phaser.Physics.Arcade.Body).setOffset(6, 18);
     this.hooks.onPowerChange(state);
   }
 
