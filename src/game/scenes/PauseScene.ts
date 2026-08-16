@@ -2,6 +2,7 @@ import Phaser from "phaser";
 import { VIEW } from "../config";
 import { audio } from "../systems/audio";
 import { gameState } from "../systems/state";
+import { display } from "../systems/display";
 
 type Entry = { label: string; action: () => void };
 
@@ -37,6 +38,7 @@ export class PauseScene extends Phaser.Scene {
         label: `Screen shake: ${gameState.save.settings.screenShake ? "ON" : "OFF"}`,
         action: () => this.toggleShake(),
       },
+      { label: this.pixelLabel(), action: () => this.togglePixelPerfect() },
       { label: `Music volume: ${Math.round(audio.settings.music * 100)}%`, action: () => this.cycleMusic() },
       { label: `SFX volume: ${Math.round(audio.settings.sfx * 100)}%`, action: () => this.cycleSfx() },
       { label: "Quit to menu", action: () => this.confirm("Quit level? Progress since the last save is lost.", () => this.quit()) },
@@ -118,18 +120,29 @@ export class PauseScene extends Phaser.Scene {
     gameState.persist();
   }
 
+  private pixelLabel(): string {
+    return `Pixel-perfect: ${display.pixelPerfect ? "ON" : "OFF"}  (zoom ${display.zoomLabel})`;
+  }
+
+  private togglePixelPerfect(): void {
+    const on = display.togglePixelPerfect();
+    gameState.save.settings.pixelPerfect = on;
+    gameState.persist();
+    this.texts[3]?.setText(this.pixelLabel());
+  }
+
   private cycleMusic(): void {
     audio.settings.music = Math.round((audio.settings.music + 0.25) * 100) / 100 > 1 ? 0 : audio.settings.music + 0.25;
     audio.applyVolumes();
     gameState.save.settings.music = audio.settings.music;
-    this.texts[3]?.setText(`Music volume: ${Math.round(audio.settings.music * 100)}%`);
+    this.texts[4]?.setText(`Music volume: ${Math.round(audio.settings.music * 100)}%`);
   }
 
   private cycleSfx(): void {
     audio.settings.sfx = Math.round((audio.settings.sfx + 0.25) * 100) / 100 > 1 ? 0 : audio.settings.sfx + 0.25;
     audio.applyVolumes();
     gameState.save.settings.sfx = audio.settings.sfx;
-    this.texts[4]?.setText(`SFX volume: ${Math.round(audio.settings.sfx * 100)}%`);
+    this.texts[5]?.setText(`SFX volume: ${Math.round(audio.settings.sfx * 100)}%`);
   }
 
   private resume(): void {

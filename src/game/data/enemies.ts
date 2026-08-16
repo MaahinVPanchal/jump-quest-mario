@@ -17,7 +17,7 @@ export const ENEMIES: Record<EnemyKind, EnemyData> = {
     id: "shell",
     name: "Bramble Shell",
     health: 2,
-    speed: 42,
+    speed: 52,
     damage: 1,
     patrolRange: 128,
     stompable: true,

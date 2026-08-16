@@ -127,5 +127,7 @@ export interface SaveData {
     music: number;
     sfx: number;
     screenShake: boolean;
+    /** Lock rendering to integer-zoom pixel-perfect scaling. */
+    pixelPerfect: boolean;
   };
 }
