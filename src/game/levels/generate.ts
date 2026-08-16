@@ -73,6 +73,8 @@ export function buildLevel(world: number, level: number): LevelData {
 
   // Difficulty curve: later worlds field more, faster, longer-ranged patrols.
   const enemyDensity = 12 + Math.floor(index * 1.4);
+  // Complex architecture: staircases grow one step taller per world (world 10 = 10 high).
+  const stairHeight = Math.min(10, 2 + index);
   const SAFE_START = 14;
   const checkpointXs: number[] = [];
   const safeFrom = (tx: number): boolean =>
@@ -98,6 +100,31 @@ export function buildLevel(world: number, level: number): LevelData {
     if (i === 2) blocks.push({ kind: "question", x: sx + 6, y: SURFACE - 4, contains: "banana" });
     if (i === 3) blocks.push({ kind: "question", x: sx + 6, y: SURFACE - 4, contains: "catBell" });
     if (i === 3) blocks.push({ kind: "hidden", x: sx + 5, y: SURFACE - 5, contains: "oneUp" });
+
+    // --- climbable buildings: pyramid stairs, towers and bridge decks
+    if (ex - sx > 14) {
+      const stepW = 1;
+      const baseX = sx + 6;
+      const up = i % 3 !== 2;
+      for (let s = 0; s < stairHeight; s++) {
+        const col = baseX + s * stepW;
+        if (col >= ex - 2) break;
+        const h = up ? s + 1 : stairHeight - s;
+        fill(col, col, SURFACE - h, SURFACE - 1, world >= 5 ? 3 : 1);
+      }
+      // Landing deck on top of the stairs with a coin payout.
+      const topX = Math.min(ex - 3, baseX + stairHeight);
+      const topY = SURFACE - stairHeight;
+      fill(topX, Math.min(ex - 1, topX + 3), topY, topY, world >= 5 ? 3 : 1);
+      coinRow(topX, Math.min(ex - 1, topX + 3), topY - 1);
+      // Tower: a stacked metal/brick column beside the deck, every other segment.
+      if (i % 2 === 0) {
+        const tx = Math.min(ex - 2, topX + 5);
+        for (let h = 1; h <= Math.min(6, 2 + Math.floor(index / 2)); h++) {
+          blocks.push({ kind: h % 3 === 0 ? "question" : "metal", x: tx, y: SURFACE - h * 2, ...(h % 3 === 0 ? { contains: "coin" as const, coins: 2 } : {}) });
+        }
+      }
+    }
 
     const count = Math.min(6, 1 + Math.floor(rand() * (1 + enemyDensity / segments.length)));
     for (let n = 0; n < count; n++) {
