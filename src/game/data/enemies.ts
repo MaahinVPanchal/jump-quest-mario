@@ -37,4 +37,16 @@ export const ENEMIES: Record<EnemyKind, EnemyData> = {
     score: 150,
     weakness: ["stomp", "fire"],
   },
+  piranha: {
+    id: "piranha",
+    name: "Emberjaw Bloom",
+    health: 1,
+    speed: 46,
+    damage: 1,
+    patrolRange: 56,
+    stompable: false,
+    canFly: true,
+    score: 250,
+    weakness: ["fire"],
+  },
 };

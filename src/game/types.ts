@@ -12,7 +12,7 @@ export interface CharacterData {
   specialAbility: string;
 }
 
-export type EnemyKind = "walker" | "shell" | "flyer";
+export type EnemyKind = "walker" | "shell" | "flyer" | "piranha";
 
 export interface EnemyData {
   id: EnemyKind;
