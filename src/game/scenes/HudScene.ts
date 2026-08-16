@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import { VIEW } from "../config";
 import { GameEvent } from "../systems/events";
+import { formatCoins, formatCombo, formatLives, formatScore, formatTime, formatWorld } from "../systems/hudFormat";
 
 interface HudPayload {
   coins: number;
@@ -57,7 +58,7 @@ export class HudScene extends Phaser.Scene {
     };
 
     this.score = col(0, "SCORE");
-    this.score.setText("000000");
+    this.score.setText(formatScore(0));
     this.coins = col(1, "COINS");
     this.world = col(2, "WORLD");
     this.timeText = col(3, "TIME");
@@ -85,12 +86,12 @@ export class HudScene extends Phaser.Scene {
 
   private onUpdate(data: HudPayload): void {
     this.targetScore = data.score;
-    this.coins.setText(`x${`${data.coins}`.padStart(2, "0")}`);
-    this.timeText.setText(`${data.time}`.padStart(3, "0"));
+    this.coins.setText(formatCoins(data.coins));
+    this.timeText.setText(formatTime(data.time));
     this.timeText.setColor(data.time <= 30 ? "#ff8080" : "#ffffff");
-    this.lives.setText(`x${`${Math.max(0, data.lives)}`.padStart(2, "0")}`);
-    this.world.setText(`${data.world}`);
-    this.combo.setText(data.combo > 1 ? `COMBO x${data.combo}` : "");
+    this.lives.setText(formatLives(data.lives));
+    this.world.setText(formatWorld(data.world));
+    this.combo.setText(formatCombo(data.combo));
   }
 
   private showToast(message: string): void {
@@ -106,7 +107,7 @@ export class HudScene extends Phaser.Scene {
         this.targetScore > this.displayedScore
           ? Math.min(step, this.targetScore - this.displayedScore)
           : -Math.min(step, this.displayedScore - this.targetScore);
-      this.score.setText(`${this.displayedScore}`.padStart(6, "0"));
+      this.score.setText(formatScore(this.displayedScore));
     }
   }
 }
