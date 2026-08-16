@@ -233,32 +233,24 @@ export function buildTextures(scene: Phaser.Scene): void {
     }
   });
 
-  // ---- hero ----
-  const hero = (key: string, pose: HeroPose): void =>
-    make(scene, key, 32, 48, (ctx) => paint(ctx, heroPixels(pose), 2, 0, 16), false);
-  hero("hero_idle", "idle");
-  hero("hero_walk_0", "walk0");
-  hero("hero_walk_1", "walk1");
-  hero("hero_walk_2", "walk2");
-  hero("hero_walk_3", "walk3");
-  hero("hero_jump", "jump");
-  hero("hero_fall", "fall");
-  hero("hero_land", "land");
-  hero("hero_hurt", "hurt");
-
-  // Second playable character: same rig, cool-toned palette.
-  const MIRA_TINT: Record<string, string> = { R: "#3cbcfc", r: "#0058f8", H: "#203890", Y: "#f8f8f8" };
-  const mira = (key: string, pose: HeroPose): void =>
-    make(scene, key, 32, 48, (ctx) => paint(ctx, heroPixels(pose), 2, 0, 16, MIRA_TINT), false);
-  mira("mira_idle", "idle");
-  mira("mira_walk_0", "walk0");
-  mira("mira_walk_1", "walk1");
-  mira("mira_walk_2", "walk2");
-  mira("mira_walk_3", "walk3");
-  mira("mira_jump", "jump");
-  mira("mira_fall", "fall");
-  mira("mira_land", "land");
-  mira("mira_hurt", "hurt");
+  // ---- heroes ----
+  // Every playable character shares the same original rig; the roster entry
+  // supplies a palette override so each hero reads distinctly at 8-bit scale.
+  const POSES: HeroPose[] = ["idle", "walk0", "walk1", "walk2", "walk3", "jump", "fall", "land", "hurt"];
+  const poseKey = (pose: HeroPose): string =>
+    pose.startsWith("walk") ? `walk_${pose.slice(4)}` : pose;
+  for (const character of Object.values(CHARACTERS)) {
+    for (const pose of POSES) {
+      make(
+        scene,
+        `${character.spritePrefix}_${poseKey(pose)}`,
+        32,
+        48,
+        (ctx) => paint(ctx, heroPixels(pose), 2, 0, 16, character.tint),
+        false,
+      );
+    }
+  }
 
   // Spiked roller: never stompable, spikes ring the whole shell.
   const spikerBody = (swap: boolean): readonly string[] => [
