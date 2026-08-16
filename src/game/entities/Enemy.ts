@@ -218,20 +218,38 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     }
   }
 
-  /** Rises out of its pipe on a fixed cadence, but stays down while the hero stands on top. */
+  /** Rises out of its pipe on a fixed NES cadence; stays down while the hero is on the rim. */
   private updatePiranha(delta: number): void {
     const scene = this.scene as Phaser.Scene & { playerX?: () => number };
-    const near = scene.playerX ? Math.abs(scene.playerX() - this.x) < 44 : false;
-    const period = 4600;
-    this.cycle = (this.cycle + delta) % period;
-    let t = 0;
-    if (this.cycle < 500) t = this.cycle / 500;
-    else if (this.cycle < 2400) t = 1;
-    else if (this.cycle < 2900) t = 1 - (this.cycle - 2400) / 500;
-    if (near && t > 0 && this.cycle < 500) {
-      this.cycle = 0;
-      t = 0;
+    const near = scene.playerX ? Math.abs(scene.playerX() - this.x) < PIRANHA.safeRadius : false;
+    const blocked = near || this.scene.time.now < this.suppressedUntil;
+
+    const hidden = PIRANHA.hiddenMs;
+    const riseEnd = hidden + PIRANHA.riseMs;
+    const upEnd = riseEnd + PIRANHA.upMs;
+    const sinkEnd = upEnd + PIRANHA.sinkMs;
+
+    // Hold the cycle at the bottom while the hero blocks the pipe mouth.
+    if (blocked && this.cycle >= hidden) {
+      if (this.cycle < riseEnd) this.cycle = 0;
+      else if (this.cycle < upEnd) this.cycle = upEnd; // finish the retract, then wait
     }
+    if (blocked && this.cycle < hidden) this.cycle = 0;
+    else this.cycle = (this.cycle + delta) % PIRANHA_PERIOD;
+
+    let t = 0;
+    if (this.cycle < hidden) t = 0;
+    else if (this.cycle < riseEnd) t = (this.cycle - hidden) / PIRANHA.riseMs;
+    else if (this.cycle < upEnd) t = 1;
+    else t = 1 - (this.cycle - upEnd) / PIRANHA.sinkMs;
+    t = Math.min(1, Math.max(0, t));
+
+    // Bite animation only while fully out.
+    if (t >= 1) {
+      const bite = Math.floor(this.scene.time.now / PIRANHA.biteMs) % 2;
+      this.setTexture(`piranha_${bite}`);
+    }
+    void sinkEnd;
     this.y = this.homeY - this.hideDepth * t;
   }
 
