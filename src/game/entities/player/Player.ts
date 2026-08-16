@@ -218,16 +218,23 @@ export class Player {
     if (s === "hurt") return void this.sprite.setTexture(`${this.prefix}_hurt`);
     if (time < this.landUntil) return void this.sprite.setTexture(`${this.prefix}_land`);
     if (s === "walk" || s === "run") {
+      // Skid frame while turning against momentum, like the classic slide-stop.
+      const vx = (this.sprite.body as Phaser.Physics.Arcade.Body).velocity.x;
+      if (Math.abs(vx) > 60 && Math.sign(vx) !== this.facing) {
+        return void this.sprite.setTexture(`${this.prefix}_skid`);
+      }
       this.animTime += delta * (s === "run" ? 1.8 : 1);
-      if (this.animTime > 90) {
+      if (this.animTime > 70) {
         this.animTime = 0;
         this.animFrame = (this.animFrame + 1) % 4;
       }
       this.sprite.setTexture(`${this.prefix}_walk_${this.animFrame}`);
       return;
     }
+    // Idle breathing cycle so heroes never look frozen.
     this.animFrame = 0;
-    this.animTime = 0;
-    this.sprite.setTexture(`${this.prefix}_idle`);
+    this.animTime += delta;
+    if (this.animTime > 1400) this.animTime = 0;
+    this.sprite.setTexture(this.animTime > 1100 ? `${this.prefix}_idle2` : `${this.prefix}_idle`);
   }
 }
