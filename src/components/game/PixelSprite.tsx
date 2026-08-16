@@ -19,16 +19,21 @@ const PALETTE: Record<string, string> = {
   p: "#a01810",
   C: "#5c94fc",
   M: "#f8b8f8",
+  V: "#7c3cfc",
+  v: "#4c18b0",
+  c: "#0058f8",
 };
 
 export type SpriteId =
   | "riko"
   | "rikoBig"
   | "rikoFire"
+  | "mira"
   | "walker"
   | "shell"
   | "flyer"
   | "piranha"
+  | "spiker"
   | "coin"
   | "star"
   | "growthOrb"
@@ -65,6 +70,28 @@ const SPRITES: Record<SpriteId, readonly string[]> = {
   riko: [...HERO_HEAD, ...HERO_BODY],
   rikoBig: [...HERO_HEAD, ...HERO_BODY],
   rikoFire: [...recolor(HERO_HEAD, "R", "W"), ...recolor(HERO_BODY, "R", "W")],
+  mira: [
+    ...recolor(recolor(HERO_HEAD, "R", "C"), "H", "c"),
+    ...recolor(recolor(HERO_BODY, "R", "C"), "H", "c"),
+  ],
+  spiker: [
+    "....K..K..K..K..",
+    "...KKK.KK.KKK...",
+    "..KKVVVVVVVVKK..",
+    ".KVVVVVVVVVVVVK.",
+    "KVVWWVVVVVVWWVVK",
+    "KVVWKVVVVVVKWVVK",
+    "KVVVVVVVVVVVVVVK",
+    "KVvvvvvvvvvvvvVK",
+    "KVvvvvvvvvvvvvVK",
+    ".KVvvvvvvvvvvVK.",
+    "..KKvvvvvvvvKK..",
+    "...KKK.KK.KKK...",
+    "....K..K..K..K..",
+    "...OO......OO...",
+    "...OO......OO...",
+    "................",
+  ],
   walker: [
     "................",
     "................",
