@@ -6,6 +6,28 @@ import type { EnemyData, EnemyKind, EnemySpawn } from "../types";
 export type EnemyState = "patrol" | "shell" | "sliding" | "dead";
 export type DamageSource = "stomp" | "fire" | "shell";
 
+/** Classic-feel timings (ms / px per second). */
+const SHELL = {
+  slideSpeed: 400,
+  /** How long a kicked-then-stopped shell stays dormant before waking up. */
+  dormantMs: 5200,
+  /** Wobble warning window before the patroller pops back out. */
+  wakeWarnMs: 1500,
+  /** Grace after a kick so the player is never clipped by their own shell. */
+  kickGraceMs: 140,
+} as const;
+
+const PIRANHA = {
+  hiddenMs: 1400,
+  riseMs: 480,
+  upMs: 2000,
+  sinkMs: 480,
+  /** Horizontal no-emerge radius around the hero. */
+  safeRadius: 52,
+  biteMs: 180,
+} as const;
+const PIRANHA_PERIOD = PIRANHA.hiddenMs + PIRANHA.riseMs + PIRANHA.upMs + PIRANHA.sinkMs;
+
 /** Data-driven enemy; all kinds share this body and branch on their data record. */
 export class Enemy extends Phaser.Physics.Arcade.Sprite {
   readonly kind: EnemyKind;
@@ -18,6 +40,8 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
   private frame2 = 0;
   private phase = Math.random() * Math.PI * 2;
   private shellIdleUntil = 0;
+  private kickGraceUntil = 0;
+  private suppressedUntil = 0;
   /** Piranha emergence cycle timer (ms). */
   private cycle = 0;
   private hideDepth = 44;
@@ -51,7 +75,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
       body.setOffset(5, 0);
       body.setImmovable(true);
       body.checkCollision.none = true;
-      this.cycle = Math.random() * 2000;
+      this.cycle = Math.random() * PIRANHA_PERIOD;
     }
     this.homeX = this.x;
     this.homeY = this.y;
@@ -68,20 +92,34 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     this.setActive(true).setVisible(true);
   }
 
+  /** True while the enemy should not damage the hero (just-kicked shells). */
+  canHurt(time: number): boolean {
+    if (this.mode === "dead") return false;
+    if (this.kind === "piranha" && this.y >= this.homeY - 4) return false;
+    return time >= this.kickGraceUntil;
+  }
+
+  /** Keeps a pipe plant tucked away (used on pipe entry/exit). */
+  suppress(ms: number): void {
+    if (this.kind !== "piranha") return;
+    this.suppressedUntil = this.scene.time.now + ms;
+  }
+
   /** Returns true when the enemy is removed from play. */
   hit(source: DamageSource): boolean {
     if (this.mode === "dead") return false;
     if (this.kind === "shell" && source === "stomp") {
       if (this.mode === "patrol") {
         this.mode = "shell";
-        this.shellIdleUntil = this.scene.time.now + 5000;
+        this.shellIdleUntil = this.scene.time.now + SHELL.dormantMs;
         this.setTexture("shell_hidden");
         this.setVelocity(0, 0);
         return false;
       }
       if (this.mode === "sliding") {
         this.mode = "shell";
-        this.shellIdleUntil = this.scene.time.now + 5000;
+        this.shellIdleUntil = this.scene.time.now + SHELL.dormantMs;
+        this.setTexture("shell_hidden");
         this.setVelocityX(0);
         return false;
       }
@@ -94,7 +132,9 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     if (this.kind !== "shell" || this.mode !== "shell") return;
     this.mode = "sliding";
     this.dir = this.x >= fromX ? 1 : -1;
-    this.setVelocityX(this.dir * 380);
+    this.setVelocityX(this.dir * SHELL.slideSpeed);
+    this.setTexture("shell_hidden");
+    this.kickGraceUntil = this.scene.time.now + SHELL.kickGraceMs;
   }
 
   defeat(flip = false): void {
@@ -134,16 +174,21 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
       this.y = this.homeY + Math.sin(time / 520 + this.phase) * 52;
       body.updateFromGameObject();
     } else if (this.mode === "sliding") {
-      this.setVelocityX(this.dir * 380);
+      this.setVelocityX(this.dir * SHELL.slideSpeed);
       if (body.blocked.left || body.blocked.right) {
         this.dir *= -1;
-        this.setVelocityX(this.dir * 380);
+        this.setVelocityX(this.dir * SHELL.slideSpeed);
+        this.x += this.dir * 2;
       }
     } else if (this.mode === "shell") {
       this.setVelocityX(0);
       if (time > this.shellIdleUntil) {
         this.mode = "patrol";
         this.setTexture("shell_0");
+        this.setFlipY(false);
+      } else if (time > this.shellIdleUntil - SHELL.wakeWarnMs) {
+        // Classic wobble tell just before the patroller climbs back out.
+        this.setFlipY(Math.floor(time / 110) % 2 === 0);
       }
     } else {
       this.setVelocityX(this.dir * this.stats.speed);
