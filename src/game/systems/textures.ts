@@ -1,5 +1,6 @@
 import type Phaser from "phaser";
 import { COLORS, TILE } from "../config";
+import { CHARACTERS } from "../data/characters";
 
 type Ctx = CanvasRenderingContext2D;
 
