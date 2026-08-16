@@ -94,7 +94,7 @@ export function buildLevel(world: number, level: number): LevelData {
     for (let n = 0; n < count; n++) {
       const kind = pick(theme.enemies);
       const ex0 = sx + 4 + Math.floor(rand() * Math.max(1, ex - sx - 6));
-      if (kind === "flyer") enemies.push({ type: "flyer", x: ex0, y: shelfY + 1, patrol: 140 + Math.floor(rand() * 60) });
+      if (kind === "ogre") enemies.push({ type: "ogre", x: ex0, y: shelfY + 1, patrol: 140 + Math.floor(rand() * 60) });
       else if (kind === "piranha") {
         pipes.push({ x: ex0, y: SURFACE - 2, target: { x: Math.min(width - 24, ex0 + 24), y: SURFACE - 1 }, label: `${theme.name} tunnel` });
         enemies.push({ type: "piranha", x: ex0, y: SURFACE - 2 });

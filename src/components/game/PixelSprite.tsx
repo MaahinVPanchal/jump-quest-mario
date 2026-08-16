@@ -49,7 +49,7 @@ export type SpriteId =
   | "catBell"
   | "walker"
   | "shell"
-  | "flyer"
+  | "ogre"
   | "piranha"
   | "spiker"
   | "coin"
@@ -276,23 +276,23 @@ const SPRITES: Record<SpriteId, readonly string[]> = {
     "...WWW....WWW...",
     "................",
   ],
-  flyer: [
-    "................",
-    "................",
-    "...MM....MM.....",
-    "..MMMM..MMMM....",
-    ".MMMMMMMMMMMM...",
-    "MMMMWKMMKWMMMM..",
-    "MMMMWKMMKWMMMM..",
-    ".MMMMMMMMMMMM...",
-    "..MMMMMMMMMM....",
-    "...MMMMMMMM.....",
-    "....MMMMMM......",
-    "..WW.MMMM.WW....",
-    ".WWWW.MM.WWWW...",
-    "................",
-    "................",
-    "................",
+  ogre: [
+    "......GGGG......",
+    ".....GLLLLG.....",
+    "....GLGGGGLG....",
+    "...GGWKGGKWGG...",
+    "...GGGGGGGGGG...",
+    "...GGWWWWWWGG...",
+    "....GGWKKWGG....",
+    "..GGGGGGGGGGGG..",
+    ".GGGGGGGGGGGGGG.",
+    "GGGGGGWWWWGGGGGG",
+    "GGGGGGWKKWGGGGGG",
+    ".GG.GGGGGGGG.GG.",
+    "....GGGGGGGG....",
+    "...GGGG..GGGG...",
+    "..GGGG....GGGG..",
+    "..GGG......GGG..",
   ],
   piranha: [
     "................",

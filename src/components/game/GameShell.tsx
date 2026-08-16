@@ -83,14 +83,14 @@ const ENEMY_CARDS: EnemyCard[] = [
     tip: "Kick a shell down a lane of Sprout Walkers for a rapid score chain — it also clears Emberjaw Blooms.",
   },
   {
-    id: "flyer",
-    key: "flyer",
-    text: "Hovers in a wave pattern. Time your jump or use fire.",
+    id: "ogre",
+    key: "ogre",
+    text: "Armoured club ogre. Two stomps — the first only enrages it.",
     behaviour:
-      "Drifts at 60 px/s along a 160 px sine wave, ignoring the ground entirely, so it crosses gaps and pits.",
-    counters: ["Stomp at the top of its dip", "Fire ember — safest option"],
-    danger: "It can drift into you mid-jump, over pits where a knockback means a fall.",
-    tip: "Wait for the low point of the wave and stomp; the bounce carries you over the following gap.",
+      "Marches at 66 px/s over a 140 px beat, turning at ledges and walls. One stomp cracks its hide and it charges 60% faster; the second stomp fells it for 400 points.",
+    counters: ["Two stomps in a row", "One fire ember", "A sliding shell drops it instantly"],
+    danger: "It is bigger and heavier than a walker, so an enraged brute closes gaps fast and can corner you on narrow shelves.",
+    tip: "Stomp once, land ahead of it, then turn and stomp again on the rebound — or just save a shell for it.",
   },
   {
     id: "piranha",

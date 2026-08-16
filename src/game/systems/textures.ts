@@ -379,29 +379,37 @@ export function buildTextures(scene: Phaser.Scene): void {
   make(scene, "piranha_0", 32, 48, (ctx) => paint(ctx, [...piranhaHead(true), ...piranhaStem], 2), false);
   make(scene, "piranha_1", 32, 48, (ctx) => paint(ctx, [...piranhaHead(false), ...piranhaStem], 2), false);
 
-  const flyer = (ctx: Ctx, up: boolean): void => {
-    ctx.fillStyle = hex(0xe4c2ff);
-    ctx.beginPath();
-    ctx.ellipse(6, up ? 10 : 20, 8, 5, up ? -0.6 : 0.6, 0, Math.PI * 2);
-    ctx.ellipse(26, up ? 10 : 20, 8, 5, up ? 0.6 : -0.6, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = hex(COLORS.flyer);
-    ctx.beginPath();
-    ctx.arc(16, 16, 10, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = hex(0xfdf6ff);
-    ctx.beginPath();
-    ctx.arc(12, 14, 3, 0, Math.PI * 2);
-    ctx.arc(20, 14, 3, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = hex(0x1d2430);
-    ctx.beginPath();
-    ctx.arc(12.6, 14, 1.5, 0, Math.PI * 2);
-    ctx.arc(20.6, 14, 1.5, 0, Math.PI * 2);
-    ctx.fill();
+  // Grimtusk Brute: a heavy club-swinging ogre that replaces the old flyer.
+  const OGRE_PAL: Record<string, string> = {
+    G: "#3ca03c",
+    g: "#1c601c",
+    L: "#68c850",
+    Y: "#d8b83c",
+    h: "#8c5a2c",
+    j: "#5c3418",
+    W: "#ffffff",
+    K: "#000000",
   };
-  make(scene, "flyer_0", 32, 32, (ctx) => flyer(ctx, true));
-  make(scene, "flyer_1", 32, 32, (ctx) => flyer(ctx, false));
+  const ogreRows = (step: boolean): string[] => [
+    step ? "......gggg...hh." : "......gggg..hh..",
+    step ? ".....gLLLLg..hhh" : ".....gLLLLg.hhh.",
+    step ? "....gLGGGGLg.hhh" : "....gLGGGGLg.hh.",
+    "...gGWKGGKWGg.j.",
+    "...gGGGGGGGGg.j.",
+    "...gGWWWWWWGg.G.",
+    "....gGWKKWGg.GG.",
+    "..ggGGGGGGGGgGg.",
+    ".gGGLGGGGGGLGGg.",
+    "gGGgGGYYYYGGgGGg",
+    "gGGgGGYWWYGGgGGg",
+    ".gg.gGGGGGGg.gg.",
+    "....gGGgGGg.....",
+    step ? "...gGGg.gGGg...." : "..gGGg...gGGg...",
+    step ? "..gGGg...gGGg..." : ".gGGg.....gGGg..",
+    step ? "..ggg.....ggg..." : ".ggg.......ggg..",
+  ];
+  make(scene, "ogre_0", 32, 32, (ctx) => paint(ctx, ogreRows(false), 2, 0, 0, OGRE_PAL), false);
+  make(scene, "ogre_1", 32, 32, (ctx) => paint(ctx, ogreRows(true), 2, 0, 0, OGRE_PAL), false);
 
   // ---- items ----
   for (let i = 0; i < 4; i++) {

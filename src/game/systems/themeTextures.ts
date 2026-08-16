@@ -329,6 +329,24 @@ function buildBoss(scene: Phaser.Scene, t: StageTheme): void {
         block(18, 44, 10, 14, dark);
         block(36, 44, 10, 14, dark);
         break;
+      case "ogre":
+        block(14, 2, 34, 22, dark); // head
+        block(17, 5, 28, 16, body);
+        block(12, 0, 6, 8, "#ffffff"); // horns
+        block(44, 0, 6, 8, "#ffffff");
+        block(20, 10, 8, 6, "#ffffff"); // eyes
+        block(34, 10, 8, 6, "#ffffff");
+        block(22, 12, 4, 4, "#000000");
+        block(36, 12, 4, 4, "#000000");
+        block(22, 20, 4, 5, "#ffffff"); // tusks
+        block(38, 20, 4, 5, "#ffffff");
+        block(0, 22, 12, 12, hex(0x8c5a2c)); // raised club
+        block(4, 32, 6, 16, hex(0x5c3418));
+        block(50, 26, 12, 22, body); // free arm
+        block(22, 34, 20, 10, trim); // skull belt
+        block(18, 52, 12, 10, dark); // legs
+        block(34, 52, 12, 10, dark);
+        break;
       case "fish":
         block(14, 8, 36, 18, dark);
         block(17, 11, 30, 12, body);
