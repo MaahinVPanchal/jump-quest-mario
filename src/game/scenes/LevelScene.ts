@@ -556,6 +556,7 @@ export class LevelScene extends Phaser.Scene {
   }
 
   private emitHud(): void {
+    console.log("HUDEMIT", GameEvent.HudUpdate);
     this.game.events.emit(GameEvent.HudUpdate, {
       coins: gameState.coins,
       score: gameState.score,

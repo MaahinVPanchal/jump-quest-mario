@@ -92,6 +92,7 @@ export class HudScene extends Phaser.Scene {
       .setOrigin(0.5)
       .setAlpha(0);
 
+    console.log("HUDBIND", GameEvent.HudUpdate);
     this.game.events.on(GameEvent.HudUpdate, this.onUpdate, this);
     this.game.events.on(GameEvent.Toast, this.showToast, this);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
