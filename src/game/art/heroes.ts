@@ -534,6 +534,9 @@ export const HERO_SOURCE_GRID: number = 16;
  */
 export const HERO_GRID: number = 32;
 
+/** Output pixels per grid cell in the generated hero textures (painted look). */
+export const HERO_PX: number = 4;
+
 /** Darker companion for each colour, used by the auto-shading pass. */
 const SHADE_OF: Record<string, string> = { "1": "2", "3": "4", S: "s", X: "x", "5": "5", W: "2" };
 
