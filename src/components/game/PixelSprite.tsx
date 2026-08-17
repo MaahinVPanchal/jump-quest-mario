@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { HERO_ART, HERO_GRID, heroPose, type HeroPose, type HeroRig } from "@/game/art/heroes";
+import { paintPainted } from "@/game/art/render";
 
 /** Shared NES-ish palette for the React-side roster art. */
 const PALETTE: Record<string, string> = {
