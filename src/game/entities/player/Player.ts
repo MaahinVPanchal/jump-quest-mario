@@ -47,6 +47,13 @@ export class Player {
   private animTime = 0;
   private animFrame = 0;
   private landUntil = 0;
+  /** Base uniform scale for the current form; squash/stretch multiplies it. */
+  private baseScale = 1;
+  private sx = 1;
+  private sy = 1;
+  private targetSx = 1;
+  private targetSy = 1;
+  private bob = 0;
   private attackUntil = 0;
   private transforming = false;
   readonly character: CharacterData;
@@ -75,11 +82,16 @@ export class Player {
       onJump: () => {
         audio.play("jump");
         this.dust(6);
+        // Anticipation: stretch tall on take-off, then ease back to neutral.
+        this.sx = 0.82;
+        this.sy = 1.22;
       },
       onLand: () => {
         audio.play("land");
         this.dust(8);
-        this.landUntil = this.scene.time.now + 120;
+        this.landUntil = this.scene.time.now + 150;
+        this.sx = 1.26;
+        this.sy = 0.76;
       },
     };
     this.movement = new MovementController(this.host, input);
@@ -93,7 +105,8 @@ export class Player {
     // hero exactly the same size on screen at any detail level.
     const density = (HERO_GRID * HERO_PX) / 32;
     const scale = (SCALE[state] * (this.character?.sizeScale ?? 1)) / density;
-    this.sprite.setScale(scale);
+    this.baseScale = scale;
+    this.sprite.setScale(scale * this.sx, scale * this.sy);
     this.sprite.body?.setSize(20 * density, 30 * density);
     (this.sprite.body as Phaser.Physics.Arcade.Body).setOffset(6 * density, 18 * density);
     if (this.movement) {
