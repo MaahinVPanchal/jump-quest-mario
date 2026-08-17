@@ -47,6 +47,13 @@ export class Player {
   private animTime = 0;
   private animFrame = 0;
   private landUntil = 0;
+  /** Base uniform scale for the current form; squash/stretch multiplies it. */
+  private baseScale = 1;
+  private sx = 1;
+  private sy = 1;
+  private targetSx = 1;
+  private targetSy = 1;
+  private bob = 0;
   private attackUntil = 0;
   private transforming = false;
   readonly character: CharacterData;
@@ -75,11 +82,16 @@ export class Player {
       onJump: () => {
         audio.play("jump");
         this.dust(6);
+        // Anticipation: stretch tall on take-off, then ease back to neutral.
+        this.sx = 0.82;
+        this.sy = 1.22;
       },
       onLand: () => {
         audio.play("land");
         this.dust(8);
-        this.landUntil = this.scene.time.now + 120;
+        this.landUntil = this.scene.time.now + 150;
+        this.sx = 1.26;
+        this.sy = 0.76;
       },
     };
     this.movement = new MovementController(this.host, input);
@@ -93,7 +105,8 @@ export class Player {
     // hero exactly the same size on screen at any detail level.
     const density = (HERO_GRID * HERO_PX) / 32;
     const scale = (SCALE[state] * (this.character?.sizeScale ?? 1)) / density;
-    this.sprite.setScale(scale);
+    this.baseScale = scale;
+    this.sprite.setScale(scale * this.sx, scale * this.sy);
     this.sprite.body?.setSize(20 * density, 30 * density);
     (this.sprite.body as Phaser.Physics.Arcade.Body).setOffset(6 * density, 18 * density);
     if (this.movement) {
@@ -217,36 +230,68 @@ export class Player {
     this.animate(time, delta);
   }
 
-  /** NES four-frame run cycle plus dedicated jump / fall / landing poses. */
+  /** Painted animation set: idle bob, speed-driven run, jump/fall, landing squash. */
   private animate(time: number, delta: number): void {
     const s = this.movement.state;
+    const body = this.sprite.body as Phaser.Physics.Arcade.Body;
+    const vx = body.velocity.x;
+    const vy = body.velocity.y;
+    this.targetSx = 1;
+    this.targetSy = 1;
+
     // Weapon poses win over everything except death: the swing must be visible.
     if (time < this.attackUntil) {
       const frame = Math.min(2, Math.floor((240 - (this.attackUntil - time)) / 80));
-      return void this.sprite.setTexture(`${this.prefix}_attack_${frame}`);
-    }
-    if (s === "jump") return void this.sprite.setTexture(`${this.prefix}_jump`);
-    if (s === "fall") return void this.sprite.setTexture(`${this.prefix}_fall`);
-    if (s === "hurt") return void this.sprite.setTexture(`${this.prefix}_hurt`);
-    if (time < this.landUntil) return void this.sprite.setTexture(`${this.prefix}_land`);
-    if (s === "walk" || s === "run") {
+      this.sprite.setTexture(`${this.prefix}_attack_${frame}`);
+      this.targetSx = 1.04;
+      this.targetSy = 0.98;
+    } else if (s === "hurt") {
+      this.sprite.setTexture(`${this.prefix}_hurt`);
+    } else if (s === "jump" || s === "fall" || !body.blocked.down) {
+      // Airborne: stretch while rising, flatten slightly as the fall accelerates.
+      const rising = vy < -20;
+      this.sprite.setTexture(`${this.prefix}_${rising ? "jump" : "fall"}`);
+      const t = Phaser.Math.Clamp(Math.abs(vy) / 620, 0, 1);
+      this.targetSy = rising ? 1 + t * 0.12 : 1 + t * 0.08;
+      this.targetSx = rising ? 1 - t * 0.1 : 1 - t * 0.06;
+    } else if (time < this.landUntil) {
+      this.sprite.setTexture(`${this.prefix}_land`);
+    } else if (s === "walk" || s === "run") {
       // Skid frame while turning against momentum, like the classic slide-stop.
-      const vx = (this.sprite.body as Phaser.Physics.Arcade.Body).velocity.x;
       if (Math.abs(vx) > 60 && Math.sign(vx) !== this.facing) {
-        return void this.sprite.setTexture(`${this.prefix}_skid`);
+        this.sprite.setTexture(`${this.prefix}_skid`);
+        this.targetSx = 1.1;
+        this.targetSy = 0.94;
+      } else {
+        // Cadence follows real speed so footfalls never slide.
+        const speed = Math.min(Math.abs(vx), 400);
+        this.animTime += delta * (0.5 + speed / 190);
+        if (this.animTime > 78) {
+          this.animTime -= 78;
+          this.animFrame = (this.animFrame + 1) % 4;
+        }
+        this.sprite.setTexture(`${this.prefix}_walk_${this.animFrame}`);
+        // Gentle vertical pulse on the contact frames gives the run weight.
+        const step = this.animFrame % 2 === 0 ? 1 : -1;
+        this.targetSy = 1 + step * 0.03 * (speed / 400);
+        this.targetSx = 1 - step * 0.03 * (speed / 400);
       }
-      this.animTime += delta * (s === "run" ? 1.8 : 1);
-      if (this.animTime > 70) {
-        this.animTime = 0;
-        this.animFrame = (this.animFrame + 1) % 4;
-      }
-      this.sprite.setTexture(`${this.prefix}_walk_${this.animFrame}`);
-      return;
+    } else {
+      // Idle breathing cycle so heroes never look frozen.
+      this.animFrame = 0;
+      this.animTime += delta;
+      if (this.animTime > 1400) this.animTime = 0;
+      this.sprite.setTexture(this.animTime > 1100 ? `${this.prefix}_idle2` : `${this.prefix}_idle`);
+      this.bob += delta / 620;
+      const breath = Math.sin(this.bob) * 0.018;
+      this.targetSy = 1 + breath;
+      this.targetSx = 1 - breath * 0.6;
     }
-    // Idle breathing cycle so heroes never look frozen.
-    this.animFrame = 0;
-    this.animTime += delta;
-    if (this.animTime > 1400) this.animTime = 0;
-    this.sprite.setTexture(this.animTime > 1100 ? `${this.prefix}_idle2` : `${this.prefix}_idle`);
+
+    // Critically-damped-ish easing keeps every transition smooth, never poppy.
+    const k = 1 - Math.pow(0.001, delta / 1000);
+    this.sx += (this.targetSx - this.sx) * k;
+    this.sy += (this.targetSy - this.sy) * k;
+    this.sprite.setScale(this.baseScale * this.sx, this.baseScale * this.sy);
   }
 }
