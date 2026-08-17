@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { HERO_ART, HERO_GRID, heroPose, type HeroPose, type HeroRig } from "@/game/art/heroes";
+import { paintPainted } from "@/game/art/render";
 
 /** Shared NES-ish palette for the React-side roster art. */
 const PALETTE: Record<string, string> = {
@@ -512,17 +513,9 @@ export function HeroSprite({
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-    ctx.imageSmoothingEnabled = false;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     const palette = HERO_ART[rig].palette as unknown as Record<string, string>;
-    heroPose(rig, pose).forEach((row, y) => {
-      for (let x = 0; x < row.length; x++) {
-        const fill = palette[row[x] as string];
-        if (!fill) continue;
-        ctx.fillStyle = fill;
-        ctx.fillRect(x * px, y * px, px, px);
-      }
-    });
+    paintPainted(ctx, heroPose(rig, pose), palette, canvas.width);
   }, [rig, pose, px]);
 
   const size = HERO_GRID * px;
@@ -533,7 +526,7 @@ export function HeroSprite({
       width={size}
       height={size}
       className={className}
-      style={{ imageRendering: "pixelated", width: display, height: display }}
+      style={{ width: display, height: display }}
       aria-hidden
     />
   );

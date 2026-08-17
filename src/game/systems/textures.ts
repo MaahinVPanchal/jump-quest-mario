@@ -106,10 +106,11 @@ function paint(
   });
 }
 
-import { HERO_ART, HERO_GRID, HERO_POSES, heroPose, type HeroPose } from "../art/heroes";
+import { HERO_ART, HERO_GRID, HERO_PX, HERO_POSES, heroPose, type HeroPose } from "../art/heroes";
+import { paintPainted } from "../art/render";
 
 /** Hero textures scale with the authored grid density (see HERO_GRID). */
-const HERO_TEX_W = HERO_GRID * 2;
+const HERO_TEX_W = HERO_GRID * HERO_PX;
 const HERO_TEX_H = Math.round(HERO_TEX_W * 1.5);
 
 export type { HeroPose };
@@ -219,16 +220,18 @@ export function buildTextures(scene: Phaser.Scene): void {
         HERO_TEX_W,
         HERO_TEX_H,
         (ctx) =>
-          paint(
+          paintPainted(
             ctx,
             heroPose(character.rig, pose),
-            2,
+            art.palette as unknown as Record<string, string>,
+            HERO_TEX_W,
             0,
             HERO_TEX_H - HERO_TEX_W,
-            art.palette as unknown as Record<string, string>,
           ),
         false,
       );
+      // Painted heroes are filtered, not nearest-sampled, so curves stay smooth.
+      scene.textures.get(`${character.spritePrefix}_${poseKey(pose)}`).setFilter(1);
     }
   }
 
