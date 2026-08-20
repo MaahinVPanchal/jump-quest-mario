@@ -8,7 +8,7 @@ const beatableEnemies = (level: LevelData): number[] =>
 
 function coinObjective(level: LevelData): LevelObjective {
   // 60% of what the stage actually contains, so the target is always fair.
-  const target = Math.max(5, Math.round(countCoins(level) * 0.6));
+  const target = Math.max(1, Math.min(countCoins(level), Math.round(countCoins(level) * 0.6)));
   return {
     type: "COIN_TARGET",
     target,
@@ -51,6 +51,7 @@ const secretObjective: LevelObjective = {
  */
 export function assignObjectives(level: LevelData): LevelData {
   if (level.objectives) return level;
+  const coinsAvailable = countCoins(level);
   const identity = (level.identity ?? "").toLowerCase();
   const hasWater = (level.zones ?? []).some((z) => z.kind === "water" || z.kind === "current");
   const secondary: LevelObjective[] = [];
@@ -75,12 +76,12 @@ export function assignObjectives(level: LevelData): LevelData {
     };
     secondary.push(coinObjective(level));
   } else if (hasWater && !identity.includes("water")) {
-    primary = coinObjective(level);
+    primary = coinsAvailable >= 8 ? coinObjective(level) : timeObjective(level, 0.5);
     secondary.push(timeObjective(level, 0.5));
   } else {
     switch (level.level % 3) {
       case 1:
-        primary = coinObjective(level);
+        primary = coinsAvailable >= 8 ? coinObjective(level) : defeatObjective(level);
         secondary.push(timeObjective(level, 0.5));
         break;
       case 2:
@@ -93,6 +94,9 @@ export function assignObjectives(level: LevelData): LevelData {
     }
   }
 
+  const usable = secondary.filter((o) => o.type !== "COIN_TARGET" || coinsAvailable >= 8);
+  secondary.length = 0;
+  secondary.push(...usable);
   if (level.secretZone) secondary.push(secretObjective);
   const objectives: LevelObjectives = { primary, ...(secondary.length ? { secondary } : {}) };
   return { ...level, objectives, requiredEnemies: beatableEnemies(level) };

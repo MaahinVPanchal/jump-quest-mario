@@ -74,7 +74,7 @@ function placeLedge(level: LevelData, x: number, y: number, w: number): void {
  * the main route sits inside the movement envelope. Anything outside it is
  * repaired by inserting a stepping platform rather than shipping a dead end.
  */
-export function validateLevel(level: LevelData, profile: MovementProfile = BASELINE_PROFILE): LevelReport {
+function repairPass(level: LevelData, profile: MovementProfile): LevelReport {
   const issues: LevelIssue[] = [];
   const maxGap = profile.safeJumpDistanceTiles;
   const maxStep = profile.safeJumpHeightTiles;
@@ -126,12 +126,18 @@ export function validateLevel(level: LevelData, profile: MovementProfile = BASEL
     if (rise <= 0) continue;
     tallestStep = Math.max(tallestStep, rise);
     if (rise <= maxStep) continue;
-    // Insert a mid-height shelf just before the wall.
-    const shelfY = cur + Math.floor(rise / 2);
-    placeLedge(level, cx - 3, shelfY, 3);
+    // Build a short staircase of shelves so the wall is climbable in steps.
+    const shelves = Math.ceil(rise / maxStep) - 1;
+    for (let i = 1; i <= shelves; i++) {
+      const shelfY = cur + maxStep * i;
+      const shelfX = cx - 1 - i * 3;
+      if (shelfX < 1 || shelfY >= (prev ?? level.heightTiles)) continue;
+      if (solid(level, shelfX, shelfY) || solid(level, shelfX, shelfY - 1)) continue;
+      placeLedge(level, shelfX, shelfY, 3);
+    }
     issues.push({
       kind: "step-too-high",
-      detail: `${rise}-tile wall at x=${cx} (max ${maxStep}); added a shelf`,
+      detail: `${rise}-tile wall at x=${cx} (max ${maxStep}); added ${shelves} shelf/shelves`,
       repaired: true,
     });
   }
@@ -197,6 +203,21 @@ export function validateLevel(level: LevelData, profile: MovementProfile = BASEL
     issues,
     ok: issues.length === 0,
   };
+}
+
+/**
+ * Repairs until the geometry stops changing (a fix can expose a new edge case),
+ * then reports what is left. A converged level is guaranteed traversable.
+ */
+export function validateLevel(level: LevelData, profile: MovementProfile = BASELINE_PROFILE): LevelReport {
+  let report = repairPass(level, profile);
+  for (let i = 0; i < 4 && !report.ok; i++) {
+    const next = repairPass(level, profile);
+    if (next.issues.length === 0) return next;
+    if (next.issues.length >= report.issues.length && i > 1) return next;
+    report = next;
+  }
+  return report;
 }
 
 /** Dev analyzer: prints one line per level plus every repair that was applied. */
