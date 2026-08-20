@@ -132,7 +132,7 @@ export function stageComposition(level: LevelData): StageComposition {
   const blocks = bucket<BlockKind>(level.blocks as unknown as { [k: string]: unknown }[], "kind");
   const items = bucket<ItemKind>(level.items as unknown as { [k: string]: unknown }[], "type");
   const enemies = bucket<EnemyKind>(level.enemies as unknown as { [k: string]: unknown }[], "type");
-  const zones = bucket(level.zones as unknown as { [k: string]: unknown }[], "kind");
+  const zones = bucket((level.zones ?? []) as unknown as { [k: string]: unknown }[], "kind");
 
   const blockTotal = level.blocks.length;
   return {
@@ -158,7 +158,7 @@ export function stageComposition(level: LevelData): StageComposition {
 }
 
 export function heroReach(level: LevelData, hero: CharacterData): HeroReach {
-  const physics = WORLDS.find((w) => w.world === level.world)?.physics;
+  const physics = level.physics ?? WORLDS.find((w) => w.world === level.world)?.physics;
   const profile = buildMovementProfile(hero, physics);
   const a = analyzeLevelFor(level, profile);
   const route = traverse(level, profile);
