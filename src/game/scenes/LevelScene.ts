@@ -14,6 +14,8 @@ import { Enemy } from "../entities/Enemy";
 import { Block } from "../entities/Block";
 import { Collectible } from "../entities/Collectible";
 import { ObjectiveTracker } from "../systems/objectiveTracker";
+import { analyzeLevelFor } from "../systems/analyzer";
+import { buildMovementProfile } from "../systems/movementProfile";
 
 interface MovingPlatform {
   sprite: Phaser.Physics.Arcade.Image;
@@ -52,6 +54,10 @@ export class LevelScene extends Phaser.Scene {
   private lastCheckpointIndex = -1;
   private goalLocked = false;
   private objectives!: ObjectiveTracker;
+  private analyzerLayer?: Phaser.GameObjects.Graphics;
+  private analyzerLabels: Phaser.GameObjects.Text[] = [];
+  private analyzerLegend?: Phaser.GameObjects.Text;
+  private analyzerOn = false;
   private airJumpPip?: Phaser.GameObjects.Text;
   private controlHint?: Phaser.GameObjects.Text;
 
@@ -169,6 +175,7 @@ export class LevelScene extends Phaser.Scene {
     this.showReadyCard();
     this.setupTimer();
     this.setupDebug();
+    this.setupAnalyzer();
 
     this.scene.launch("Hud");
     this.emitHud();
@@ -1104,6 +1111,111 @@ export class LevelScene extends Phaser.Scene {
       text.destroy();
       if (!this.finished && !this.respawning) this.player.lockControls(false);
     });
+  }
+
+  // ------------------------------------------------------- level analyzer
+
+  /** F5 paints reachability for the CURRENT hero over the live level. */
+  private setupAnalyzer(): void {
+    this.analyzerOn = false;
+    this.analyzerLabels = [];
+    this.input.keyboard?.on("keydown-F5", (e: KeyboardEvent) => {
+      e.preventDefault();
+      this.analyzerOn = !this.analyzerOn;
+      if (this.analyzerOn) this.drawAnalyzer();
+      else this.clearAnalyzer();
+    });
+  }
+
+  private clearAnalyzer(): void {
+    this.analyzerLayer?.destroy();
+    this.analyzerLayer = undefined as unknown as Phaser.GameObjects.Graphics;
+    this.analyzerLegend?.destroy();
+    this.analyzerLegend = undefined as unknown as Phaser.GameObjects.Text;
+    for (const label of this.analyzerLabels) label.destroy();
+    this.analyzerLabels = [];
+  }
+
+  private drawAnalyzer(): void {
+    this.clearAnalyzer();
+    const character = CHARACTERS[gameState.characterId] ?? DEFAULT_CHARACTER;
+    const analysis = analyzeLevelFor(this.level, buildMovementProfile(character, this.profile));
+    const g = this.add.graphics().setDepth(180);
+    this.analyzerLayer = g;
+
+    const box = (x: number, y: number, w: number, h: number, color: number, alpha = 0.28) => {
+      g.fillStyle(color, alpha);
+      g.fillRect(x * TILE, y * TILE, w * TILE, h * TILE);
+      g.lineStyle(2, color, 0.95);
+      g.strokeRect(x * TILE, y * TILE, w * TILE, h * TILE);
+    };
+    const marker = (x: number, y: number, color: number) => {
+      g.lineStyle(2, color, 1);
+      g.strokeRect(x * TILE + 2, y * TILE + 2, TILE - 4, TILE - 4);
+    };
+    const tag = (x: number, y: number, text: string, color: string) => {
+      this.analyzerLabels.push(
+        this.add
+          .text(x * TILE, y * TILE - 12, text, {
+            fontFamily: "monospace",
+            fontSize: "10px",
+            color,
+            backgroundColor: "rgba(0,0,0,0.65)",
+            padding: { x: 2, y: 1 },
+          })
+          .setDepth(181),
+      );
+    };
+
+    // Gaps: green = clearable by this hero, red = needs a platform/ability.
+    for (const gap of analysis.gaps) {
+      const color = gap.reachable ? 0x38d95a : 0xff3b30;
+      const top = Math.max(0, gap.y);
+      box(gap.x0, top, gap.widthTiles, Math.min(4, this.level.heightTiles - top), color, 0.22);
+      tag(gap.x0, top, `${gap.widthTiles}t${gap.bridged ? " PLT" : ""}`, gap.reachable ? "#9dffb0" : "#ffb3ae");
+    }
+
+    // Coins / stars / relics and blocks.
+    for (const c of analysis.coins) marker(c.x, c.y, c.reachable ? 0xffd23f : 0xff3b30);
+    for (const b of analysis.blocks) marker(b.x, b.y, b.reachable ? 0x7ad1ff : 0xff3b30);
+
+    // Checkpoints and goal.
+    for (const cp of analysis.checkpoints) {
+      box(cp.x, cp.y - 2, 1, 3, cp.reachable ? 0x35e0d0 : 0xff3b30, 0.3);
+      tag(cp.x, cp.y - 2, "CP", cp.reachable ? "#9ff7ef" : "#ffb3ae");
+    }
+    box(analysis.goal.x, analysis.goal.y - 3, 1, 4, analysis.goal.reachable ? 0xffffff : 0xff3b30, 0.25);
+    tag(analysis.goal.x, analysis.goal.y - 3, "GOAL", "#ffffff");
+
+    if (analysis.secret) {
+      const s = analysis.secret;
+      box(s.x, s.y, s.w, s.h, s.reachable ? 0xc46bff : 0xff3b30, 0.3);
+      tag(s.x, s.y, s.label.toUpperCase(), s.reachable ? "#e5c2ff" : "#ffb3ae");
+    }
+
+    const sum = analysis.summary;
+    this.analyzerLegend = this.add
+      .text(
+        12,
+        VIEW.height - 86,
+        [
+          `ANALYZER — ${character.name} @ ${this.level.id}`,
+          `jump ${sum.maxGap}t wide / ${sum.maxHeight}t high`,
+          `gaps ${sum.gaps} (blocked ${sum.blockedGaps}, widest ${sum.widestGap}t)`,
+          `pickups ${sum.coins} (out of reach ${sum.unreachableCoins})`,
+          "green=clearable red=blocked yellow=coin blue=block purple=secret",
+        ].join("\n"),
+        {
+          fontFamily: "monospace",
+          fontSize: "11px",
+          color: "#eaf2ff",
+          backgroundColor: "rgba(6,10,24,0.82)",
+          padding: { x: 6, y: 4 },
+          lineSpacing: 2,
+        },
+      )
+      .setScrollFactor(0)
+      .setDepth(220);
   }
 
   private setupDebug(): void {

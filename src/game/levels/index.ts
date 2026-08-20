@@ -1,6 +1,7 @@
 import type { LevelData } from "../types";
 import { buildCampaign } from "./campaign";
 import { assignObjectives } from "./objectives";
+import { applyBrickDifficulty } from "./brickDifficulty";
 import { analyzeLevels } from "./validate";
 import { WORLDS, getWorld } from "./worlds";
 
@@ -12,7 +13,7 @@ export const WORLD_SIZES = [4, 4, 4, 4, 4, 4, 4, 4];
  * before it is handed to the game, then given data-driven objectives.
  */
 function prepareCampaign(): LevelData[] {
-  const raw = buildCampaign();
+  const raw = buildCampaign().map(applyBrickDifficulty);
   analyzeLevels(raw);
   return raw.map(assignObjectives);
 }
