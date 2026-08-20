@@ -21,8 +21,14 @@ export class LevelCompleteScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
 
+    const objectiveRows: [string, string][] = (result?.objectives ?? []).map((o) => [
+      `Objective - ${o.label}`,
+      o.complete ? `${o.value}  CLEAR` : `${o.value}  MISSED`,
+    ]);
+
     const rows: [string, string][] = result
       ? [
+          ...objectiveRows,
           ["Time taken", `${result.timeTaken}s`],
           ["Time bonus", `${result.timeLeft * 50}`],
           ["Coins", `${result.coins}`],

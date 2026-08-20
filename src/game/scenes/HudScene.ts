@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import { VIEW } from "../config";
 import { GameEvent } from "../systems/events";
+import type { ObjectiveProgress } from "../types";
 import {
   formatCoins,
   formatCombo,
@@ -22,6 +23,7 @@ interface HudPayload {
   relics: number;
   stars: number;
   starsRequired: number;
+  objectives: ObjectiveProgress[];
 }
 
 // Arcade-era HUD: monospace caps, hard black shadow, no chrome.
@@ -51,6 +53,7 @@ export class HudScene extends Phaser.Scene {
   private stars!: Phaser.GameObjects.Text;
   private starsLabel!: Phaser.GameObjects.Text;
   private combo!: Phaser.GameObjects.Text;
+  private objective!: Phaser.GameObjects.Text;
   private toast!: Phaser.GameObjects.Text;
   private displayedScore = 0;
   private targetScore = 0;
@@ -82,7 +85,12 @@ export class HudScene extends Phaser.Scene {
     this.timeText = col(4, "TIME");
     this.lives = col(5, "LIVES");
 
-    this.combo = this.add.text(VIEW.width / 2, 84, "", { ...VALUE, color: "#fcd83c" }).setOrigin(0.5, 0);
+    this.objective = this.add
+      .text(VIEW.width / 2, 84, "", { ...LABEL, fontSize: "18px", color: "#9ae6b4" })
+      .setOrigin(0.5, 0);
+    this.objective.setShadow(3, 3, "#000000", 0, true, true);
+
+    this.combo = this.add.text(VIEW.width / 2, 110, "", { ...VALUE, color: "#fcd83c" }).setOrigin(0.5, 0);
     this.combo.setShadow(3, 3, "#000000", 0, true, true);
     this.toast = this.add
       .text(VIEW.width / 2, VIEW.height - 90, "", {
@@ -113,6 +121,21 @@ export class HudScene extends Phaser.Scene {
     const showStars = data.starsRequired > 0;
     this.stars.setVisible(showStars).setText(formatStars(data.stars, data.starsRequired));
     this.starsLabel?.setVisible(showStars);
+    this.renderObjectives(data.objectives ?? []);
+  }
+
+  /** One compact line: "OBJ COINS 12/20  ·  BEAT 180" — always caps, always padded. */
+  private renderObjectives(list: ObjectiveProgress[]): void {
+    if (!list.length) {
+      this.objective.setVisible(false);
+      return;
+    }
+    const text = list.map((o) => `${o.label} ${o.value}`).join("   ");
+    const primary = list[0]!;
+    this.objective
+      .setVisible(true)
+      .setText(text)
+      .setColor(primary.failed ? "#ff8080" : primary.complete ? "#9ae6b4" : "#fcfcfc");
   }
 
   private showToast(message: string): void {
