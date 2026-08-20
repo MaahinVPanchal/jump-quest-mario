@@ -40,7 +40,7 @@ export interface HeroClearance {
 }
 
 function stageReport(character: CharacterData, level: LevelData): StageClearance {
-  const world = WORLDS.find((w) => w.id === level.world);
+  const world = WORLDS.find((w) => w.world === level.world);
   const profile = buildMovementProfile(character, world?.physics);
   const a = analyzeLevelFor(level, profile);
   const issues = a.gaps
