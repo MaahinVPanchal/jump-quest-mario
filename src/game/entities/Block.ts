@@ -7,7 +7,18 @@ const TEXTURE: Record<BlockKind, string> = {
   brick: "block_brick",
   hidden: "block_question",
   metal: "block_metal",
+  bounce: "block_metal",
+  falling: "block_brick",
+  ice: "block_brick",
 };
+
+/** Tints that let the shared block art read as distinct block types. */
+const BLOCK_TINT: Partial<Record<BlockKind, number>> = {
+  bounce: 0x6ee87f,
+  falling: 0xb08050,
+  ice: 0x9ce8ff,
+};
+
 
 /** Question / brick / hidden / metal blocks share one body with data-driven behaviour. */
 export class Block extends Phaser.Physics.Arcade.Sprite {
@@ -26,6 +37,8 @@ export class Block extends Phaser.Physics.Arcade.Sprite {
     scene.add.existing(this);
     scene.physics.add.existing(this, true);
     this.setDepth(10);
+    const tint = BLOCK_TINT[this.kind];
+    if (tint) this.setTint(tint);
     this.setVisible(this.revealed);
     if (!this.revealed) {
       const body = this.body as Phaser.Physics.Arcade.StaticBody;
@@ -49,7 +62,32 @@ export class Block extends Phaser.Physics.Arcade.Sprite {
 
   markEmpty(): void {
     this.used = true;
+    this.clearTint();
     this.setTexture("block_empty");
+  }
+
+  /** Falling block: shudders, then drops out of the level. */
+  fall(): void {
+    if (this.used) return;
+    this.used = true;
+    this.scene.tweens.add({
+      targets: this,
+      x: this.x + 2,
+      duration: 45,
+      yoyo: true,
+      repeat: 5,
+      onComplete: () => {
+        const body = this.body as Phaser.Physics.Arcade.StaticBody;
+        body.enable = false;
+        this.scene.tweens.add({
+          targets: this,
+          y: this.y + 480,
+          alpha: 0,
+          duration: 900,
+          onComplete: () => this.destroy(),
+        });
+      },
+    });
   }
 
   bumpAnimation(): void {

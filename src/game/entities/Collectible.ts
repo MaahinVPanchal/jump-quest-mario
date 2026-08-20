@@ -11,7 +11,28 @@ const TEXTURE: Record<ItemKind, string> = {
   banana: "item_banana",
   catBell: "item_bell",
   oneUp: "item_oneup",
+  aquaPearl: "item_orb",
+  wingSeed: "item_orb",
+  emberCore: "item_crystal",
+  frostCrystal: "item_crystal",
+  gravityOrb: "item_orb",
+  shieldCore: "item_bell",
+  rushSpark: "item_crystal",
+  starFragment: "star",
 };
+
+/** Palette shift so each world power-up reads differently on the shared pixel rig. */
+const ITEM_TINT: Partial<Record<ItemKind, number>> = {
+  aquaPearl: 0x4fd8ff,
+  wingSeed: 0xd8ff8a,
+  emberCore: 0xff8a3c,
+  frostCrystal: 0x9ce8ff,
+  gravityOrb: 0xc08cff,
+  shieldCore: 0xffe066,
+  rushSpark: 0xff4fa3,
+  starFragment: 0xfff4a8,
+};
+
 
 /** Coins, relics and power-ups. Power-ups walk along the ground after spawning. */
 export class Collectible extends Phaser.Physics.Arcade.Sprite {
@@ -33,6 +54,8 @@ export class Collectible extends Phaser.Physics.Arcade.Sprite {
     scene.add.existing(this);
     scene.physics.add.existing(this);
     this.setDepth(12);
+    const tint = ITEM_TINT[this.kind];
+    if (tint) this.setTint(tint);
     const body = this.body as Phaser.Physics.Arcade.Body;
     body.setAllowGravity(false);
     body.setSize(this.width * 0.8, this.height * 0.8, true);

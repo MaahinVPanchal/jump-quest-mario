@@ -6,11 +6,11 @@ import type { SaveData } from "@/game/types";
 import PixelSprite, { type SpriteId } from "./PixelSprite";
 import { ENEMIES } from "@/game/data/enemies";
 import { CHARACTERS, ROSTER } from "@/game/data/characters";
-import { LEVELS } from "@/game/levels";
+import { LEVELS, WORLDS, isLevelUnlocked, levelsOfWorld } from "@/game/levels";
 
 const PhaserMount = lazy(() => import("./PhaserMount"));
 
-type Screen = "menu" | "roster" | "controls" | "playing";
+type Screen = "menu" | "roster" | "map" | "controls" | "playing";
 
 const CONTROLS: [string, string][] = [
   ["Move", "A / D or Left / Right"],
@@ -125,6 +125,7 @@ export default function GameShell() {
   const [save, setSave] = useState<SaveData | null>(null);
   const [activeSave, setActiveSave] = useState<SaveData | null>(null);
   const [characterId, setCharacterId] = useState("riko");
+  const [pickedLevelId, setPickedLevelId] = useState<string | null>(null);
 
   useEffect(() => {
     setSave(loadSlot(SAVE_SLOT));
@@ -132,7 +133,9 @@ export default function GameShell() {
 
   const completedLevels = save?.completedLevels ?? [];
   // Campaign flows automatically: drop straight into the first unfinished stage.
-  const nextLevel = LEVELS.find((l) => !completedLevels.includes(l.id)) ?? LEVELS[0]!;
+  const autoLevel = LEVELS.find((l) => !completedLevels.includes(l.id)) ?? LEVELS[0]!;
+  // A stage picked on the world map wins; otherwise resume the campaign.
+  const nextLevel = (pickedLevelId && LEVELS.find((l) => l.id === pickedLevelId)) || autoLevel;
 
   const play = useCallback(() => {
     const existing = loadSlot(SAVE_SLOT) ?? emptySave("Riko");
@@ -194,6 +197,7 @@ export default function GameShell() {
             <MenuButton primary onClick={() => setScreen("roster")}>
               Play
             </MenuButton>
+            <MenuButton onClick={() => setScreen("map")}>World map</MenuButton>
             <MenuButton onClick={() => setScreen("controls")}>Controls</MenuButton>
             <p className="mt-4 max-w-md text-center text-[9px] leading-5 text-nes-brick-dark">
               Original characters, art, music and sound. No third-party game assets are used.
@@ -345,6 +349,74 @@ export default function GameShell() {
               <p className="text-center text-[9px] leading-5 text-nes-brick-dark">
                 {completedLevels.length}/{LEVELS.length} stages cleared · next up {nextLevel.name}
               </p>
+              <MenuButton onClick={() => setScreen("map")}>Choose a stage</MenuButton>
+              <MenuButton onClick={() => setScreen("menu")}>Back</MenuButton>
+            </div>
+          </section>
+        )}
+
+        {screen === "map" && (
+          <section className="w-full space-y-5">
+            <h2 className="text-center text-xs uppercase tracking-[0.3em] text-nes-ink">
+              World map · {completedLevels.length}/{LEVELS.length} cleared
+            </h2>
+            {WORLDS.map((w) => (
+              <div
+                key={w.world}
+                className="border-4 border-nes-ink bg-nes-paper p-4 shadow-[6px_6px_0_0_var(--nes-ink)]"
+              >
+                <div className="flex flex-wrap items-baseline justify-between gap-2">
+                  <p className="text-[10px] uppercase tracking-widest text-nes-brick-dark">
+                    World {w.world} · {w.name}
+                  </p>
+                  <p className="text-[8px] uppercase tracking-widest text-nes-ink/70">
+                    Difficulty {w.difficulty}/8 · {w.buildSet} · Boss: {w.boss.name}
+                  </p>
+                </div>
+                <p className="mt-2 text-[9px] leading-5">{w.pitch}</p>
+                <p className="mt-1 text-[8px] uppercase tracking-widest text-nes-ink/70">
+                  Teaches: {w.teaches.join(" · ")}
+                </p>
+                <div className="mt-3 grid gap-2 sm:grid-cols-4">
+                  {levelsOfWorld(w.world).map((l) => {
+                    const unlocked = isLevelUnlocked(l.id, completedLevels);
+                    const cleared = completedLevels.includes(l.id);
+                    const stars = save?.levelStars?.[l.id] ?? 0;
+                    return (
+                      <button
+                        key={l.id}
+                        type="button"
+                        disabled={!unlocked}
+                        onClick={() => {
+                          setPickedLevelId(l.id);
+                          setScreen("roster");
+                        }}
+                        className={`border-4 border-nes-ink p-2 text-left transition ${
+                          !unlocked
+                            ? "cursor-not-allowed bg-nes-ink/20 opacity-60"
+                            : cleared
+                              ? "bg-nes-coin hover:brightness-110"
+                              : "bg-nes-paper hover:bg-nes-coin/60"
+                        } ${pickedLevelId === l.id ? "ring-4 ring-nes-brick-dark" : ""}`}
+                      >
+                        <p className="text-[9px] uppercase tracking-widest text-nes-brick-dark">
+                          {l.world}-{l.level} {l.boss ? "· BOSS" : ""}
+                        </p>
+                        <p className="mt-1 text-[8px] leading-4">{unlocked ? l.name : "LOCKED"}</p>
+                        <p className="mt-1 text-[8px] uppercase tracking-widest text-nes-ink/70">
+                          {cleared ? "CLEARED" : unlocked ? "OPEN" : "\u2716"}
+                          {l.starsRequired ? ` · ${stars}/${l.starsRequired}\u2605` : ""}
+                        </p>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+            <div className="flex flex-col items-center gap-3">
+              <MenuButton primary onClick={() => setScreen("roster")}>
+                Pick your hero
+              </MenuButton>
               <MenuButton onClick={() => setScreen("menu")}>Back</MenuButton>
             </div>
           </section>

@@ -24,6 +24,14 @@ export class MovementController {
   jumpScale = 1;
   private airJumpUsed = false;
   controlsLocked = false;
+  /** Environment modifiers (world profile + local zones). */
+  frictionScale = 1;
+  speedScale = 1;
+  envJumpScale = 1;
+  /** Water: repeatable strokes instead of grounded jumps. */
+  swimming = false;
+  /** Horizontal push from wind / current zones, px/s^2. */
+  windForce = 0;
   knockbackUntil = 0;
 
   constructor(
@@ -62,7 +70,7 @@ export class MovementController {
     const knocked = time < this.knockbackUntil;
     const axis = this.controlsLocked || knocked ? 0 : this.input.axisX();
     const running = this.input.isDown("RUN");
-    const maxSpeed = running ? MOVE.runSpeed : MOVE.walkSpeed;
+    const maxSpeed = (running ? MOVE.runSpeed : MOVE.walkSpeed) * this.speedScale;
 
     if (axis !== 0) {
       this.host.facing = axis;
@@ -71,14 +79,36 @@ export class MovementController {
       body.velocity.x += axis * accel * dt;
       body.velocity.x = Phaser.Math.Clamp(body.velocity.x, -maxSpeed, maxSpeed);
     } else if (!knocked) {
-      const friction = (grounded ? MOVE.groundFriction : MOVE.airFriction) * dt;
+      const friction = (grounded ? MOVE.groundFriction : MOVE.airFriction) * this.frictionScale * dt;
       if (Math.abs(body.velocity.x) <= friction) body.velocity.x = 0;
       else body.velocity.x -= Math.sign(body.velocity.x) * friction;
     }
 
+    if (this.windForce !== 0 && !this.controlsLocked) {
+      body.velocity.x = Phaser.Math.Clamp(
+        body.velocity.x + this.windForce * dt,
+        -maxSpeed * 1.6,
+        maxSpeed * 1.6,
+      );
+    }
+
+    // Water: JUMP is a repeatable swim stroke, capped so ascent stays gentle.
+    if (this.swimming) {
+      if (this.buffer > 0 && !this.controlsLocked) {
+        body.velocity.y = Math.max(-260, body.velocity.y - 230);
+        this.buffer = 0;
+        this.host.onJump();
+      }
+      if (this.state !== "hurt") {
+        this.state = Math.abs(body.velocity.x) > 8 ? "walk" : "idle";
+        if (!grounded && body.velocity.y < -10) this.state = "jump";
+      }
+      return;
+    }
+
     if (this.buffer > 0 && this.coyote > 0 && !this.controlsLocked) {
       const bonus = Math.abs(body.velocity.x) > MOVE.walkSpeed ? JUMP.runBonus : 0;
-      body.velocity.y = (JUMP.velocity + bonus) * this.jumpScale;
+      body.velocity.y = (JUMP.velocity + bonus) * this.jumpScale * this.envJumpScale;
       this.buffer = 0;
       this.coyote = 0;
       this.jumping = true;
@@ -90,7 +120,7 @@ export class MovementController {
       !grounded &&
       !this.controlsLocked
     ) {
-      body.velocity.y = JUMP.velocity * 0.86 * this.jumpScale;
+      body.velocity.y = JUMP.velocity * 0.86 * this.jumpScale * this.envJumpScale;
       this.buffer = 0;
       this.airJumpUsed = true;
       this.jumping = true;
