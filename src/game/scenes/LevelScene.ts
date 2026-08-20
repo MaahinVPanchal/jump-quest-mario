@@ -190,6 +190,7 @@ export class LevelScene extends Phaser.Scene {
       );
     }
     this.buildAbilityUi();
+    this.buildHiddenSonar();
     // The engine loop must never stay paused because of a stale hit-stop or a
     // window blur: guarantee physics is running whenever the scene resumes.
     this.events.on(Phaser.Scenes.Events.RESUME, () => this.physics.world.resume());
