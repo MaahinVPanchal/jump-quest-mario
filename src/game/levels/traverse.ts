@@ -33,7 +33,17 @@ export function standings(l: LevelData, x: number): number[] {
   for (let y = 0; y < l.heightTiles; y++) {
     if (isSolid(l, x, y) && !isSolid(l, x, y - 1) && clear(l, x, y - 1)) out.push(y - 1);
   }
-  for (const p of l.platforms) if (x >= p.x && x < p.x + p.widthTiles) out.push(p.y - 1);
+  // Moving platforms are standable anywhere along their travel.
+  for (const p of l.platforms) {
+    const dx = Math.round((p.dx ?? 0));
+    const dy = Math.round((p.dy ?? 0));
+    const x0 = Math.min(p.x, p.x + dx);
+    const x1 = Math.max(p.x, p.x + dx) + p.widthTiles - 1;
+    if (x < x0 || x > x1) continue;
+    const yA = Math.min(p.y, p.y + dy);
+    const yB = Math.max(p.y, p.y + dy);
+    for (let y = yA; y <= yB; y++) out.push(y - 1);
+  }
   return [...new Set(out)].sort((a, b) => a - b);
 }
 
