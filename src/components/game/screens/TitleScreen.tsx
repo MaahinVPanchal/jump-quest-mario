@@ -6,6 +6,7 @@ export default function TitleScreen({
   onPlay,
   onMap,
   onArchive,
+  onInspector,
   onControls,
   onSettings,
   playLabel,
@@ -14,6 +15,7 @@ export default function TitleScreen({
   onPlay: () => void;
   onMap: () => void;
   onArchive: () => void;
+  onInspector: () => void;
   onControls: () => void;
   onSettings: () => void;
   playLabel: string;
@@ -60,6 +62,9 @@ export default function TitleScreen({
           </PixelButton>
           <PixelButton block onClick={onSettings}>
             Settings
+          </PixelButton>
+          <PixelButton block className="col-span-2" onClick={onInspector}>
+            Stage inspector
           </PixelButton>
         </div>
       </PixelPanel>
