@@ -89,19 +89,30 @@ function w1_3(): LevelData {
 function w1_4(): LevelData {
   const b = new LevelBuilder(170);
   b.ground(0, 169);
-  b.ceiling(20, 150, 4, 2);
-  b.arch(24, b.surface - 1, 8, 6).arch(44, b.surface - 1, 8, 6);
+  // Fortress hall: a high ceiling that never traps the player against a wall.
+  b.ceiling(20, 150, 3, 2);
+  // Low gateways you hop through, each with a step-up brick on the approach.
+  b.arch(24, b.surface - 1, 4, 6).arch(44, b.surface - 1, 4, 6);
+  b.block("brick", 22, b.surface - 3).block("brick", 42, b.surface - 3);
   b.hazard(34, b.surface - 1, 2).hazard(56, b.surface - 1, 2);
   b.platform(64, b.surface - 5, 3, { dy: -5 }, 2000);
   b.checkpoint(70);
-  b.blockRow("metal", 80, b.surface - 5, 8);
+  b.blockRow("metal", 80, b.surface - 6, 8);
+  b.blockRow("brick", 88, b.surface - 3, 3);
   b.patrol(mix(1), 20, 110, 6);
   b.block("question", 76, b.surface - 4, "growthOrb");
-  b.fill(120, 121, b.surface - 8, b.surface - 1, T.STONE);
+  // Battlement before the arena: a climbable staircase, not a sheer wall.
+  b.stairs(118, b.surface - 1, 4, 1, T.STONE);
+  b.stairs(125, b.surface - 1, 4, -1, T.STONE);
+  b.coins(121, b.surface - 6, 3);
+  // Open arena floor for the guardian fight.
+  b.checkpoint(132);
   b.setBoss("guardian", "Meadow Guardian", 3, 146, b.surface - 3);
   b.goal = { x: 164, y: b.surface - 1 };
   return b.build({ world: 1, level: 4, name: "Emberleaf Fortress", identity: "fortress + boss", objective: "Defeat the Meadow Guardian", widthTiles: 170, timeLimit: 340 });
 }
+
+
 
 // ============================================================ WORLD 2
 // Vertical forest: climbs, hanging platforms, threats above and below.
