@@ -23,9 +23,9 @@ interface MovingPlatform {
 export class LevelScene extends Phaser.Scene {
   private level: LevelData = LEVELS[0]!;
   private profile: WorldPhysics = BASE_PHYSICS;
-  private boss?: Boss;
+  private boss: Boss | undefined;
   private bossShots!: Phaser.Physics.Arcade.Group;
-  private bossBar?: Phaser.GameObjects.Graphics;
+  private bossBar: Phaser.GameObjects.Graphics | undefined;
   private controls!: InputManager;
   private player!: Player;
   private terrain!: Phaser.Physics.Arcade.StaticGroup;
