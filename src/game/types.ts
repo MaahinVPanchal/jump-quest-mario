@@ -1,13 +1,80 @@
+/** The ten signature X-abilities. One per hero — never shared, never recoloured. */
+export type AbilityKind =
+  | "emberBurst"
+  | "bounceShot"
+  | "electricArc"
+  | "knifeThrow"
+  | "shield"
+  | "ninjaStar"
+  | "fireBurst"
+  | "frostShard"
+  | "windBlast"
+  | "groundSmash";
+
+/** Passives, one per hero. */
+export type PassiveKind =
+  | "emberResolve"
+  | "quickRecovery"
+  | "overcharge"
+  | "comboEdge"
+  | "armor"
+  | "airStep"
+  | "heat"
+  | "iceWalk"
+  | "glide"
+  | "heavyForce";
+
+/** Visual rig used for the hero silhouette (sprite + UI art). */
+export type HeroRig =
+  | "runner"
+  | "tech"
+  | "rogue"
+  | "armored"
+  | "ninja"
+  | "flame"
+  | "explorer"
+  | "winged"
+  | "heavy";
+
+export interface HeroMovement {
+  speedMul: number;
+  accelMul: number;
+  airControlMul: number;
+  jumpMul: number;
+  /** Hold jump while falling to glide (Aero). */
+  glide?: boolean;
+  /** Dash distance in px, 0 / absent = no dash. */
+  dashDistance?: number;
+  /** 0 = full knockback, 1 = immovable. */
+  knockbackResist?: number;
+  /** Keeps traction on ice (Frost). */
+  iceGrip?: boolean;
+}
+
 export interface CharacterData {
   id: string;
   name: string;
   /** Texture key prefix for this character's sprite set. */
   spritePrefix: string;
-  /** Short archetype label shown on the select screen. */
-  archetype?: string;
-  /** Signature move name, shown in caps on the select screen. */
-  special?: string;
+  /** Visual silhouette used by both the Phaser sprites and the React art. */
+  rig: HeroRig;
+  /** Role label shown on the select screen. */
+  role: string;
+  /** 1-5 stars. */
+  difficulty: number;
   blurb: string;
+  abilityName: string;
+  abilityDesc: string;
+  passiveName: string;
+  passiveDesc: string;
+  ability: AbilityKind;
+  passive: PassiveKind;
+  /** How this hero interacts with blocks / barriers. */
+  blockPower: string;
+  strengths: string[];
+  weaknesses: string[];
+  /** Display bars, 0-10. */
+  stats: { speed: number; jump: number; power: number; defense: number };
   speed: number;
   acceleration: number;
   jumpForce: number;
@@ -16,9 +83,7 @@ export interface CharacterData {
   projectileSpeed: number;
   canDoubleJump: boolean;
   canDash: boolean;
-  specialAbility: string;
-  /** Signature projectile thrown while powered up. */
-  throwable?: ThrowKind;
+  move: HeroMovement;
   /** Level id that must be cleared before this character is playable. */
   unlockedBy?: string;
   /** Palette overrides applied to the shared pixel rig. */
@@ -40,20 +105,9 @@ export interface EnemyData {
   weakness: string[];
 }
 
-export type ThrowKind =
-  | "ember"
-  | "banana"
-  | "claw"
-  | "hammer"
-  | "egg"
-  | "star"
-  | "pellet"
-  | "beam"
-  | "bubble"
-  | "shell"
-  | "shadow"
-  | "vine"
-  | "ice";
+/** Projectiles that exist in flight: hero abilities plus the two form throws. */
+export type ThrowKind = AbilityKind | "banana" | "claw";
+
 
 export type ItemKind =
   | "coin"
