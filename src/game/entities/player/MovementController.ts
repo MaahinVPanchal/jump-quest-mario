@@ -34,6 +34,24 @@ export class MovementController {
   windForce = 0;
   knockbackUntil = 0;
 
+  // ---- per-character identity (set from CharacterData.move) ----
+  speedMul = 1;
+  accelMul = 1;
+  airControlMul = 1;
+  charJumpMul = 1;
+  /** Aero: hold jump while falling for a slow descent. */
+  glideEnabled = false;
+  gliding = false;
+  /** 0 = normal knockback, 1 = immovable (Titan). */
+  knockbackResist = 0;
+  /** Frost keeps traction on slippery ground. */
+  iceGrip = false;
+  dashDistance = 0;
+  private dashUntil = 0;
+  private dashReadyAt = 0;
+  /** Shin's air step: one small mid-air nudge per jump, granted by attacking. */
+  private airStepBanked = false;
+
   constructor(
     private host: Host,
     private input: InputManager,
@@ -57,7 +75,10 @@ export class MovementController {
 
     if (grounded) this.coyote = JUMP.coyoteMs;
     else this.coyote = Math.max(0, this.coyote - deltaMs);
-    if (grounded) this.airJumpUsed = false;
+    if (grounded) {
+      this.airJumpUsed = false;
+      this.airStepBanked = false;
+    }
 
     if (this.input.justPressed("JUMP")) this.buffer = JUMP.bufferMs;
     else this.buffer = Math.max(0, this.buffer - deltaMs);
@@ -70,16 +91,19 @@ export class MovementController {
     const knocked = time < this.knockbackUntil;
     const axis = this.controlsLocked || knocked ? 0 : this.input.axisX();
     const running = this.input.isDown("RUN");
-    const maxSpeed = (running ? MOVE.runSpeed : MOVE.walkSpeed) * this.speedScale;
+    const maxSpeed = (running ? MOVE.runSpeed : MOVE.walkSpeed) * this.speedScale * this.speedMul;
 
     if (axis !== 0) {
       this.host.facing = axis;
       const turning = Math.sign(body.velocity.x) === -axis && body.velocity.x !== 0;
-      const accel = (grounded ? MOVE.groundAccel : MOVE.airAccel) * (turning ? MOVE.turnBoost : 1);
+      const accel =
+        (grounded ? MOVE.groundAccel * this.accelMul : MOVE.airAccel * this.airControlMul) *
+        (turning ? MOVE.turnBoost : 1);
       body.velocity.x += axis * accel * dt;
       body.velocity.x = Phaser.Math.Clamp(body.velocity.x, -maxSpeed, maxSpeed);
     } else if (!knocked) {
-      const friction = (grounded ? MOVE.groundFriction : MOVE.airFriction) * this.frictionScale * dt;
+      const slip = this.iceGrip ? Math.max(this.frictionScale, 0.9) : this.frictionScale;
+      const friction = (grounded ? MOVE.groundFriction : MOVE.airFriction) * slip * dt;
       if (Math.abs(body.velocity.x) <= friction) body.velocity.x = 0;
       else body.velocity.x -= Math.sign(body.velocity.x) * friction;
     }
@@ -108,7 +132,7 @@ export class MovementController {
 
     if (this.buffer > 0 && this.coyote > 0 && !this.controlsLocked) {
       const bonus = Math.abs(body.velocity.x) > MOVE.walkSpeed ? JUMP.runBonus : 0;
-      body.velocity.y = (JUMP.velocity + bonus) * this.jumpScale * this.envJumpScale;
+      body.velocity.y = (JUMP.velocity + bonus) * this.jumpScale * this.envJumpScale * this.charJumpMul;
       this.buffer = 0;
       this.coyote = 0;
       this.jumping = true;
@@ -120,11 +144,22 @@ export class MovementController {
       !grounded &&
       !this.controlsLocked
     ) {
-      body.velocity.y = JUMP.velocity * 0.86 * this.jumpScale * this.envJumpScale;
+      body.velocity.y = JUMP.velocity * 0.86 * this.jumpScale * this.envJumpScale * this.charJumpMul;
       this.buffer = 0;
       this.airJumpUsed = true;
       this.jumping = true;
       this.host.onJump();
+    }
+
+    // Aero glide: falling with JUMP held clamps descent to a gentle float.
+    this.gliding = false;
+    if (this.glideEnabled && !grounded && body.velocity.y > 40 && this.input.isDown("JUMP")) {
+      body.velocity.y = Math.min(body.velocity.y, 120);
+      this.gliding = true;
+    }
+
+    if (time < this.dashUntil) {
+      body.velocity.x = this.host.facing * Math.max(maxSpeed * 1.7, 520);
     }
 
     if (this.jumping && body.velocity.y < 0 && this.input.justReleased("JUMP")) {
@@ -141,6 +176,28 @@ export class MovementController {
     }
   }
 
+  /** Short forward burst (Blade / Shin). Returns false while on cooldown. */
+  tryDash(time: number): boolean {
+    if (this.dashDistance <= 0 || time < this.dashReadyAt || this.controlsLocked) return false;
+    this.dashUntil = time + 150;
+    this.dashReadyAt = time + 900;
+    return true;
+  }
+
+  /** Shin banks one air step per jump; spend it for a small controlled nudge. */
+  bankAirStep(): void {
+    this.airStepBanked = true;
+  }
+
+  spendAirStep(): boolean {
+    const body = this.host.sprite.body as Phaser.Physics.Arcade.Body | null;
+    if (!body || !this.airStepBanked || this.grounded) return false;
+    this.airStepBanked = false;
+    body.velocity.x = this.host.facing * Math.max(Math.abs(body.velocity.x), 300);
+    body.velocity.y = Math.min(body.velocity.y, -140);
+    return true;
+  }
+
   bounce(): void {
     const body = this.host.sprite.body as Phaser.Physics.Arcade.Body | null;
     if (!body) return;
@@ -152,8 +209,9 @@ export class MovementController {
   knockback(time: number, dir: number): void {
     const body = this.host.sprite.body as Phaser.Physics.Arcade.Body | null;
     if (!body) return;
-    body.velocity.x = dir * 220;
-    body.velocity.y = -320;
-    this.knockbackUntil = time + 220;
+    const resist = 1 - Math.min(1, this.knockbackResist);
+    body.velocity.x = dir * 220 * resist;
+    body.velocity.y = -320 * Math.max(0.4, resist);
+    this.knockbackUntil = time + 220 * resist;
   }
 }
