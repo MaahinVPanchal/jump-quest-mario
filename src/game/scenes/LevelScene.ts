@@ -122,6 +122,7 @@ export class LevelScene extends Phaser.Scene {
 
     this.fireballs = this.physics.add.group({ maxSize: COMBAT.maxProjectiles, runChildUpdate: false });
     this.dust = this.add.group();
+    this.frozenBlocks = this.physics.add.staticGroup();
 
     this.buildPlatforms();
     this.buildPipes();
@@ -146,7 +147,7 @@ export class LevelScene extends Phaser.Scene {
       start.y,
       this.controls,
       {
-        onFire: (x, y, dir, kind) => this.spawnFireball(x, y, dir, kind),
+        onFire: (x, y, dir, kind, power) => this.spawnAbility(x, y, dir, kind, power),
         onDeath: () => this.handleDeath(),
         onDamage: () => {
           gameState.damageTaken += 1;
@@ -387,15 +388,21 @@ export class LevelScene extends Phaser.Scene {
     this.physics.add.collider(sprite, this.blocks, (_p, b) => this.onBlockCollide(b as unknown as Block));
     this.physics.add.overlap(sprite, this.enemies, (_p, e) => this.onEnemyTouch(e as unknown as Enemy));
     this.physics.add.overlap(sprite, this.items, (_p, i) => this.collect(i as unknown as Collectible));
-    this.physics.add.overlap(sprite, this.hazardSprites, () => this.hurtPlayer());
+    this.physics.add.overlap(sprite, this.hazardSprites, () => {
+      // HEAT: Cinder walks through fire and lava hazards unharmed.
+      if (this.player.fireImmune) return;
+      this.hurtPlayer();
+    });
+    this.physics.add.collider(sprite, this.frozenBlocks);
     this.physics.add.overlap(sprite, this.goalZone, () => this.completeLevel());
 
     this.physics.add.collider(this.fireballs, this.terrain, (f) => this.bounceFireball(f as unknown as Phaser.Physics.Arcade.Image));
-    this.physics.add.collider(this.fireballs, this.blocks, (f) => this.bounceFireball(f as unknown as Phaser.Physics.Arcade.Image));
-    this.physics.add.overlap(this.fireballs, this.enemies, (f, e) => {
-      (f as unknown as Phaser.Physics.Arcade.Image).destroy();
-      this.defeatEnemy(e as Enemy, "fire");
-    });
+    this.physics.add.collider(this.fireballs, this.blocks, (f, b) =>
+      this.onAbilityHitBlock(f as unknown as Phaser.Physics.Arcade.Image, b as unknown as Block),
+    );
+    this.physics.add.overlap(this.fireballs, this.enemies, (f, e) =>
+      this.onAbilityHitEnemy(f as unknown as Phaser.Physics.Arcade.Image, e as Enemy),
+    );
     if (this.boss) {
       const boss = this.boss;
       this.physics.add.collider(boss, this.terrain);
@@ -429,7 +436,8 @@ export class LevelScene extends Phaser.Scene {
     this.shake(CAMERA.shakeSmall);
 
     if (block.kind === "brick") {
-      if (this.player.isBig) {
+      // HEAVY FORCE: Titan pops bricks open even in his smallest form.
+      if (this.player.isBig || this.player.breaksHeavyBlocks) {
         this.breakBlock(block);
       } else {
         audio.play("block");
@@ -437,7 +445,12 @@ export class LevelScene extends Phaser.Scene {
       return;
     }
     if (block.kind === "metal") {
-      audio.play("block");
+      if (this.player.breaksHeavyBlocks) {
+        this.breakBlock(block);
+        this.shake(CAMERA.shakeBig);
+      } else {
+        audio.play("block");
+      }
       return;
     }
 
@@ -611,6 +624,7 @@ export class LevelScene extends Phaser.Scene {
       if (!removed) return;
     }
     gameState.enemiesDefeated += 1;
+    this.player.onKill();
     this.objectives.enemyDefeated();
     const multiplier = gameState.bumpCombo(this.time.now);
     const points = enemy.stats.score * multiplier;
@@ -708,28 +722,71 @@ export class LevelScene extends Phaser.Scene {
 
   // ------------------------------------------------------------ fireball
 
-  private spawnFireball(x: number, y: number, dir: number, kind: ThrowKind = "ember"): void {
+  /** Per-ability flight model. No two heroes share a projectile profile. */
+  private static readonly ABILITY: Record<
+    string,
+    {
+      speed: number;
+      gravity: boolean;
+      bounce: number;
+      life: number;
+      pierce: number;
+      scale: number;
+      rise: number;
+      spin?: boolean;
+      tint?: number;
+    }
+  > = {
+    emberBurst: { speed: 430, gravity: true, bounce: 0.9, life: 700, pierce: 0, scale: 1, rise: 60 },
+    bounceShot: { speed: 380, gravity: true, bounce: 1, life: 3200, pierce: 0, scale: 1, rise: -240, spin: true },
+    electricArc: { speed: 640, gravity: false, bounce: 0, life: 900, pierce: 1, scale: 1, rise: 0 },
+    knifeThrow: { speed: 700, gravity: false, bounce: 0, life: 1300, pierce: 1, scale: 1, rise: 0, spin: true },
+    ninjaStar: { speed: 800, gravity: false, bounce: 0, life: 1500, pierce: 2, scale: 0.9, rise: 0, spin: true },
+    fireBurst: { speed: 190, gravity: false, bounce: 0, life: 900, pierce: 9, scale: 2.1, rise: 0 },
+    frostShard: { speed: 430, gravity: true, bounce: 0.4, life: 1800, pierce: 0, scale: 1, rise: -80 },
+    windBlast: { speed: 520, gravity: false, bounce: 0, life: 700, pierce: 9, scale: 1.7, rise: 0 },
+    groundSmash: { speed: 400, gravity: false, bounce: 0, life: 1400, pierce: 9, scale: 1.4, rise: 0 },
+    banana: { speed: 420, gravity: true, bounce: 0.95, life: 2600, pierce: 0, scale: 1, rise: -260, spin: true },
+    claw: { speed: 620, gravity: false, bounce: 0, life: 900, pierce: 1, scale: 1, rise: 0 },
+  };
+
+  private frozenBlocks!: Phaser.Physics.Arcade.StaticGroup;
+  private shieldSprite: Phaser.GameObjects.Image | null = null;
+
+  /** Fires the hero's signature ability. Shield is a body, not a projectile. */
+  private spawnAbility(x: number, y: number, dir: number, kind: ThrowKind, power = 1): void {
+    if (kind === "shield") return this.raiseShield();
     if (this.fireballs.countActive(true) >= COMBAT.maxProjectiles) return;
-    const texture = kind === "ember" ? "fireball" : `shot_${kind}`;
-    const ball = this.physics.add.image(x, y, texture);
+
+    const cfg = LevelScene.ABILITY[kind] ?? LevelScene.ABILITY["emberBurst"]!;
+    const ball = this.physics.add.image(x, y, `shot_${kind}`);
     this.fireballs.add(ball);
     ball.setDepth(18);
+    ball.setScale(cfg.scale);
     const body = ball.body as Phaser.Physics.Arcade.Body;
     body.setCircle(8);
-    // Each throwable flies its own way: arcing bananas / hammers, flat beams and claws.
-    const arcing = kind === "banana" || kind === "hammer" || kind === "egg";
-    const flat = kind === "beam" || kind === "claw" || kind === "ice";
-    const speed = COMBAT.projectileSpeed * (flat ? 1.3 : kind === "star" ? 1.15 : 1);
-    body.setVelocity(dir * speed, arcing ? -260 : flat ? 0 : 120);
-    body.setAllowGravity(!flat);
-    body.setBounce(1, arcing ? 0.95 : 0.85);
+    body.setVelocity(dir * cfg.speed, cfg.rise);
+    body.setAllowGravity(cfg.gravity);
+    body.setBounce(cfg.bounce, cfg.bounce);
     body.setCollideWorldBounds(false);
     ball.setData("dir", dir);
-    ball.setData("flat", flat);
-    if (kind === "shell" || kind === "star" || kind === "vine") {
-      this.tweens.add({ targets: ball, angle: 360, duration: 400, repeat: -1 });
+    ball.setData("kind", kind);
+    ball.setData("power", power);
+    ball.setData("pierce", cfg.pierce);
+    ball.setData("flat", !cfg.gravity);
+    if (cfg.spin) this.tweens.add({ targets: ball, angle: 360 * dir, duration: 320, repeat: -1 });
+    if (kind === "groundSmash") {
+      // Shockwave hugs the floor and shakes the screen on impact.
+      this.shake(CAMERA.shakeBig);
+      this.burst(x, y, 0xd8a860, 12);
+      body.setAllowGravity(true);
+      body.setBounce(0, 0);
     }
-    this.time.delayedCall(COMBAT.projectileLifeMs, () => {
+    if (kind === "fireBurst" || kind === "windBlast") {
+      this.tweens.add({ targets: ball, scale: cfg.scale * 1.35, alpha: 0.7, duration: cfg.life });
+    }
+
+    this.time.delayedCall(cfg.life, () => {
       if (ball.active) {
         this.burst(ball.x, ball.y, COLORS.crystal, 5);
         ball.destroy();
@@ -737,14 +794,149 @@ export class LevelScene extends Phaser.Scene {
     });
   }
 
+  /** Aegis: a held barrier that reflects shots and shrugs off contact damage. */
+  private raiseShield(): void {
+    if (this.shieldSprite) return;
+    const shield = this.add.image(0, 0, "shot_shield").setDepth(21).setScale(1.6);
+    this.shieldSprite = shield;
+    this.physics.add.existing(shield);
+    const body = shield.body as Phaser.Physics.Arcade.Body;
+    body.setAllowGravity(false);
+    body.setSize(26, 44);
+    this.physics.add.overlap(shield, this.bossShots, (_s, shot) => {
+      const projectile = shot as unknown as Phaser.Physics.Arcade.Image;
+      this.burst(projectile.x, projectile.y, 0x9fd8ff, 8);
+      projectile.destroy();
+      audio.play("block");
+    });
+    this.physics.add.overlap(shield, this.enemies, (_s, e) => {
+      const enemy = e as Enemy;
+      const body2 = enemy.body as Phaser.Physics.Arcade.Body | null;
+      if (body2) body2.velocity.x = Math.sign(enemy.x - this.player.sprite.x) * 180;
+    });
+    audio.play("block");
+    this.time.delayedCall(1100, () => {
+      shield.destroy();
+      if (this.shieldSprite === shield) this.shieldSprite = null;
+    });
+  }
+
+  /** Ability-specific reaction to hitting an enemy. */
+  private onAbilityHitEnemy(ball: Phaser.Physics.Arcade.Image, enemy: Enemy): void {
+    if (!ball.active || enemy.mode === "dead") return;
+    const kind = ball.getData("kind") as ThrowKind;
+    let pierce = (ball.getData("pierce") as number) ?? 0;
+
+    switch (kind) {
+      case "windBlast": {
+        // Wind pushes rather than kills.
+        const body = enemy.body as Phaser.Physics.Arcade.Body | null;
+        if (body) {
+          body.velocity.x = (ball.getData("dir") as number) * 300;
+          body.velocity.y = -180;
+        }
+        this.burst(enemy.x, enemy.y - 10, 0xd8f8ff, 6);
+        return;
+      }
+      case "frostShard":
+        this.freezeEnemy(enemy);
+        ball.destroy();
+        return;
+      case "electricArc":
+        this.defeatEnemy(enemy, "fire");
+        this.chainLightning(enemy.x, enemy.y, enemy);
+        break;
+      default:
+        this.defeatEnemy(enemy, "fire");
+        break;
+    }
+
+    if (pierce > 0) {
+      pierce -= 1;
+      ball.setData("pierce", pierce);
+      return;
+    }
+    ball.destroy();
+  }
+
+  /** Volt's arc jumps to nearby foes. */
+  private chainLightning(x: number, y: number, source: Enemy): void {
+    const targets = (this.enemies.getChildren() as Enemy[])
+      .filter((e) => e !== source && e.active && e.mode !== "dead")
+      .filter((e) => Phaser.Math.Distance.Between(x, y, e.x, e.y) < 170)
+      .slice(0, 2);
+    for (const target of targets) {
+      const spark = this.add
+        .line(0, 0, x, y, target.x, target.y, 0x9ff0ff)
+        .setOrigin(0)
+        .setDepth(19)
+        .setLineWidth(2);
+      this.time.delayedCall(140, () => spark.destroy());
+      this.defeatEnemy(target, "fire");
+    }
+  }
+
+  /** Frost turns an enemy into a temporary standable ice block. */
+  private freezeEnemy(enemy: Enemy): void {
+    const ice = this.frozenBlocks.create(enemy.x, enemy.y, "block_metal") as Phaser.Physics.Arcade.Sprite;
+    ice.setTint(0x9ce8ff).setAlpha(0.9).setDepth(11);
+    ice.refreshBody();
+    enemy.setVisible(false);
+    const body = enemy.body as Phaser.Physics.Arcade.Body | null;
+    if (body) body.enable = false;
+    this.burst(enemy.x, enemy.y - 8, 0xb8f8f8, 10);
+    audio.play("block");
+    this.time.delayedCall(5000, () => {
+      ice.destroy();
+      if (enemy.active) this.defeatEnemy(enemy, "fire");
+    });
+  }
+
+  /** Abilities interact with blockwork in their own way. */
+  private onAbilityHitBlock(ball: Phaser.Physics.Arcade.Image, block: Block): void {
+    const kind = ball.getData("kind") as ThrowKind;
+    const breaksBrick = kind === "emberBurst" || kind === "fireBurst" || kind === "knifeThrow" || kind === "groundSmash";
+    const breaksMetal = kind === "groundSmash";
+    if (block.kind === "brick" && breaksBrick && !block.used) {
+      this.breakBlock(block);
+      ball.destroy();
+      return;
+    }
+    if (block.kind === "metal" && breaksMetal) {
+      this.breakBlock(block);
+      this.shake(CAMERA.shakeBig);
+      ball.destroy();
+      return;
+    }
+    if (block.kind === "metal" && kind === "electricArc" && !block.used) {
+      // Volt energises metal: it pops open like a question block.
+      block.bumpAnimation();
+      this.burst(block.x, block.y - 16, 0x9ff0ff, 10);
+      ball.destroy();
+      return;
+    }
+    this.bounceFireball(ball);
+  }
+
   private bounceFireball(ball: Phaser.Physics.Arcade.Image): void {
+    if (!ball.active) return;
+    const kind = ball.getData("kind") as ThrowKind;
     const body = ball.body as Phaser.Physics.Arcade.Body;
-    if (body.blocked.left || body.blocked.right || ball.getData("flat")) {
+    if (kind === "bounceShot") {
+      // Miko's shot ricochets off everything and keeps its speed.
+      const dir = body.velocity.x === 0 ? -(ball.getData("dir") as number) : Math.sign(body.velocity.x);
+      ball.setData("dir", dir);
+      body.velocity.x = dir * 380;
+      if (body.blocked.down) body.velocity.y = -320;
+      audio.play("block");
+      return;
+    }
+    if (ball.getData("flat") || body.blocked.left || body.blocked.right) {
       this.burst(ball.x, ball.y, COLORS.crystal, 6);
       ball.destroy();
       return;
     }
-    body.setVelocityX((ball.getData("dir") as number) * COMBAT.projectileSpeed);
+    body.velocity.x = (ball.getData("dir") as number) * 420;
   }
 
   // ------------------------------------------------------------ sequence
