@@ -277,9 +277,11 @@ function w4_2(): LevelData {
 
 function w4_3(): LevelData {
   const b = new LevelBuilder(80, 60);
-  b.ground(0, 79, 4);
+  // Vertical shaft: a stone ceiling, open air between, floor far below.
+  // (Never fill the shaft itself — that buries the ledges and the goal.)
   b.fill(0, 79, 0, 3, T.STONE);
-  b.spawn = { x: 6, y: 2 };
+  b.ledge(3, 6, 10);
+  b.spawn = { x: 6, y: 5 };
   for (let i = 0; i < 16; i++) b.ledge(8 + ((i * 17) % 56), 8 + i * 3, 5);
   for (let i = 0; i < 6; i++) b.platform(20 + ((i * 23) % 40), 12 + i * 8, 3, i % 2 ? { dx: 4 } : { dy: 3 }, 2100);
   b.patrol(["flyer", "spiker", "flyer"], 8, 70, 9, 30);

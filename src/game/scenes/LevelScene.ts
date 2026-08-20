@@ -58,6 +58,7 @@ export class LevelScene extends Phaser.Scene {
   private analyzerLabels: Phaser.GameObjects.Text[] = [];
   private analyzerLegend?: Phaser.GameObjects.Text;
   private analyzerOn = false;
+  private hiddenSonar?: Phaser.GameObjects.Graphics;
   private airJumpPip?: Phaser.GameObjects.Text;
   private controlHint?: Phaser.GameObjects.Text;
 
@@ -190,6 +191,7 @@ export class LevelScene extends Phaser.Scene {
       );
     }
     this.buildAbilityUi();
+    this.buildHiddenSonar();
     // The engine loop must never stay paused because of a stale hit-stop or a
     // window blur: guarantee physics is running whenever the scene resumes.
     this.events.on(Phaser.Scenes.Events.RESUME, () => this.physics.world.resume());
@@ -242,6 +244,37 @@ export class LevelScene extends Phaser.Scene {
       duration: 900,
       onComplete: () => this.controlHint?.destroy(),
     });
+  }
+
+  /**
+   * Hidden bricks are invisible until head-butted, so a short-range "sonar"
+   * shows a faint ghost outline when the hero stands or jumps under one.
+   * Climbing routes built on hidden blocks stay discoverable without spoiling
+   * them from across the screen.
+   */
+  private buildHiddenSonar(): void {
+    this.hiddenSonar = this.add.graphics().setDepth(9);
+  }
+
+  private updateHiddenSonar(): void {
+    const g = this.hiddenSonar;
+    if (!g) return;
+    g.clear();
+    if (this.player.dead) return;
+    const px = this.player.sprite.x;
+    const py = this.player.sprite.y;
+    const pulse = 0.18 + 0.14 * Math.abs(Math.sin(this.time.now / 260));
+    for (const obj of this.blocks.getChildren()) {
+      const block = obj as Block;
+      if (block.kind !== "hidden" || block.revealed) continue;
+      const dx = Math.abs(block.x - px);
+      const dy = block.y - py;
+      // Only within a jump's reach horizontally, and above the hero.
+      if (dx > TILE * 2.6 || dy > 0 || dy < -TILE * 4.5) continue;
+      const near = 1 - dx / (TILE * 2.6);
+      g.lineStyle(2, 0xfcd83c, pulse + near * 0.35);
+      g.strokeRect(block.x - TILE / 2 + 2, block.y - TILE / 2 + 2, TILE - 4, TILE - 4);
+    }
   }
 
   private updateAbilityUi(): void {
@@ -1177,7 +1210,12 @@ export class LevelScene extends Phaser.Scene {
 
     // Coins / stars / relics and blocks.
     for (const c of analysis.coins) marker(c.x, c.y, c.reachable ? 0xffd23f : 0xff3b30);
-    for (const b of analysis.blocks) marker(b.x, b.y, b.reachable ? 0x7ad1ff : 0xff3b30);
+    for (const b of analysis.blocks) {
+      const hiddenBlock = b.label === "hidden";
+      marker(b.x, b.y, !b.reachable ? 0xff3b30 : hiddenBlock ? 0xff7ae0 : 0x7ad1ff);
+      // Hidden bricks are the climbing routes players cannot see — always tag them.
+      if (hiddenBlock) tag(b.x, b.y, "HID", b.reachable ? "#ffc2f0" : "#ffb3ae");
+    }
 
     // Checkpoints and goal.
     for (const cp of analysis.checkpoints) {
@@ -1203,7 +1241,7 @@ export class LevelScene extends Phaser.Scene {
           `jump ${sum.maxGap}t wide / ${sum.maxHeight}t high`,
           `gaps ${sum.gaps} (blocked ${sum.blockedGaps}, widest ${sum.widestGap}t)`,
           `pickups ${sum.coins} (out of reach ${sum.unreachableCoins})`,
-          "green=clearable red=blocked yellow=coin blue=block purple=secret",
+          "green=clearable red=blocked yellow=coin blue=block pink=hidden purple=secret",
         ].join("\n"),
         {
           fontFamily: "monospace",
@@ -1461,6 +1499,7 @@ export class LevelScene extends Phaser.Scene {
     this.updateBossBar();
     this.updateParallax();
     this.updateAbilityUi();
+    this.updateHiddenSonar();
     this.updateRiding();
     this.updateWakeRange();
     this.checkPipes();
