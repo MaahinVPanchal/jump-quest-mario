@@ -66,6 +66,93 @@ const HERO_BODY = [
   ".HHHH......HHHH.",
 ];
 
+/** Rig heads mirror the in-game silhouettes so UI art matches gameplay art. */
+export const RIG_HEADS: Record<string, readonly string[]> = {
+  runner: HERO_HEAD,
+  tech: [
+    ".......Y........",
+    "....RRRYRRR.....",
+    "...RRRRRRRRR....",
+    "..RKKWWKKWWKKR..",
+    "..RKKWWKKWWKKR..",
+    "...RSSSSSSSSR...",
+    "....SSSKKSSS....",
+    "....HHHRRHHH....",
+  ],
+  rogue: [
+    "....RRRRRR......",
+    "...RRRRRRRRR....",
+    "..RRRRRRRRRRR...",
+    "..RRSSSSSSSRR...",
+    "..RRSKSSSKSRR...",
+    "...RKKKKKKKR....",
+    "....KKKKKKK.....",
+    "....HHRRRHH.....",
+  ],
+  armored: [
+    "...RRRRRRRRR....",
+    "..RRRRYRRRRRR...",
+    ".RRRRRYRRRRRRR..",
+    ".RRKKKKKKKKKRR..",
+    ".RRKWWKKKWWKRR..",
+    ".RRRRRRRRRRRRR..",
+    "..RRRRRRRRRRR...",
+    "...HHHRRRHHH....",
+  ],
+  ninja: [
+    "................",
+    "....RRRRRRR.....",
+    "..YRRRRRRRRRYY..",
+    "..YYRSSSSSRR.Y..",
+    "....RSKSSKSR....",
+    "....RRRRRRRR....",
+    ".....RRRRRR.....",
+    "....HHHRRHHH....",
+  ],
+  flame: [
+    "....Y..Y..Y.....",
+    "...YY.YYY.YY....",
+    "...RYRRRRRYR....",
+    "..RRRSSSSSRR....",
+    "..RRSKSSSKSR....",
+    "...RSSSSSSSR....",
+    "....SSSSSSS.....",
+    "....HHHRRHHH....",
+  ],
+  explorer: [
+    "...HHHHHHHHH....",
+    "..HRRRRRRRRRH...",
+    "..HRSSSSSSSRH...",
+    "..HRSKSSSKSRH...",
+    "..HRSSSSSSSRH...",
+    "..HHRSSSSSRHH...",
+    "...HHHHHHHHH....",
+    "....HHRRRHH.....",
+  ],
+  winged: [
+    "..W..RRRRR..W...",
+    ".WW.RRRRRRR.WW..",
+    "WWW.RSSSSSR.WWW.",
+    ".WW.RSKSKSR.WW..",
+    "..W.RSSSSSR.W...",
+    "....RSSSSSR.....",
+    ".....SSSSS......",
+    "....HHRRRHH.....",
+  ],
+  heavy: [
+    "..Y..........Y..",
+    "..YY.RRRRR..YY..",
+    "..RYRRRRRRRRYR..",
+    ".RRRRKKKKKRRRR..",
+    ".RRRKWWKWWKRRR..",
+    ".RRRRRRRRRRRRR..",
+    "..RRRRRRRRRRR...",
+    "..HHHHRRRHHHH...",
+  ],
+};
+
+export const HERO_TORSO = HERO_BODY;
+
 const recolor = (rows: readonly string[], from: string, to: string): string[] =>
   rows.map((r) => r.split(from).join(to));
 
@@ -337,15 +424,22 @@ export default function PixelSprite({
   px = 4,
   className,
   tint,
+  rig,
 }: {
   id: SpriteId;
   px?: number;
   className?: string;
   /** Palette overrides (same keys as the shared palette), used to skin heroes. */
   tint?: Record<string, string> | undefined;
+  /** Hero silhouette rig; swaps the head art for hero sprites. */
+  rig?: string | undefined;
 }) {
   const ref = useRef<HTMLCanvasElement>(null);
-  const rows = SPRITES[id];
+  const rigHead = rig ? RIG_HEADS[rig] : undefined;
+  const rows =
+    rigHead && (id === "riko" || id === "rikoBig" || id === "rikoFire")
+      ? [...rigHead, ...HERO_BODY]
+      : SPRITES[id];
 
   useEffect(() => {
     const canvas = ref.current;
