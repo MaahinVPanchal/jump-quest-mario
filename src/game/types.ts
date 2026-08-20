@@ -257,6 +257,14 @@ export interface LevelData {
   physics?: WorldPhysics;
   /** Boss encounter, present on every world's final stage. */
   boss?: BossDefinition;
+  /** Primary + secondary goals of the stage. */
+  objectives?: LevelObjectives;
+  /** Hidden region that satisfies FIND_SECRET. */
+  secretZone?: SecretZone;
+  /** Semantic goal descriptor used for validation and completion. */
+  goalMeta?: LevelGoal;
+  /** Enemies that count towards DEFEAT_ALL (indices into `enemies`). */
+  requiredEnemies?: number[];
 }
 
 export interface LevelResult {
@@ -266,12 +274,18 @@ export interface LevelResult {
   relics: number;
   relicIds: string[];
   enemies: number;
+  enemiesRequired?: number;
   timeLeft: number;
   timeTaken: number;
   damageTaken: number;
   stars: number;
+  /** Snapshot of every objective as it stood when the flag was touched. */
+  objectives?: ObjectiveProgress[];
+  primaryComplete?: boolean;
+  secretFound?: boolean;
   rank: "S" | "A" | "B" | "C";
 }
+
 
 export interface SaveData {
   save_version: number;
