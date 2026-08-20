@@ -51,9 +51,41 @@ export function createGame({ parent, slot, save, onExit, characterId, levelId }:
       default: "arcade",
       arcade: { gravity: { x: 0, y: PHYSICS.gravity }, debug: false },
     },
+    // The game must only ever pause when the player asks for it: no pausing on
+    // window blur, tab switch or focus loss.
+    autoFocus: true,
+    disableContextMenu: true,
     input: { gamepad: true },
     scene: [BootScene, LevelScene, HudScene, PauseScene, LevelCompleteScene, GameOverScene],
   });
+
+  // Phaser pauses its loop on blur / tab hide by default; neutralise that so
+  // only the player's pause key ever stops the game.
+  const loop = game.loop as Phaser.Core.TimeStep & { blur: () => void; pause: () => void };
+  loop.blur = () => {};
+  (game as unknown as { onHidden: () => void }).onHidden = () => {};
+  (game as unknown as { onBlur: () => void }).onBlur = () => {};
+
+  // Belt and braces: whatever the browser does with visibility/focus, resume
+  // the loop and the level unless the player opened the pause menu.
+  const keepRunning = (): void => {
+    if (!game.isRunning) game.loop.wake();
+    game.loop.resume();
+    const pauseScene = game.scene.getScene("Pause");
+    const paused = pauseScene ? game.scene.isActive("Pause") : false;
+    const level = game.scene.getScene("Level");
+    if (level && !paused) {
+      if (game.scene.isPaused("Level")) game.scene.resume("Level");
+      const world = (level as Phaser.Scene).physics?.world;
+      if (world?.isPaused) world.resume();
+    }
+  };
+  const onVisible = (): void => {
+    if (!document.hidden) keepRunning();
+  };
+  document.addEventListener("visibilitychange", onVisible);
+  window.addEventListener("focus", keepRunning);
+  window.addEventListener("pageshow", keepRunning);
 
   game.events.on("game:exit", () => {
     audio.stopMusic();
@@ -78,6 +110,9 @@ export function createGame({ parent, slot, save, onExit, characterId, levelId }:
   const unsubscribe = display.subscribe(() => fitPixelPerfect());
   game.events.once(Phaser.Core.Events.DESTROY, () => {
     window.removeEventListener("resize", fitPixelPerfect);
+    document.removeEventListener("visibilitychange", onVisible);
+    window.removeEventListener("focus", keepRunning);
+    window.removeEventListener("pageshow", keepRunning);
     unsubscribe();
   });
 
