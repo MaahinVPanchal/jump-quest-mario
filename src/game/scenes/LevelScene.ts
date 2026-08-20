@@ -1241,7 +1241,7 @@ export class LevelScene extends Phaser.Scene {
           `jump ${sum.maxGap}t wide / ${sum.maxHeight}t high`,
           `gaps ${sum.gaps} (blocked ${sum.blockedGaps}, widest ${sum.widestGap}t)`,
           `pickups ${sum.coins} (out of reach ${sum.unreachableCoins})`,
-          "green=clearable red=blocked yellow=coin blue=block purple=secret",
+          "green=clearable red=blocked yellow=coin blue=block pink=hidden purple=secret",
         ].join("\n"),
         {
           fontFamily: "monospace",
