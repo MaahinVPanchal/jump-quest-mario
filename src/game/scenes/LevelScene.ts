@@ -504,6 +504,8 @@ export class LevelScene extends Phaser.Scene {
 
   private registerCoin(x: number, y: number): void {
     audio.play("coin");
+    // OVERCHARGE: Volt banks coins into speed surges.
+    this.player.onCoin(this.time.now);
     gameState.addCoin();
     this.objectives.coin();
     this.addScore(SCORE.coin, x, y);
@@ -772,7 +774,8 @@ export class LevelScene extends Phaser.Scene {
     ball.setData("dir", dir);
     ball.setData("kind", kind);
     ball.setData("power", power);
-    ball.setData("pierce", cfg.pierce);
+    // COMBO EDGE and other high-power heroes punch through one extra enemy.
+    ball.setData("pierce", cfg.pierce + (power >= 2 ? 1 : 0));
     ball.setData("flat", !cfg.gravity);
     if (cfg.spin) this.tweens.add({ targets: ball, angle: 360 * dir, duration: 320, repeat: -1 });
     if (kind === "groundSmash") {
@@ -1335,6 +1338,14 @@ export class LevelScene extends Phaser.Scene {
     this.forceResume();
     this.applyEnvironment();
     this.player.update(time, delta);
+    if (this.shieldSprite) {
+      this.shieldSprite.setPosition(
+        this.player.sprite.x + this.player.facing * 20,
+        this.player.sprite.y - 26,
+      );
+      this.shieldSprite.setFlipX(this.player.facing < 0);
+      (this.shieldSprite.body as Phaser.Physics.Arcade.Body | null)?.updateFromGameObject();
+    }
     this.updateBossBar();
     this.updateParallax();
     this.updateAbilityUi();
