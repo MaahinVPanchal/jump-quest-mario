@@ -54,9 +54,12 @@ export interface TraverseResult {
   visited: number;
   /** Farthest x column the hero can stand on. */
   farthestX: number;
+  /** Every standable tile the hero can actually get to, as [x, y] pairs. */
+  nodes: Array<[number, number]>;
   /** Description of what stopped progress, when blocked. */
   reason?: string;
 }
+
 
 export function traverse(level: LevelData, profile: MovementProfile = BASELINE_PROFILE): TraverseResult {
   const maxUp = Math.max(1, profile.maxJumpHeightTiles);
