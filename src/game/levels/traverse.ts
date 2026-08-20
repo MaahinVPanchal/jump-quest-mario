@@ -71,11 +71,15 @@ export function traverse(level: LevelData, profile: MovementProfile = BASELINE_P
   for (let x = Math.max(0, level.spawn.x - 2); x <= level.spawn.x + 2; x++) {
     for (const y of standings(level, x)) if (y >= level.spawn.y - 3) startNodes.push([x, y]);
   }
-  if (startNodes.length === 0) return { reachable: false, visited: 0, farthestX: level.spawn.x, reason: "spawn has no floor" };
+  if (startNodes.length === 0) return { reachable: false, visited: 0, farthestX: level.spawn.x, nodes: [], reason: "spawn has no floor" };
 
   const seen = new Set<number>();
+  const nodes: Array<[number, number]> = [];
   const queue = [...startNodes];
-  for (const [x, y] of startNodes) seen.add(key(x, y));
+  for (const [x, y] of startNodes) {
+    seen.add(key(x, y));
+    nodes.push([x, y]);
+  }
   let farthest = 0;
 
   while (queue.length) {
@@ -87,6 +91,7 @@ export function traverse(level: LevelData, profile: MovementProfile = BASELINE_P
       const k = key(nx, ny);
       if (seen.has(k)) return;
       seen.add(k);
+      nodes.push([nx, ny]);
       queue.push([nx, ny]);
     };
 
@@ -131,6 +136,7 @@ export function traverse(level: LevelData, profile: MovementProfile = BASELINE_P
     reachable: goalOk,
     visited: seen.size,
     farthestX: farthest,
+    nodes,
     ...(goalOk ? {} : { reason: `stuck at x=${farthest} of ${level.widthTiles} (goal x=${level.goal.x})` }),
   };
 }
