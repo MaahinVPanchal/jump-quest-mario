@@ -71,17 +71,19 @@ export function ensureRoute(
     const stepX = Math.max(2, Math.min(span, Math.abs(gx - fx) || span));
     const nx = Math.max(1, Math.min(level.widthTiles - 4, fx + dirX * stepX));
     const dy = fy - gy;
-    const ny = Math.max(2, Math.min(level.heightTiles - 2, fy - Math.max(-4, Math.min(up, dy))));
+    const climb = Math.max(-4, Math.min(up - 1, dy));
+    const ny = Math.max(2, Math.min(level.heightTiles - 3, fy - climb));
 
     // Doorway through anything between the frontier and the new ledge.
     const lo = Math.min(fy, ny);
     for (let cx = Math.min(fx, nx); cx <= Math.max(fx, nx) + 2; cx++) carveHeadroom(level, cx, lo, 3);
     carveHeadroom(level, fx, fy, 3);
 
-    // The stepping ledge itself.
+    // The stepping ledge itself: the tile goes one row below the target stand,
+    // so the hero ends up standing exactly at `ny`.
     for (let w = 0; w < 3; w++) {
-      place(level, nx + w, ny);
-      carveHeadroom(level, nx + w, ny, 3);
+      place(level, nx + w, ny + 1);
+      carveHeadroom(level, nx + w, ny + 1, 4);
     }
     repaired++;
 
