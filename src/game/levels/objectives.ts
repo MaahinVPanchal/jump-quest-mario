@@ -57,12 +57,13 @@ export function assignObjectives(level: LevelData): LevelData {
   let primary: LevelObjective;
 
   if (level.boss) {
+    const spare = Math.round(level.timeLimit * 0.3);
     primary = {
       type: "TIME_LIMIT",
-      timeLimit: level.timeLimit,
-      target: level.timeLimit,
-      description: `Defeat ${level.boss.name}`,
-      mandatory: true,
+      timeLimit: spare,
+      target: spare,
+      description: `Defeat ${level.boss.name} with ${spare}s left`,
+      mandatory: false,
     };
     secondary.push(coinObjective(level));
   } else if (identity.includes("hanging") || (hasWater && identity.includes("no"))) {
@@ -70,7 +71,7 @@ export function assignObjectives(level: LevelData): LevelData {
       type: "NO_WATER",
       target: 0,
       description: hasWater ? "Never touch the water" : "Never touch the forest floor",
-      mandatory: true,
+      mandatory: false,
     };
     secondary.push(coinObjective(level));
   } else if (hasWater && !identity.includes("water")) {

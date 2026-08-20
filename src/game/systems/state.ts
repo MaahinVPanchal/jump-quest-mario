@@ -93,11 +93,12 @@ export class GameState {
     return this.starIds;
   }
 
-  rankFor(timeLeft: number, timeLimit: number): LevelResult["rank"] {
+  /** Objective completion is worth as much as relics and speed. */
+  rankFor(timeLeft: number, timeLimit: number, objectiveMet = true): LevelResult["rank"] {
     const fast = timeLeft > timeLimit * 0.55;
-    if (fast && this.relicIds.length >= 3 && this.damageTaken === 0) return "S";
-    if (this.relicIds.length >= 2 && this.damageTaken <= 1) return "A";
-    if (this.levelCoins >= 20) return "B";
+    if (objectiveMet && fast && this.relicIds.length >= 3 && this.damageTaken === 0) return "S";
+    if (objectiveMet && (this.relicIds.length >= 2 || fast) && this.damageTaken <= 1) return "A";
+    if (objectiveMet || this.levelCoins >= 20) return "B";
     return "C";
   }
 
