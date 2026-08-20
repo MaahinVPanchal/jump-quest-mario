@@ -1210,7 +1210,12 @@ export class LevelScene extends Phaser.Scene {
 
     // Coins / stars / relics and blocks.
     for (const c of analysis.coins) marker(c.x, c.y, c.reachable ? 0xffd23f : 0xff3b30);
-    for (const b of analysis.blocks) marker(b.x, b.y, b.reachable ? 0x7ad1ff : 0xff3b30);
+    for (const b of analysis.blocks) {
+      const hiddenBlock = b.label === "hidden";
+      marker(b.x, b.y, !b.reachable ? 0xff3b30 : hiddenBlock ? 0xff7ae0 : 0x7ad1ff);
+      // Hidden bricks are the climbing routes players cannot see — always tag them.
+      if (hiddenBlock) tag(b.x, b.y, "HID", b.reachable ? "#ffc2f0" : "#ffb3ae");
+    }
 
     // Checkpoints and goal.
     for (const cp of analysis.checkpoints) {
