@@ -1494,6 +1494,7 @@ export class LevelScene extends Phaser.Scene {
     this.updateBossBar();
     this.updateParallax();
     this.updateAbilityUi();
+    this.updateHiddenSonar();
     this.updateRiding();
     this.updateWakeRange();
     this.checkPipes();
