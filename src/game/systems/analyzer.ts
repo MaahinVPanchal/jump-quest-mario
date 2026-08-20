@@ -57,10 +57,10 @@ export interface LevelAnalysis {
   };
 }
 
-const solid = (level: LevelData, x: number, y: number): boolean =>
+export const solid = (level: LevelData, x: number, y: number): boolean =>
   y >= 0 && y < level.heightTiles && x >= 0 && x < level.widthTiles && (level.tiles[y]?.[x] ?? 0) !== 0;
 
-function floorAt(level: LevelData, x: number): number | null {
+export function floorAt(level: LevelData, x: number): number | null {
   for (let y = level.heightTiles - 1; y >= 0; y--) {
     if (solid(level, x, y) && !solid(level, x, y - 1)) return y;
   }
@@ -68,7 +68,7 @@ function floorAt(level: LevelData, x: number): number | null {
 }
 
 /** Every standable tile top in a column, plus tops of solid block stacks. */
-function surfaces(level: LevelData, x: number): number[] {
+export function surfaces(level: LevelData, x: number): number[] {
   const out: number[] = [];
   for (let y = 0; y < level.heightTiles; y++) {
     if (solid(level, x, y) && !solid(level, x, y - 1)) out.push(y);
@@ -81,7 +81,7 @@ function surfaces(level: LevelData, x: number): number[] {
 }
 
 /** Tiles a point sits above the best surface a hero could launch from. */
-function heightAboveSupport(level: LevelData, x: number, y: number, maxSpan: number): number {
+export function heightAboveSupport(level: LevelData, x: number, y: number, maxSpan: number): number {
   let best = Infinity;
   for (let sx = x - maxSpan; sx <= x + maxSpan; sx++) {
     for (const sy of surfaces(level, sx)) {
