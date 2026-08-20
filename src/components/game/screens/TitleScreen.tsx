@@ -29,11 +29,11 @@ export default function TitleScreen({
           EMBERLEAF MEADOW
         </h1>
         <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
-          <PixelBadge tone="gold" icon="\u2605">
+          <PixelBadge tone="gold" icon={"\u2605"}>
             10 heroes
           </PixelBadge>
-          <PixelBadge icon="\u25A3">8 worlds · 32 stages</PixelBadge>
-          <PixelBadge icon="\u266B">Original art & audio</PixelBadge>
+          <PixelBadge icon={"\u25A3"}>8 worlds · 32 stages</PixelBadge>
+          <PixelBadge icon={"\u266B"}>Original art & audio</PixelBadge>
         </div>
       </header>
 

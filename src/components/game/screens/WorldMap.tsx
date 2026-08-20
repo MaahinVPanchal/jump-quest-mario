@@ -143,7 +143,7 @@ export default function WorldMap({
             {selected.objectives?.primary.description ?? selected.objective ?? "Reach the goal flag"}
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
-            <PixelBadge icon="\u25A3">{selected.buildSet ?? def.buildSet}</PixelBadge>
+            <PixelBadge icon={"\u25A3"}>{selected.buildSet ?? def.buildSet}</PixelBadge>
             {selected.boss ? <PixelBadge tone="bad">Boss</PixelBadge> : null}
           </div>
           <PixelButton
