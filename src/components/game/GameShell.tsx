@@ -116,10 +116,6 @@ const ENEMY_CARDS: EnemyCard[] = [
 
 const SAVE_SLOT = 1;
 
-/** "emberFlare" -> "EMBER FLARE" for the ability tag on each hero card. */
-const abilityLabel = (id: string): string =>
-  id.replace(/([A-Z])/g, " $1").trim().toUpperCase();
-
 /** 10-segment block meter used on the hero dossier. */
 function StatBar({ label, value }: { label: string; value: number }) {
   return (
