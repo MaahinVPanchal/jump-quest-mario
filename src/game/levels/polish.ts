@@ -111,7 +111,16 @@ export function polishLevel(
 
   // 4. Enemies stand on ground (flyers may hover).
   level.enemies = level.enemies.flatMap((e) => {
-    if (e.type === "flyer" || e.type === "piranha") return [e];
+    if (e.type === "flyer") return [e];
+    if (e.type === "piranha") {
+      // Piranhas only make sense inside a pipe mouth.
+      const pipe = level.pipes.find((p) => Math.abs(p.x - e.x) <= 1);
+      if (pipe) return [{ ...e, x: pipe.x, y: pipe.y }];
+      const near = level.pipes
+        .slice()
+        .sort((a, b) => Math.abs(a.x - e.x) - Math.abs(b.x - e.x))[0];
+      return near ? [{ ...e, x: near.x, y: near.y }] : [];
+    }
     if (floorAt(level, e.x) !== null) return [e];
     const nx = nearestGroundedX(level, e.x);
     if (nx === null) return [];
