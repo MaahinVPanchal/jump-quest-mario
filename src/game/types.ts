@@ -165,6 +165,59 @@ export interface PipeSpawn extends Vec2 {
   label: string;
 }
 
+/** Primary gameplay goal of a stage, beyond simply reaching the flag. */
+export type ObjectiveType =
+  | "TIME_LIMIT"
+  | "COIN_TARGET"
+  | "DEFEAT_ALL"
+  | "NO_WATER"
+  | "FIND_SECRET";
+
+export interface LevelObjective {
+  type: ObjectiveType;
+  /** Coins / enemies to reach, when the type is counted. */
+  target?: number;
+  /** Seconds allowed, for TIME_LIMIT. */
+  timeLimit?: number;
+  description: string;
+  /** Mandatory objectives block level completion; the rest only affect the grade. */
+  mandatory: boolean;
+}
+
+export interface LevelObjectives {
+  primary: LevelObjective;
+  secondary?: LevelObjective[];
+}
+
+/** Rectangular tile region that flips the FIND_SECRET objective when entered. */
+export interface SecretZone {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  label?: string;
+}
+
+export interface LevelGoal {
+  type: "GOAL_FLAG";
+  /** Tile position of the pole base. */
+  position: Vec2;
+  /** Pixels from the pole that count as touching the flag. */
+  activationRadius: number;
+}
+
+/** Live objective state, mirrored into the HUD and the results screen. */
+export interface ObjectiveProgress {
+  type: ObjectiveType;
+  label: string;
+  value: string;
+  current: number;
+  target: number;
+  complete: boolean;
+  failed: boolean;
+}
+
+
 export interface LevelData {
   id: string;
   world: number;
