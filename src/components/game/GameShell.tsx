@@ -120,6 +120,19 @@ const SAVE_SLOT = 1;
 const abilityLabel = (id: string): string =>
   id.replace(/([A-Z])/g, " $1").trim().toUpperCase();
 
+/** 10-segment block meter used on the hero dossier. */
+function StatBar({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="flex items-center gap-3">
+      <span className="w-16 text-[8px] uppercase tracking-widest text-nes-brick-dark">{label}</span>
+      <span className="text-[10px] tracking-[0.2em] text-nes-ink">
+        {"\u2588".repeat(Math.max(0, Math.min(10, value)))}
+        <span className="text-nes-ink/25">{"\u2591".repeat(Math.max(0, 10 - value))}</span>
+      </span>
+    </div>
+  );
+}
+
 export default function GameShell() {
   const [screen, setScreen] = useState<Screen>("menu");
   const [save, setSave] = useState<SaveData | null>(null);
