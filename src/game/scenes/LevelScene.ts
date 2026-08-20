@@ -245,6 +245,37 @@ export class LevelScene extends Phaser.Scene {
     });
   }
 
+  /**
+   * Hidden bricks are invisible until head-butted, so a short-range "sonar"
+   * shows a faint ghost outline when the hero stands or jumps under one.
+   * Climbing routes built on hidden blocks stay discoverable without spoiling
+   * them from across the screen.
+   */
+  private buildHiddenSonar(): void {
+    this.hiddenSonar = this.add.graphics().setDepth(9);
+  }
+
+  private updateHiddenSonar(): void {
+    const g = this.hiddenSonar;
+    if (!g) return;
+    g.clear();
+    if (this.player.dead) return;
+    const px = this.player.sprite.x;
+    const py = this.player.sprite.y;
+    const pulse = 0.18 + 0.14 * Math.abs(Math.sin(this.time.now / 260));
+    for (const obj of this.blocks.getChildren()) {
+      const block = obj as Block;
+      if (block.kind !== "hidden" || block.revealed) continue;
+      const dx = Math.abs(block.x - px);
+      const dy = block.y - py;
+      // Only within a jump's reach horizontally, and above the hero.
+      if (dx > TILE * 2.6 || dy > 0 || dy < -TILE * 4.5) continue;
+      const near = 1 - dx / (TILE * 2.6);
+      g.lineStyle(2, 0xfcd83c, pulse + near * 0.35);
+      g.strokeRect(block.x - TILE / 2 + 2, block.y - TILE / 2 + 2, TILE - 4, TILE - 4);
+    }
+  }
+
   private updateAbilityUi(): void {
     const pip = this.airJumpPip;
     if (!pip) return;
