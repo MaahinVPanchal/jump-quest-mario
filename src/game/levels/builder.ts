@@ -127,10 +127,19 @@ export class LevelBuilder {
     return this;
   }
 
-  /** Vertical shaft with alternating wall ledges to climb. */
+  /**
+   * Vertical shaft with alternating wall ledges to climb.
+   * Both walls keep a doorway — the entry at the bottom, the exit at the top —
+   * so a shaft is always something you climb through, never a dead end.
+   */
   shaft(x: number, yTop: number, yBottom: number, wallW = 2, step = 3, w = 3): this {
     this.fill(x - wallW, x - 1, yTop, yBottom, T.STONE);
     this.fill(x + 8, x + 8 + wallW - 1, yTop, yBottom, T.STONE);
+    // Entry doorway at the foot of the left wall.
+    this.fill(x - wallW, x - 1, yBottom - 3, yBottom - 1, T.EMPTY);
+    // Exit doorway at the head of the right wall.
+    this.fill(x + 8, x + 8 + wallW - 1, yTop + 1, yTop + 3, T.EMPTY);
+    this.ledge(x + 8 + wallW, yTop + 4, w + 2);
     let side = 0;
     for (let y = yBottom - step; y > yTop; y -= step) {
       this.ledge(side % 2 === 0 ? x : x + 8 - w, y, w);
@@ -138,6 +147,7 @@ export class LevelBuilder {
     }
     return this;
   }
+
 
   /** Tower of stacked blocks with a flat roof. */
   tower(x: number, baseY: number, height: number, w = 3): this {
