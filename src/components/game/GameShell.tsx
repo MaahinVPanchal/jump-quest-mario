@@ -207,15 +207,15 @@ export default function GameShell() {
 
         {screen === "roster" && (
           <section className="w-full space-y-6">
-            {/* Hero roster - every hero is playable, arcade select-screen style */}
+            {/* Ten heroes, ten playstyles - two rows of five, arcade style. */}
             <div className="border-4 border-nes-ink bg-nes-ink p-4 shadow-[8px_8px_0_0_var(--nes-brick-dark)]">
               <h2 className="text-center text-xs uppercase tracking-[0.3em] text-nes-coin">
                 Select your hero
               </h2>
               <p className="mt-2 text-center text-[8px] uppercase tracking-widest text-nes-paper/70">
-                {ROSTER.length} original fighters · every one playable
+                {ROSTER.length} heroes · every one plays differently
               </p>
-              <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-5">
                 {ROSTER.map((c) => {
                   const selected = characterId === c.id;
                   return (
@@ -223,70 +223,75 @@ export default function GameShell() {
                       key={c.id}
                       type="button"
                       onClick={() => setCharacterId(c.id)}
-                      className={`flex items-start gap-3 border-4 p-3 text-left transition ${
+                      className={`flex flex-col items-center gap-2 border-4 p-3 transition ${
                         selected
                           ? "border-nes-paper bg-nes-coin"
                           : "border-nes-ink bg-nes-coin/80 hover:bg-nes-coin active:translate-y-[2px]"
                       }`}
                     >
-                      <PixelSprite
-                        id={
-                          /Princess|Doll|Dancer|Star/i.test(c.archetype ?? "")
-                            ? "princess"
-                            : c.canDoubleJump
-                              ? "mira"
-                              : "riko"
-                        }
-                        px={3}
-                        tint={c.tint}
-                      />
-                      <div className="min-w-0">
-                        <p className="text-[9px] uppercase tracking-widest text-nes-brick-dark">
-                          {c.name} · {c.archetype ?? abilityLabel(c.specialAbility)}
-                        </p>
-                        <p className="mt-1 text-[8px] leading-5">{c.blurb}</p>
-                        <p className="mt-2 text-[8px] uppercase tracking-widest text-nes-ink/70">
-                          SPD {c.speed} · JMP {c.jumpForce} · HP {c.maxHealth}
-                          {c.canDoubleJump ? " · Double jump" : ""}
-                          {c.canDash ? " · Dash" : ""}
-                        </p>
-                        <p className="mt-1 text-[8px] uppercase tracking-widest text-nes-ink/70">
-                          Throws: {c.throwable ?? "ember"} · banana → monkey · bell → cat
-                        </p>
-                        <p className="mt-2 inline-block border-2 border-nes-ink bg-nes-ink px-2 py-1 text-[8px] uppercase tracking-widest text-nes-coin">
-                          Special: {c.special ?? abilityLabel(c.specialAbility)}
-                        </p>
-                        {selected ? (
-                          <p className="mt-2 text-[8px] uppercase tracking-widest text-nes-brick-dark">
-                            ★ Selected
-                          </p>
-                        ) : null}
-                      </div>
+                      <PixelSprite id="riko" px={3} rig={c.rig} tint={c.tint} />
+                      <span className="text-[9px] uppercase tracking-widest text-nes-brick-dark">
+                        {c.name}
+                      </span>
+                      <span className="text-[8px] uppercase tracking-widest text-nes-ink/70">
+                        {c.role}
+                      </span>
                     </button>
                   );
                 })}
               </div>
             </div>
 
-            {/* Selected hero forms */}
-            <div className="border-4 border-nes-ink bg-nes-paper p-5 shadow-[6px_6px_0_0_var(--nes-ink)]">
-              <h2 className="text-center text-xs uppercase tracking-widest text-nes-ink">
-                {hero.name} · power forms
-              </h2>
-              <div className="mt-5 flex flex-wrap items-center justify-center gap-8">
-                <PixelSprite id="star" px={4} />
-                {(["riko", "rikoBig", "rikoFire"] as SpriteId[]).map((id, i) => (
-                  <div key={id} className="flex flex-col items-center gap-2">
-                    <PixelSprite id={id} px={i === 0 ? 3 : 4} tint={i === 2 ? undefined : hero.tint} />
-                    <p className="text-[8px] uppercase tracking-widest text-nes-brick-dark">
-                      {["Small", "Big", "Fire"][i]}
-                    </p>
-                  </div>
-                ))}
-                <PixelSprite id="coin" px={4} />
+            {/* Selected hero dossier */}
+            <div className="grid gap-6 border-4 border-nes-ink bg-nes-paper p-5 shadow-[6px_6px_0_0_var(--nes-ink)] sm:grid-cols-[auto_1fr]">
+              <div className="flex flex-col items-center gap-3">
+                <PixelSprite id="rikoBig" px={5} rig={hero.rig} tint={hero.tint} />
+                <p className="text-[10px] uppercase tracking-widest text-nes-ink">{hero.name}</p>
+                <p className="text-[8px] uppercase tracking-widest text-nes-brick-dark">{hero.role}</p>
+                <p className="text-[8px] uppercase tracking-widest text-nes-ink">
+                  Difficulty
+                  <br />
+                  <span className="text-nes-coin-dark">
+                    {"★".repeat(hero.difficulty)}
+                    {"☆".repeat(5 - hero.difficulty)}
+                  </span>
+                </p>
               </div>
-              <p className="mt-4 text-center text-[9px] leading-5">{hero.blurb}</p>
+
+              <div className="space-y-3">
+                <StatBar label="Speed" value={hero.stats.speed} />
+                <StatBar label="Jump" value={hero.stats.jump} />
+                <StatBar label="Power" value={hero.stats.power} />
+                <StatBar label="Defense" value={hero.stats.defense} />
+
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  <div className="border-2 border-nes-ink bg-nes-ink p-3">
+                    <p className="text-[8px] uppercase tracking-widest text-nes-coin">Special (X)</p>
+                    <p className="mt-1 text-[9px] uppercase tracking-widest text-nes-paper">
+                      {hero.abilityName}
+                    </p>
+                    <p className="mt-2 text-[8px] leading-5 text-nes-paper/80">{hero.abilityDesc}</p>
+                  </div>
+                  <div className="border-2 border-nes-ink bg-nes-ink p-3">
+                    <p className="text-[8px] uppercase tracking-widest text-nes-coin">Passive</p>
+                    <p className="mt-1 text-[9px] uppercase tracking-widest text-nes-paper">
+                      {hero.passiveName}
+                    </p>
+                    <p className="mt-2 text-[8px] leading-5 text-nes-paper/80">{hero.passiveDesc}</p>
+                  </div>
+                </div>
+
+                <p className="text-[9px] leading-5">{hero.blurb}</p>
+                <p className="text-[8px] uppercase leading-5 tracking-widest text-nes-brick-dark">
+                  Blocks: {hero.blockPower}
+                </p>
+                <div className="grid gap-2 text-[8px] uppercase leading-5 tracking-widest sm:grid-cols-2">
+                  <p className="text-nes-ink">+ {hero.strengths.join(" · ")}</p>
+                  <p className="text-nes-brick-dark">- {hero.weaknesses.join(" · ")}</p>
+                </div>
+              </div>
             </div>
+
 
             {/* Power-ups */}
             <div className="border-4 border-nes-ink bg-nes-paper p-5 shadow-[6px_6px_0_0_var(--nes-ink)]">
