@@ -50,6 +50,37 @@ function highestSurface(level: LevelData, x: number): number | null {
   return null;
 }
 
+/** Every standable tile top in a column. */
+function surfaces(level: LevelData, x: number): number[] {
+  const out: number[] = [];
+  for (let y = 0; y < level.heightTiles; y++) {
+    if (solid(level, x, y) && !solid(level, x, y - 1) && !solid(level, x, y - 2)) out.push(y);
+  }
+  return out;
+}
+
+/** Can the hero land on (x, y) from any surface inside the jump envelope? */
+function reachableSurface(
+  level: LevelData,
+  x: number,
+  y: number,
+  maxGap: number,
+  maxStep: number,
+): boolean {
+  for (let sx = x - maxGap; sx <= x + maxGap; sx++) {
+    if (sx === x || sx < 0 || sx >= level.widthTiles) continue;
+    const dx = Math.abs(sx - x);
+    for (const sy of surfaces(level, sx)) {
+      const rise = sy - y; // positive = we must climb
+      if (rise > maxStep) continue;
+      // Long jumps cannot also be tall jumps.
+      const allowance = Math.max(2, Math.round(maxGap * (1 - Math.max(0, rise) / (maxStep + 1) * 0.4)));
+      if (dx <= allowance) return true;
+    }
+  }
+  return false;
+}
+
 function coveredByPlatform(level: LevelData, x0: number, x1: number): boolean {
   return level.platforms.some((p) => {
     const dx = Math.abs(p.dx ?? 0) / TILE;
@@ -126,18 +157,22 @@ function repairPass(level: LevelData, profile: MovementProfile): LevelReport {
     if (rise <= 0) continue;
     tallestStep = Math.max(tallestStep, rise);
     if (rise <= maxStep) continue;
+    if (reachableSurface(level, cx, cur, maxGap, maxStep)) continue;
     // Build a short staircase of shelves so the wall is climbable in steps.
-    const shelves = Math.ceil(rise / maxStep) - 1;
+    const shelves = Math.ceil(rise / maxStep);
+    let placed = 0;
     for (let i = 1; i <= shelves; i++) {
       const shelfY = cur + maxStep * i;
       const shelfX = cx - 1 - i * 3;
-      if (shelfX < 1 || shelfY >= (prev ?? level.heightTiles)) continue;
+      if (shelfX < 1 || shelfY >= level.heightTiles - 1) continue;
       if (solid(level, shelfX, shelfY) || solid(level, shelfX, shelfY - 1)) continue;
       placeLedge(level, shelfX, shelfY, 3);
+      placed++;
     }
+    if (placed === 0) continue;
     issues.push({
       kind: "step-too-high",
-      detail: `${rise}-tile wall at x=${cx} (max ${maxStep}); added ${shelves} shelf/shelves`,
+      detail: `${rise}-tile wall at x=${cx} (max ${maxStep}); added ${placed} shelf/shelves`,
       repaired: true,
     });
   }
