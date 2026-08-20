@@ -19,11 +19,12 @@ import WorldMap from "./screens/WorldMap";
 import Archive from "./screens/Archive";
 import ControlsScreen from "./screens/ControlsScreen";
 import SettingsScreen from "./screens/SettingsScreen";
+import Inspector from "./screens/Inspector";
 import { PixelButton, PixelPanel } from "@/components/pixel";
 
 const PhaserMount = lazy(() => import("./PhaserMount"));
 
-type Screen = "menu" | "roster" | "map" | "archive" | "controls" | "settings" | "loading" | "playing";
+type Screen = "menu" | "roster" | "map" | "archive" | "inspector" | "controls" | "settings" | "loading" | "playing";
 
 const SAVE_SLOT = 1;
 const HERO_KEY = "emberleaf.hero.v1";
@@ -166,6 +167,7 @@ export default function GameShell() {
             onPlay={() => setScreen("roster")}
             onMap={() => setScreen("map")}
             onArchive={() => setScreen("archive")}
+            onInspector={() => setScreen("inspector")}
             onControls={() => setScreen("controls")}
             onSettings={() => setScreen("settings")}
           />
@@ -195,6 +197,7 @@ export default function GameShell() {
         )}
 
         {screen === "archive" && <Archive onBack={() => setScreen("menu")} />}
+        {screen === "inspector" && <Inspector onBack={() => setScreen("menu")} />}
         {screen === "controls" && <ControlsScreen onBack={() => setScreen("menu")} />}
         {screen === "settings" && (
           <SettingsScreen settings={settings} onChange={patchSettings} onBack={() => setScreen("menu")} />
