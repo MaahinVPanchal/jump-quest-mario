@@ -1,6 +1,4 @@
 import { useEffect, useRef } from "react";
-import { HERO_ART, HERO_GRID, heroPose, type HeroPose, type HeroRig } from "@/game/art/heroes";
-import { paintPainted } from "@/game/art/render";
 
 /** Shared NES-ish palette for the React-side roster art. */
 const PALETTE: Record<string, string> = {
@@ -24,16 +22,6 @@ const PALETTE: Record<string, string> = {
   V: "#7c3cfc",
   v: "#4c18b0",
   c: "#0058f8",
-  N: "#28407c",
-  n: "#101838",
-  T: "#fcd8a8",
-  t: "#c07840",
-  A: "#b8b8c8",
-  a: "#585868",
-  E: "#00d8c8",
-  L: "#58d818",
-  F: "#f87800",
-  J: "#f8f8f8",
 };
 
 export type SpriteId =
@@ -42,18 +30,13 @@ export type SpriteId =
   | "rikoFire"
   | "mira"
   | "princess"
-  | "ranger"
-  | "hunter"
-  | "whip"
-  | "ninja"
   | "banana"
   | "catBell"
   | "walker"
   | "shell"
-  | "ogre"
+  | "flyer"
   | "piranha"
   | "spiker"
-  | "lobber"
   | "coin"
   | "star"
   | "growthOrb"
@@ -88,82 +71,6 @@ const recolor = (rows: readonly string[], from: string, to: string): string[] =>
 
 const SPRITES: Record<SpriteId, readonly string[]> = {
   riko: [...HERO_HEAD, ...HERO_BODY],
-  /* Hooded blade scout — pointed cap, tunic, drawn shortsword. */
-  ranger: [
-    ".....GGG........",
-    "....GLLGG.......",
-    "...GLLLLGG......",
-    "...GTTTTKG......",
-    "...GTKTTKT......",
-    "....TTTTTT......",
-    "...GGLLLLGG.....",
-    "..GLLLGLLLG..A..",
-    "..GLLLGLLLG.AA..",
-    "..TLLLLLLLTAA...",
-    "..TLyyyyyLTA....",
-    "...LLLLLLLt.....",
-    "...LLL..LLL.....",
-    "...ttt..ttt.....",
-    "..tttt..tttt....",
-    "..KKK....KKK....",
-  ],
-  /* Armoured hunter — visored helm, shoulder plate, arm cannon. */
-  hunter: [
-    "....AAAAAA......",
-    "...ARRRRRRA.....",
-    "...ARJJJJRA.....",
-    "...ARRRRRRA.....",
-    "...AAAAAAAA.....",
-    "..FFAAAAAAFF....",
-    ".FFFFFFFFFFFF...",
-    ".FFEEEEEEEEFF...",
-    ".AFEEAAAAEEFAAA.",
-    ".AFFEEEEEEFFAAA.",
-    "..FFFFFFFFFFAA..",
-    "..FFFF..FFFF....",
-    "..FFF....FFF....",
-    "..AFF....FFA....",
-    "..AFF....FFA....",
-    "..KKK....KKK....",
-  ],
-  /* Whip ranger — long hair, leather harness, coiled whip. */
-  whip: [
-    "....YYYYYY......",
-    "...YYYYYYYY.....",
-    "...YTTTTTKY.....",
-    "...YTKTTTTY.....",
-    "....TTTTTT......",
-    "...HHTTTTHH.....",
-    "..THHHHHHHHT....",
-    "..THHtttHHHT....",
-    "..THHtttHHHTy...",
-    "...HHHHHHHy.y...",
-    "...HHtttHHy..y..",
-    "...HHtttHH.y.y..",
-    "...ttt..ttt.y...",
-    "..tttt..tttt....",
-    "..AAA....AAA....",
-    "..KKK....KKK....",
-  ],
-  /* Night ninja — masked hood, sash, sheathed blade on the back. */
-  ninja: [
-    "....NNNNNN......",
-    "...NnnnnnnN.....",
-    "...NTTKTTKN.....",
-    "...NNNNNNNN.....",
-    "....NNNNNN...y..",
-    "...NNNNNNNN.y...",
-    "..TNNNNNNNNy....",
-    "..TNNRRRRNNT....",
-    "..TNNNNNNNNT....",
-    "...NNNNNNNN.....",
-    "...NNnnnnNN.....",
-    "...NNN..NNN.....",
-    "...nnn..nnn.....",
-    "..nnnn..nnnn....",
-    "..NNN....NNN....",
-    "..KKK....KKK....",
-  ],
   banana: [
     "................",
     "..........yy....",
@@ -224,25 +131,6 @@ const SPRITES: Record<SpriteId, readonly string[]> = {
     ...recolor(recolor(HERO_HEAD, "R", "C"), "H", "c"),
     ...recolor(recolor(HERO_BODY, "R", "C"), "H", "c"),
   ],
-  /* Cragspit Gunner — armoured shooter with a shoulder cannon. */
-  lobber: [
-    "................",
-    "......KKKK......",
-    ".....KAAAAK.....",
-    "....KAWWWWAK....",
-    "....KAWKKWAK....",
-    "...KAAAAAAAAK...",
-    "..KAFFFFFFFFAK..",
-    ".KAFFFFFFFFFFAK.",
-    "PPKAFFFFFFFFAKK.",
-    "PPKAFFFFFFFFAKK.",
-    ".KAFFFFFFFFFFAK.",
-    "..KAaaaaaaaaAK..",
-    "..KAaaaaaaaaAK..",
-    "...KKAA..AAKK...",
-    "...KAA....AAK...",
-    "................",
-  ],
   spiker: [
     "....K..K..K..K..",
     "...KKK.KK.KKK...",
@@ -297,23 +185,23 @@ const SPRITES: Record<SpriteId, readonly string[]> = {
     "...WWW....WWW...",
     "................",
   ],
-  ogre: [
-    "......GGGG......",
-    ".....GLLLLG.....",
-    "....GLGGGGLG....",
-    "...GGWKGGKWGG...",
-    "...GGGGGGGGGG...",
-    "...GGWWWWWWGG...",
-    "....GGWKKWGG....",
-    "..GGGGGGGGGGGG..",
-    ".GGGGGGGGGGGGGG.",
-    "GGGGGGWWWWGGGGGG",
-    "GGGGGGWKKWGGGGGG",
-    ".GG.GGGGGGGG.GG.",
-    "....GGGGGGGG....",
-    "...GGGG..GGGG...",
-    "..GGGG....GGGG..",
-    "..GGG......GGG..",
+  flyer: [
+    "................",
+    "................",
+    "...MM....MM.....",
+    "..MMMM..MMMM....",
+    ".MMMMMMMMMMMM...",
+    "MMMMWKMMKWMMMM..",
+    "MMMMWKMMKWMMMM..",
+    ".MMMMMMMMMMMM...",
+    "..MMMMMMMMMM....",
+    "...MMMMMMMM.....",
+    "....MMMMMM......",
+    "..WW.MMMM.WW....",
+    ".WWWW.MM.WWWW...",
+    "................",
+    "................",
+    "................",
   ],
   piranha: [
     "................",
@@ -486,47 +374,6 @@ export default function PixelSprite({
       height={h}
       className={className}
       style={{ imageRendering: "pixelated", width: w, height: h }}
-      aria-hidden
-    />
-  );
-}
-
-/**
- * Renders a playable hero from the same art registry the game uses, so the
- * select screen and the level always show the identical sprite.
- */
-export function HeroSprite({
-  rig,
-  pose = "idle",
-  px = 4,
-  className,
-}: {
-  rig: HeroRig;
-  pose?: HeroPose;
-  px?: number;
-  className?: string;
-}) {
-  const ref = useRef<HTMLCanvasElement>(null);
-
-  useEffect(() => {
-    const canvas = ref.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    const palette = HERO_ART[rig].palette as unknown as Record<string, string>;
-    paintPainted(ctx, heroPose(rig, pose), palette, canvas.width);
-  }, [rig, pose, px]);
-
-  const size = HERO_GRID * px;
-  const display = 16 * px;
-  return (
-    <canvas
-      ref={ref}
-      width={size}
-      height={size}
-      className={className}
-      style={{ width: display, height: display }}
       aria-hidden
     />
   );

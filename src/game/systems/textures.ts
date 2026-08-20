@@ -1,16 +1,15 @@
 import type Phaser from "phaser";
 import { COLORS, TILE } from "../config";
 import { CHARACTERS } from "../data/characters";
-import { buildThemeTextures } from "./themeTextures";
 
-export type Ctx = CanvasRenderingContext2D;
+type Ctx = CanvasRenderingContext2D;
 
-export const hex = (c: number): string => `#${c.toString(16).padStart(6, "0")}`;
+const hex = (c: number): string => `#${c.toString(16).padStart(6, "0")}`;
 
 /** Chunky pixel size: art is drawn full size, crushed down, then blown back up. */
 const PX = 2;
 
-export function make(
+function make(
   scene: Phaser.Scene,
   key: string,
   w: number,
@@ -75,16 +74,6 @@ const PALETTE: Record<string, string> = {
   v: "#4c18b0",
   C: "#3cbcfc", // Mira cyan
   c: "#0058f8",
-  D: "#28407c", // ninja navy
-  d: "#101838", // ninja navy shade
-  A: "#b8b8c8", // steel / boots
-  a: "#585868",
-  E: "#00d8c8", // visor teal
-  F: "#f87800", // armour orange
-  L: "#58d818", // tunic green
-  t: "#c07840", // leather tan
-  y: "#c88000", // gold shade
-  T: "#fcd8a8",
 };
 
 function paint(
@@ -106,26 +95,63 @@ function paint(
   });
 }
 
-import { HERO_ART, HERO_GRID, HERO_PX, HERO_POSES, heroPose, type HeroPose } from "../art/heroes";
-import { paintPainted } from "../art/render";
+const HERO_HEAD: readonly string[] = [
+  "....RRRRR.......",
+  "...RRRRRRRRRR...",
+  "...HHHSSKS......",
+  "..HSHSSSKSSS....",
+  "..HSHHSSSKSSS...",
+  "..HHSSSSSKKKK...",
+  "....SSSSSSSS....",
+  "...HHRRHRRH.....",
+];
 
-/** Hero textures scale with the authored grid density (see HERO_GRID). */
-const HERO_TEX_W = HERO_GRID * HERO_PX;
-const HERO_TEX_H = Math.round(HERO_TEX_W * 1.5);
+export type HeroPose = "idle" | "walk0" | "walk1" | "walk2" | "walk3" | "jump" | "fall" | "land" | "hurt";
 
-export type { HeroPose };
-
-/** Texture-key suffix for a pose: walk poses become walk_0..walk_3. */
-const poseKey = (pose: HeroPose): string =>
-  pose.startsWith("walk")
-    ? `walk_${pose.slice(4)}`
-    : pose.startsWith("attack")
-      ? `attack_${pose.slice(6)}`
-      : pose;
+/** Torso + leg variants keep the classic four-frame run cycle readable. */
+function heroPixels(pose: HeroPose): readonly string[] {
+  const torso =
+    pose === "jump" || pose === "fall"
+      ? [
+          "S.HHHRRHRRHHH.SS",
+          "SSHHHRRRRRRHHHSS",
+          "SSHHRYRRRRYRHH.S",
+          "..HRRRRRRRRRRH..",
+        ]
+      : pose === "land"
+        ? [
+            "................",
+            "SSHHHRRRRRRHHHSS",
+            "SSHHRYRRRRYRHHSS",
+            "SSHRRRRRRRRRRHSS",
+          ]
+        : [
+          "..HHHRRHRRHHH...",
+          ".HHHHRRRRRRHHHH.",
+          "SSHHRYRRRRYRHHSS",
+          "SSHRRRRRRRRRRHSS",
+        ];
+  const legs =
+    pose === "walk0"
+      ? ["...RRRRRRRRR....", "...RRRR..RRRR...", "...HHH....HHHH..", "..HHHH....HHHHH."]
+      : pose === "walk2"
+        ? ["....RRRRRRRRR...", "..RRRR...RRRR...", ".HHHH.....HHH...", "HHHHH....HHHH..."]
+        : pose === "walk1" || pose === "walk3"
+          ? ["..RRRRRRRRRRR...", "..RRRRRRRRRR....", "...HHHH..HHH....", "..HHHH...HHHH..."]
+          : pose === "jump"
+          ? ["..RRRRRRRRRR....", "..RRRR...RRRR...", ".HHHH.....HHH...", "HHHH.....HHHHH.."]
+          : pose === "fall"
+            ? ["..RRRRRRRRRR....", "..RRR.....RRRR..", "..HHH.....HHH...", ".HHHH....HHHHH.."]
+            : pose === "land"
+              ? ["..RRRRRRRRRRRR..", "..RRRRRRRRRRRR..", ".HHHHH....HHHHH.", "HHHHHH....HHHHHH"]
+              : pose === "hurt"
+              ? ["..RRRRRRRRRR....", ".RRRR.....RRRR..", "HHHH.......HHHH.", "HHH.........HHH."]
+              : ["..RRRRRRRRRRRR..", "..RRRR....RRRR..", "..HHH......HHH..", ".HHHH......HHHH."];
+  return [...HERO_HEAD, ...torso, ...legs];
+}
 
 /** All artwork is drawn procedurally here - the build ships no external art. */
 export function buildTextures(scene: Phaser.Scene): void {
-  buildThemeTextures(scene);
   // ---- terrain ----
   // Ground is a bricked slab, like the classic overworld floor.
   const groundBricks = (ctx: Ctx, top: boolean): void => {
@@ -209,29 +235,21 @@ export function buildTextures(scene: Phaser.Scene): void {
   });
 
   // ---- heroes ----
-  // Each hero owns its own pixel layout and palette (src/game/art/heroes.ts),
-  // so no two characters are recolors of one another.
+  // Every playable character shares the same original rig; the roster entry
+  // supplies a palette override so each hero reads distinctly at 8-bit scale.
+  const POSES: HeroPose[] = ["idle", "walk0", "walk1", "walk2", "walk3", "jump", "fall", "land", "hurt"];
+  const poseKey = (pose: HeroPose): string =>
+    pose.startsWith("walk") ? `walk_${pose.slice(4)}` : pose;
   for (const character of Object.values(CHARACTERS)) {
-    const art = HERO_ART[character.rig];
-    for (const pose of HERO_POSES) {
+    for (const pose of POSES) {
       make(
         scene,
         `${character.spritePrefix}_${poseKey(pose)}`,
-        HERO_TEX_W,
-        HERO_TEX_H,
-        (ctx) =>
-          paintPainted(
-            ctx,
-            heroPose(character.rig, pose),
-            art.palette as unknown as Record<string, string>,
-            HERO_TEX_W,
-            0,
-            HERO_TEX_H - HERO_TEX_W,
-          ),
+        32,
+        48,
+        (ctx) => paint(ctx, heroPixels(pose), 2, 0, 16, character.tint),
         false,
       );
-      // Painted heroes are filtered, not nearest-sampled, so curves stay smooth.
-      scene.textures.get(`${character.spritePrefix}_${poseKey(pose)}`).setFilter(1);
     }
   }
 
@@ -254,47 +272,6 @@ export function buildTextures(scene: Phaser.Scene): void {
     swap ? "..OO........OO.." : "...OO......OO...",
     "................",
   ];
-  // Cragspit Gunner: squat armoured shooter with a shoulder cannon; lobs fireshots.
-  const lobberBody = (fire: boolean): readonly string[] => [
-    "................",
-    "......KKKK......",
-    ".....KAAAAK.....",
-    "....KAWWWWAK....",
-    "....KAWKKWAK....",
-    "...KAAAAAAAAK...",
-    "..KAFFFFFFFFAK..",
-    ".KAFFFFFFFFFFAK.",
-    fire ? "KKKAFFFFFFFFAKKK" : ".KKAFFFFFFFFAKK.",
-    fire ? "PPKAFFFFFFFFAKKK" : ".KKAFFFFFFFFAKK.",
-    ".KAFFFFFFFFFFAK.",
-    "..KAaaaaaaaaAK..",
-    "..KAaaaaaaaaAK..",
-    "...KKAA..AAKK...",
-    "...KAA....AAK...",
-    "................",
-  ];
-  make(scene, "lobber_0", 32, 32, (ctx) => paint(ctx, lobberBody(false), 2), false);
-  make(scene, "lobber_1", 32, 32, (ctx) => paint(ctx, lobberBody(true), 2), false);
-
-  // Enemy projectile: hot core with a dark rim so it reads on every background.
-  make(
-    scene,
-    "enemy_shot",
-    16,
-    16,
-    (ctx) => {
-      ctx.fillStyle = hex(0x000000);
-      ctx.fillRect(2, 2, 12, 12);
-      ctx.fillStyle = hex(0xff5a1f);
-      ctx.fillRect(3, 3, 10, 10);
-      ctx.fillStyle = hex(0xffd83c);
-      ctx.fillRect(5, 5, 6, 6);
-      ctx.fillStyle = "#ffffff";
-      ctx.fillRect(6, 6, 3, 3);
-    },
-    false,
-  );
-
   make(scene, "spiker_0", 32, 32, (ctx) => paint(ctx, spikerBody(false), 2), false);
   make(scene, "spiker_1", 32, 32, (ctx) => paint(ctx, spikerBody(true), 2), false);
 
@@ -435,37 +412,29 @@ export function buildTextures(scene: Phaser.Scene): void {
   make(scene, "piranha_0", 32, 48, (ctx) => paint(ctx, [...piranhaHead(true), ...piranhaStem], 2), false);
   make(scene, "piranha_1", 32, 48, (ctx) => paint(ctx, [...piranhaHead(false), ...piranhaStem], 2), false);
 
-  // Grimtusk Brute: a heavy club-swinging ogre that replaces the old flyer.
-  const OGRE_PAL: Record<string, string> = {
-    G: "#3ca03c",
-    g: "#1c601c",
-    L: "#68c850",
-    Y: "#d8b83c",
-    h: "#8c5a2c",
-    j: "#5c3418",
-    W: "#ffffff",
-    K: "#000000",
+  const flyer = (ctx: Ctx, up: boolean): void => {
+    ctx.fillStyle = hex(0xe4c2ff);
+    ctx.beginPath();
+    ctx.ellipse(6, up ? 10 : 20, 8, 5, up ? -0.6 : 0.6, 0, Math.PI * 2);
+    ctx.ellipse(26, up ? 10 : 20, 8, 5, up ? 0.6 : -0.6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = hex(COLORS.flyer);
+    ctx.beginPath();
+    ctx.arc(16, 16, 10, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = hex(0xfdf6ff);
+    ctx.beginPath();
+    ctx.arc(12, 14, 3, 0, Math.PI * 2);
+    ctx.arc(20, 14, 3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = hex(0x1d2430);
+    ctx.beginPath();
+    ctx.arc(12.6, 14, 1.5, 0, Math.PI * 2);
+    ctx.arc(20.6, 14, 1.5, 0, Math.PI * 2);
+    ctx.fill();
   };
-  const ogreRows = (step: boolean): string[] => [
-    step ? "......gggg...hh." : "......gggg..hh..",
-    step ? ".....gLLLLg..hhh" : ".....gLLLLg.hhh.",
-    step ? "....gLGGGGLg.hhh" : "....gLGGGGLg.hh.",
-    "...gGWKGGKWGg.j.",
-    "...gGGGGGGGGg.j.",
-    "...gGWWWWWWGg.G.",
-    "....gGWKKWGg.GG.",
-    "..ggGGGGGGGGgGg.",
-    ".gGGLGGGGGGLGGg.",
-    "gGGgGGYYYYGGgGGg",
-    "gGGgGGYWWYGGgGGg",
-    ".gg.gGGGGGGg.gg.",
-    "....gGGgGGg.....",
-    step ? "...gGGg.gGGg...." : "..gGGg...gGGg...",
-    step ? "..gGGg...gGGg..." : ".gGGg.....gGGg..",
-    step ? "..ggg.....ggg..." : ".ggg.......ggg..",
-  ];
-  make(scene, "ogre_0", 32, 32, (ctx) => paint(ctx, ogreRows(false), 2, 0, 0, OGRE_PAL), false);
-  make(scene, "ogre_1", 32, 32, (ctx) => paint(ctx, ogreRows(true), 2, 0, 0, OGRE_PAL), false);
+  make(scene, "flyer_0", 32, 32, (ctx) => flyer(ctx, true));
+  make(scene, "flyer_1", 32, 32, (ctx) => flyer(ctx, false));
 
   // ---- items ----
   for (let i = 0; i < 4; i++) {
@@ -614,127 +583,6 @@ export function buildTextures(scene: Phaser.Scene): void {
         ctx.fill();
       }
     });
-  // ---- signature projectiles (one readable look per hero) ----
-  const P: Record<string, string> = {
-    K: "#101018",
-    W: "#ffffff",
-    O: "#ff9c20",
-    R: "#e82820",
-    G: "#3cf83c",
-    g: "#0c8c1c",
-    M: "#fc8cd8",
-    m: "#c03c98",
-    Y: "#fcec48",
-    C: "#5cfc48",
-    T: "#106878",
-    A: "#d8dcec",
-    a: "#7c8298",
-    B: "#2848c8",
-  };
-  const shape = (key: string, rows: readonly string[], w = 16, h = 16) =>
-    make(scene, key, w, h, (ctx) => paint(ctx, rows, 2, 0, 0, P), false);
-
-  shape("shot_fireball", [
-    "..KKKK..",
-    ".KOOOOK.",
-    "KOWWOOOK",
-    "KOWWOOOK",
-    "KOOOOOOK",
-    "KROOOORK",
-    ".KRRRRK.",
-    "..KKKK..",
-  ]);
-  shape("shot_ember", [
-    "..KKKK..",
-    ".KOOOOK.",
-    "KOWWOOOK",
-    "KOWWOOOK",
-    "KOOOOOOK",
-    "KROOOORK",
-    ".KRRRRK.",
-    "..KKKK..",
-  ]);
-  shape("shot_greenbolt", [
-    "...KK...",
-    "..KGGK..",
-    ".KGWWGK.",
-    "KGGWWGGK",
-    "KGGGGGGK",
-    ".KgGGgK.",
-    "..KggK..",
-    "...KK...",
-  ]);
-  shape("shot_heart", [
-    ".KK..KK.",
-    "KMMKKMMK",
-    "KMWMMMMK",
-    "KMWMMMMK",
-    ".KMMMMK.",
-    "..KMMK..",
-    "...KK...",
-    "........",
-  ]);
-  shape("shot_flame", [
-    "....KKKK",
-    "..KKOOOK",
-    ".KOOYYOK",
-    "KOYYWYOK",
-    "KOYYWYOK",
-    ".KOOYYOK",
-    "..KKOOOK",
-    "....KKKK",
-  ]);
-  shape("shot_pellet", [
-    "........",
-    "..KKKK..",
-    ".KYWWYK.",
-    ".KYYYYK.",
-    ".KRRRRK.",
-    "..KKKK..",
-    "........",
-    "........",
-  ]);
-  shape("shot_slash", [
-    "......KK",
-    ".....KWK",
-    "....KWAK",
-    "...KWAAK",
-    "..KWAAK.",
-    ".KWAAK..",
-    "KWAAK...",
-    "KaaK....",
-  ]);
-  shape("shot_plasma", [
-    "...KK...",
-    "..KCCK..",
-    ".KCWWCK.",
-    "KCWWWWCK",
-    "KCWWWWCK",
-    ".KCWWCK.",
-    "..KTTK..",
-    "...KK...",
-  ]);
-  shape("shot_axe", [
-    ".KKKK...",
-    "KAAAAK..",
-    "KAWAAK..",
-    "KAAAAK..",
-    ".KAAK...",
-    "..KaK...",
-    "..KaK...",
-    "..KKK...",
-  ]);
-  shape("shot_kunai", [
-    "KKK.....",
-    "KAAK....",
-    ".KAAK...",
-    "..KAAK..",
-    "...KAAK.",
-    "....KBBK",
-    ".....KRK",
-    "......KK",
-  ]);
-
   shot("shot_banana", 0xfcd83c, 0x8a5a00);
   shot("shot_claw", 0xfcfcfc, 0x00b8f8);
   shot("shot_hammer", 0xa8a8a8, 0x502000, true);
@@ -847,53 +695,17 @@ export function buildTextures(scene: Phaser.Scene): void {
     ctx.fillStyle = hex(0x007800);
     ctx.fillRect(44, 16, 10, 48);
   });
-  make(
-    scene,
-    "spike",
-    TILE,
-    24,
-    (ctx) => {
-      // Hazard base: black/yellow warning stripes so traps are unmissable.
-      ctx.fillStyle = hex(0xffd400);
-      ctx.fillRect(0, 16, TILE, 8);
-      ctx.fillStyle = hex(0x000000);
-      for (let i = -8; i < TILE + 8; i += 8) {
-        ctx.beginPath();
-        ctx.moveTo(i, 24);
-        ctx.lineTo(i + 4, 24);
-        ctx.lineTo(i + 8, 16);
-        ctx.lineTo(i + 4, 16);
-        ctx.closePath();
-        ctx.fill();
-      }
-      // Blades: bright steel with hard outlines and white highlights.
-      for (let i = 0; i < 4; i++) {
-        const x = i * 8;
-        ctx.fillStyle = hex(0x000000);
-        ctx.beginPath();
-        ctx.moveTo(x, 18);
-        ctx.lineTo(x + 4, 0);
-        ctx.lineTo(x + 8, 18);
-        ctx.closePath();
-        ctx.fill();
-        ctx.fillStyle = hex(0xe8ecf4);
-        ctx.beginPath();
-        ctx.moveTo(x + 1, 17);
-        ctx.lineTo(x + 4, 3);
-        ctx.lineTo(x + 7, 17);
-        ctx.closePath();
-        ctx.fill();
-        ctx.fillStyle = hex(0x9aa4b2);
-        ctx.beginPath();
-        ctx.moveTo(x + 4, 3);
-        ctx.lineTo(x + 7, 17);
-        ctx.lineTo(x + 4, 17);
-        ctx.closePath();
-        ctx.fill();
-      }
-    },
-    false,
-  );
+  make(scene, "spike", TILE, 16, (ctx) => {
+    ctx.fillStyle = hex(0x9aa4b2);
+    for (let i = 0; i < 4; i++) {
+      ctx.beginPath();
+      ctx.moveTo(i * 8, 16);
+      ctx.lineTo(i * 8 + 4, 0);
+      ctx.lineTo(i * 8 + 8, 16);
+      ctx.closePath();
+      ctx.fill();
+    }
+  });
 
   // ---- parallax ----
   // Stepped, flat-shaded scenery in the console-era style.

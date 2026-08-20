@@ -59,11 +59,10 @@ export class Block extends Phaser.Physics.Arcade.Sprite {
       y: startY - 9,
       duration: 80,
       yoyo: true,
-      onUpdate: () => (this.body as Phaser.Physics.Arcade.StaticBody | null)?.updateFromGameObject(),
+      onUpdate: () => (this.body as Phaser.Physics.Arcade.StaticBody).updateFromGameObject(),
       onComplete: () => {
-        if (!this.scene) return;
         this.y = startY;
-        (this.body as Phaser.Physics.Arcade.StaticBody | null)?.updateFromGameObject();
+        (this.body as Phaser.Physics.Arcade.StaticBody).updateFromGameObject();
       },
     });
   }

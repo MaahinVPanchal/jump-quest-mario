@@ -1,26 +1,12 @@
-import type { HeroRig } from "./art/heroes";
-
 export interface CharacterData {
   id: string;
   name: string;
-  /** Pixel rig used for this hero's sprite set (shared by game + UI). */
-  rig: HeroRig;
   /** Texture key prefix for this character's sprite set. */
   spritePrefix: string;
-  /** One-line role shown on the character card. */
-  role: string;
   /** Short archetype label shown on the select screen. */
   archetype?: string;
   /** Signature move name, shown in caps on the select screen. */
   special?: string;
-  /** Signature attack name, shown next to the weapon icon. */
-  attackName: string;
-  /** Card palette so no two heroes read the same at a glance. */
-  colors: { primary: string; secondary: string; accent: string };
-  /** 0-10 card stats. */
-  stats: { speed: number; jump: number; health: number; airControl: number };
-  /** Sprite scale multiplier — keeps Krogar huge and Shroomy tiny. */
-  sizeScale: number;
   blurb: string;
   speed: number;
   acceleration: number;
@@ -39,7 +25,7 @@ export interface CharacterData {
   tint?: Record<string, string>;
 }
 
-export type EnemyKind = "walker" | "shell" | "ogre" | "piranha" | "spiker" | "lobber" | "boss";
+export type EnemyKind = "walker" | "shell" | "flyer" | "piranha" | "spiker";
 
 export interface EnemyData {
   id: EnemyKind;
@@ -54,20 +40,7 @@ export interface EnemyData {
   weakness: string[];
 }
 
-/** One projectile look per hero. */
-export type AttackVisual =
-  | "fireball"
-  | "greenbolt"
-  | "heart"
-  | "flame"
-  | "pellet"
-  | "slash"
-  | "plasma"
-  | "axe"
-  | "kunai";
-
 export type ThrowKind =
-  | AttackVisual
   | "ember"
   | "banana"
   | "claw"
@@ -109,8 +82,6 @@ export interface BlockSpawn extends Vec2 {
 
 export interface EnemySpawn extends Vec2 {
   type: EnemyKind;
-  /** Theme id for bosses, so each world fields its own silhouette. */
-  variant?: string;
   direction?: -1 | 1;
   patrol?: number;
 }
@@ -156,10 +127,6 @@ export interface LevelData {
   music: string;
   /** Sky Stars that must be collected before the goal opens (level 2+). */
   starsRequired?: number;
-  /** Stage theme id driving tiles, backdrop, liquid and boss art. */
-  themeId?: string;
-  /** The stage goal stays sealed until this boss is defeated. */
-  bossRequired?: boolean;
   /** Optional palette theme for the backdrop. */
   skyColor?: number;
   /** Next level in the campaign. */

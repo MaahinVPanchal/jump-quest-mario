@@ -85,7 +85,7 @@ export const COLORS = {
   heroAccent: 0xfc7460,
   walker: 0x9cd83c,
   shell: 0xfc7460,
-  ogre: 0x3aa03a,
+  flyer: 0xd882fc,
   coin: 0xfcd83c,
   relic: 0xffe680,
   orb: 0x6ee87f,

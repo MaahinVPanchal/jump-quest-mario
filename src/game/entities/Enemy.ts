@@ -2,7 +2,6 @@ import Phaser from "phaser";
 import { TILE } from "../config";
 import { ENEMIES } from "../data/enemies";
 import type { EnemyData, EnemyKind, EnemySpawn } from "../types";
-import { bossKey, themeById } from "../levels/themes";
 
 export type EnemyState = "patrol" | "shell" | "sliding" | "dead";
 export type DamageSource = "stomp" | "fire" | "shell";
@@ -29,30 +28,11 @@ const PIRANHA = {
 } as const;
 const PIRANHA_PERIOD = PIRANHA.hiddenMs + PIRANHA.riseMs + PIRANHA.upMs + PIRANHA.sinkMs;
 
-/** Ranged gunner: paces slowly and lobs shots at the hero on a fixed cadence. */
-const LOBBER = {
-  range: 460,
-  cooldownMs: 1900,
-  telegraphMs: 420,
-} as const;
-
 /** Spiked roller: winds up, then charges when the hero is close and level with it. */
 const SPIKER = {
   chargeRange: 260,
   chargeMultiplier: 2.6,
   windUpMs: 260,
-} as const;
-
-/** Per-kind signature skills so no stage fields a purely passive patroller. */
-const SKILL = {
-  walkerHopRange: 150,
-  walkerHopCooldown: 1500,
-  shellDashRange: 210,
-  shellDashCooldown: 2200,
-  ogreLeapRange: 190,
-  ogreLeapCooldown: 2600,
-  bossShotRange: 620,
-  bossShotCooldown: 2400,
 } as const;
 
 /** Data-driven enemy; all kinds share this body and branch on their data record. */
@@ -73,15 +53,6 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
   private cycle = 0;
   private hideDepth = 44;
   private chargeUntil = 0;
-  private nextShotAt = 0;
-  private telegraphUntil = 0;
-  /** Next time this enemy may use its signature skill. */
-  private nextSkillAt = 0;
-  /** Boss state: remaining hits, hop timer and the theme its art comes from. */
-  private hp = 1;
-  private enraged = false;
-  private hopAt = 0;
-  private bossTheme = "meadow";
   awake = false;
 
   constructor(scene: Phaser.Scene, spawn: EnemySpawn) {
@@ -95,11 +66,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
             ? "piranha_0"
             : spawn.type === "spiker"
               ? "spiker_0"
-              : spawn.type === "lobber"
-                ? "lobber_0"
-              : spawn.type === "boss"
-                ? bossKey(themeById(spawn.variant ?? "meadow").id, 0)
-                : "ogre_0";
+              : "flyer_0";
     const y = spawn.type === "piranha" ? spawn.y * TILE + 48 : spawn.y * TILE + TILE;
     super(scene, spawn.x * TILE + TILE / 2, y, key);
     this.kind = spawn.type;
@@ -119,22 +86,6 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
       body.setImmovable(true);
       body.checkCollision.none = true;
       this.cycle = Math.random() * PIRANHA_PERIOD;
-    }
-    if (spawn.type === "ogre") {
-      // Heavy brute: two stomps to fell, bigger hitbox than a walker.
-      this.hp = data.health;
-      this.setScale(1.25);
-      body.setSize(24, 30);
-      body.setOffset(4, 2);
-    }
-    if (spawn.type === "boss") {
-      const theme = themeById(spawn.variant ?? "meadow");
-      this.bossTheme = theme.id;
-      this.hp = 3 + theme.boss.extraHits;
-      this.setScale(1.6);
-      body.setSize(46, 52);
-      body.setOffset(9, 12);
-      this.setDepth(16);
     }
     this.homeX = this.x;
     this.homeY = this.y;
@@ -183,27 +134,6 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
         return false;
       }
     }
-    if (this.kind === "ogre" && source !== "fire") {
-      this.hp -= source === "shell" ? 2 : 1;
-      if (this.hp > 0) {
-        // First stomp cracks its armour: it turns enraged and speeds up.
-        this.enraged = true;
-        this.setTint(0xff9c6c);
-        this.setVelocityY(-120);
-        this.scene.tweens.add({ targets: this, alpha: 0.3, yoyo: true, repeat: 2, duration: 60 });
-        return false;
-      }
-    }
-    if (this.kind === "boss") {
-      this.hp -= source === "shell" ? 2 : 1;
-      if (this.hp > 0) {
-        // Flash + knock back so every landed hit reads clearly.
-        this.dir = -this.dir;
-        this.setVelocityY(-260);
-        this.scene.tweens.add({ targets: this, alpha: 0.25, yoyo: true, repeat: 3, duration: 70 });
-        return false;
-      }
-    }
     this.defeat(source === "fire");
     return true;
   }
@@ -248,6 +178,11 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     if (this.kind === "piranha") {
       this.updatePiranha(delta);
       body.updateFromGameObject();
+    } else if (this.kind === "flyer") {
+      this.x += this.dir * this.stats.speed * (delta / 1000);
+      if (Math.abs(this.x - this.homeX) > this.patrol) this.dir *= -1;
+      this.y = this.homeY + Math.sin(time / 520 + this.phase) * 52;
+      body.updateFromGameObject();
     } else if (this.mode === "sliding") {
       this.setVelocityX(this.dir * SHELL.slideSpeed);
       if (body.blocked.left || body.blocked.right) {
@@ -265,24 +200,10 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
         // Classic wobble tell just before the patroller climbs back out.
         this.setFlipY(Math.floor(time / 110) % 2 === 0);
       }
-    } else if (this.kind === "boss") {
-      this.setVelocityX(this.dir * this.stats.speed);
-      if (body.blocked.left || body.blocked.right || Math.abs(this.x - this.homeX) > this.patrol) {
-        this.dir *= -1;
-        this.x += this.dir * 3;
-      }
-      if (body.blocked.down && time > this.hopAt) {
-        this.hopAt = time + 1400;
-        this.setVelocityY(-420);
-      }
-      this.useSkill(time, body);
     } else {
-      if (this.kind === "lobber") this.updateLobber(time);
       let speed = this.stats.speed;
-      if (this.kind === "ogre" && this.enraged) speed *= 1.6;
       if (this.kind === "spiker") speed *= this.updateSpikerCharge(time);
       this.setVelocityX(this.dir * speed);
-      this.useSkill(time, body);
       const hitWall = body.blocked.left || body.blocked.right;
       const beyondPatrol = Math.abs(this.x - this.homeX) > this.patrol;
       const edge = body.blocked.down && !this.groundAhead();
@@ -293,10 +214,6 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     }
 
     if (this.kind !== "piranha") this.setFlipX(this.dir > 0);
-    if (this.kind === "boss") {
-      this.setTexture(bossKey(this.bossTheme, Math.floor(time / 220) % 2));
-      return;
-    }
     this.animTime += delta;
     if (this.kind !== "piranha" && this.animTime > 180 && this.mode === "patrol") {
       this.animTime = 0;
@@ -308,81 +225,12 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
             ? "shell"
             : this.kind === "spiker"
               ? "spiker"
-              : this.kind === "lobber"
-                ? "lobber"
-                : "ogre";
+              : "flyer";
       this.setTexture(`${base}_${this.frame2}`);
     }
   }
 
   /** Returns the speed multiplier for the spiker's patrol / charge rhythm. */
-  private updateLobber(time: number): void {
-    const scene = this.scene as Phaser.Scene & {
-      playerX?: () => number;
-      spawnEnemyShot?: (x: number, y: number, dir: number) => void;
-    };
-    const px = scene.playerX?.();
-    if (px === undefined || !Number.isFinite(px)) return;
-    const dx = px - this.x;
-    if (Math.abs(dx) > LOBBER.range) return;
-    this.dir = dx >= 0 ? 1 : -1;
-    if (time > this.nextShotAt) {
-      this.nextShotAt = time + LOBBER.cooldownMs;
-      this.telegraphUntil = time + LOBBER.telegraphMs;
-      this.scene.time.delayedCall(LOBBER.telegraphMs, () => {
-        if (this.mode === "dead" || !this.active) return;
-        scene.spawnEnemyShot?.(this.x + this.dir * 16, this.y - 20, this.dir);
-      });
-    }
-    this.setTint(time < this.telegraphUntil ? 0xffe08a : 0xffffff);
-  }
-
-  /**
-   * Signature skills: walkers leap, shells burst-dash, ogres pounce and bosses
-   * fire ranged shots, so every stage has active threats instead of pacers.
-   */
-  private useSkill(time: number, body: Phaser.Physics.Arcade.Body): void {
-    const scene = this.scene as Phaser.Scene & {
-      playerX?: () => number;
-      spawnEnemyShot?: (x: number, y: number, dir: number) => void;
-    };
-    const px = scene.playerX?.();
-    if (px === undefined || !Number.isFinite(px)) return;
-    const dx = px - this.x;
-    const near = (r: number): boolean => Math.abs(dx) < r;
-    if (time < this.nextSkillAt) return;
-
-    if (this.kind === "walker" && body.blocked.down && near(SKILL.walkerHopRange)) {
-      this.nextSkillAt = time + SKILL.walkerHopCooldown;
-      this.dir = dx >= 0 ? 1 : -1;
-      this.setVelocityY(-300);
-      this.setVelocityX(this.dir * this.stats.speed * 1.8);
-    } else if (this.kind === "shell" && this.mode === "patrol" && near(SKILL.shellDashRange)) {
-      this.nextSkillAt = time + SKILL.shellDashCooldown;
-      this.dir = dx >= 0 ? 1 : -1;
-      this.setTint(0xffd0d0);
-      this.scene.time.delayedCall(260, () => {
-        if (this.mode !== "patrol" || !this.active) return;
-        this.clearTint();
-        this.setVelocityX(this.dir * this.stats.speed * 3);
-      });
-    } else if (this.kind === "ogre" && body.blocked.down && near(SKILL.ogreLeapRange)) {
-      this.nextSkillAt = time + SKILL.ogreLeapCooldown;
-      this.dir = dx >= 0 ? 1 : -1;
-      this.setVelocityY(-380);
-      this.setVelocityX(this.dir * this.stats.speed * 1.6);
-    } else if (this.kind === "boss" && near(SKILL.bossShotRange)) {
-      this.nextSkillAt = time + SKILL.bossShotCooldown;
-      const dir = dx >= 0 ? 1 : -1;
-      this.setTint(0xffc8a0);
-      this.scene.time.delayedCall(360, () => {
-        if (this.mode === "dead" || !this.active) return;
-        this.clearTint();
-        scene.spawnEnemyShot?.(this.x + dir * 24, this.y - 40, dir);
-      });
-    }
-  }
-
   private updateSpikerCharge(time: number): number {
     const scene = this.scene as Phaser.Scene & { playerX?: () => number };
     const px = scene.playerX?.() ?? Number.NaN;

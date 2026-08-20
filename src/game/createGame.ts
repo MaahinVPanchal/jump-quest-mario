@@ -6,7 +6,6 @@ import { HudScene } from "./scenes/HudScene";
 import { PauseScene } from "./scenes/PauseScene";
 import { LevelCompleteScene } from "./scenes/LevelCompleteScene";
 import { GameOverScene } from "./scenes/GameOverScene";
-import { SanityScene } from "./scenes/SanityScene";
 import { audio } from "./systems/audio";
 import { gameState } from "./systems/state";
 import { display, resolveZoom } from "./systems/display";
@@ -53,7 +52,7 @@ export function createGame({ parent, slot, save, onExit, characterId, levelId }:
       arcade: { gravity: { x: 0, y: PHYSICS.gravity }, debug: false },
     },
     input: { gamepad: true },
-    scene: [BootScene, LevelScene, HudScene, PauseScene, LevelCompleteScene, GameOverScene, SanityScene],
+    scene: [BootScene, LevelScene, HudScene, PauseScene, LevelCompleteScene, GameOverScene],
   });
 
   game.events.on("game:exit", () => {

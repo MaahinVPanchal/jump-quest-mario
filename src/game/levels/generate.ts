@@ -1,5 +1,6 @@
 import type {
   BlockSpawn,
+  EnemyKind,
   EnemySpawn,
   ItemSpawn,
   LevelData,
@@ -7,10 +8,86 @@ import type {
   PipeSpawn,
   Vec2,
 } from "../types";
-import { STAGE_THEMES, themeByWorld } from "./themes";
 
-/** Legacy alias kept for briefing UI code that reads world names. */
-export const WORLD_THEMES = STAGE_THEMES;
+export interface WorldTheme {
+  world: number;
+  name: string;
+  /** Backdrop colour for the world. */
+  skyColor: number;
+  /** Naming pool for the stages in this world. */
+  places: string[];
+  /** Enemy mix used when populating stages. */
+  enemies: EnemyKind[];
+  /** Building-set label shown in the level briefing. */
+  buildSet: string;
+}
+
+export const WORLD_THEMES: WorldTheme[] = [
+  {
+    world: 1,
+    name: "Emberleaf Meadow",
+    skyColor: 0x5c94fc,
+    places: ["Emberleaf Meadow", "Sunblossom Fields", "Acorn Hollow", "Thistle Rise", "Meadow Gate", "Emberleaf Keep"],
+    enemies: ["walker", "walker", "shell", "flyer"],
+    buildSet: "Grass brick set",
+  },
+  {
+    world: 2,
+    name: "Cinderpeak",
+    skyColor: 0x2038ec,
+    places: ["Cinderpeak Hollow", "Ashfall Steps", "Ember Quarry", "Sootstone Pass", "Magma Vents", "Cinderpeak Keep"],
+    enemies: ["walker", "shell", "spiker", "flyer", "piranha"],
+    buildSet: "Cavern stone set",
+  },
+  {
+    world: 3,
+    name: "Duneglass",
+    skyColor: 0xd8a038,
+    places: ["Duneglass Flats", "Scarab Steps", "Glass Pyramid", "Quicksand Run", "Sunken Bazaar", "Duneglass Tomb"],
+    enemies: ["walker", "spiker", "piranha", "shell"],
+    buildSet: "Sandstone pyramid set",
+  },
+  {
+    world: 4,
+    name: "Frostpane",
+    skyColor: 0x3cbcfc,
+    places: ["Frostpane Shelf", "Glacier Drift", "Icicle Span", "Snowveil Woods", "Frozen Falls", "Frostpane Spire"],
+    enemies: ["walker", "flyer", "shell", "spiker"],
+    buildSet: "Ice block set",
+  },
+  {
+    world: 5,
+    name: "Verdant Canopy",
+    skyColor: 0x009438,
+    places: ["Canopy Trail", "Vinecoil Deep", "Bloomspire", "Rootmaze", "Fernlight Grove", "Canopy Crown"],
+    enemies: ["piranha", "walker", "flyer", "shell", "spiker"],
+    buildSet: "Jungle timber set",
+  },
+  {
+    world: 6,
+    name: "Skylantern",
+    skyColor: 0x6888fc,
+    places: ["Skylantern Reach", "Cloudstep Way", "Lantern Bridge", "Windwake Run", "Stormshelf", "Skylantern Court"],
+    enemies: ["flyer", "flyer", "walker", "shell"],
+    buildSet: "Floating cloud set",
+  },
+  {
+    world: 7,
+    name: "Gearworks",
+    skyColor: 0x7c7c7c,
+    places: ["Gearworks Yard", "Piston Row", "Rivet Line", "Boiler Deep", "Conveyor Maze", "Gearworks Vault"],
+    enemies: ["spiker", "shell", "walker", "flyer", "piranha"],
+    buildSet: "Iron machine set",
+  },
+  {
+    world: 8,
+    name: "Obsidian Crown",
+    skyColor: 0x201038,
+    places: ["Obsidian Gate", "Ashen Bridge", "Molten Stair", "Shadow Halls", "Crown Ascent", "The Final Crown"],
+    enemies: ["spiker", "piranha", "shell", "flyer", "walker"],
+    buildSet: "Obsidian castle set",
+  },
+];
 
 /** Deterministic RNG so every generated stage is identical between sessions. */
 function rng(seed: number): () => number {
@@ -28,8 +105,8 @@ const HEIGHT = 24;
 const SURFACE = 19;
 
 export function buildLevel(world: number, level: number): LevelData {
-  const theme = themeByWorld(world);
-  const index = world - 1;
+  const theme = WORLD_THEMES[world - 1]!;
+  const index = (world - 1) * 6 + (level - 1);
   const rand = rng(1337 + index * 7919);
   const pick = <T,>(list: T[]): T => list[Math.floor(rand() * list.length)]!;
 
@@ -71,18 +148,7 @@ export function buildLevel(world: number, level: number): LevelData {
     for (let cx = x0; cx <= x1; cx++) items.push({ type: "coin", x: cx, y });
   };
 
-  // Difficulty curve: later worlds field more, faster, longer-ranged patrols.
-  const enemyDensity = 12 + Math.floor(index * 1.4);
-  // Complex architecture: staircases grow one step taller per world (world 10 = 10 high).
-  const stairHeight = Math.min(10, 2 + index);
-  const SAFE_START = 14;
-  const checkpointXs: number[] = [];
-  const safeFrom = (tx: number): boolean =>
-    tx > SAFE_START && checkpointXs.every((cx) => Math.abs(tx - cx) > 6);
-  const thirdSeg = segments[Math.floor(segments.length / 3)];
-  const midSeg = segments[Math.floor(segments.length / 2)];
-  if (thirdSeg) checkpointXs.push(thirdSeg[0] + 4);
-  if (midSeg) checkpointXs.push(midSeg[0] + 4);
+  const enemyDensity = 10 + Math.floor(index * 0.5);
   segments.forEach(([sx, ex], i) => {
     if (ex - sx < 10) return;
     const shelfY = 8 + Math.floor(rand() * 6);
@@ -101,40 +167,11 @@ export function buildLevel(world: number, level: number): LevelData {
     if (i === 3) blocks.push({ kind: "question", x: sx + 6, y: SURFACE - 4, contains: "catBell" });
     if (i === 3) blocks.push({ kind: "hidden", x: sx + 5, y: SURFACE - 5, contains: "oneUp" });
 
-    // --- climbable buildings: pyramid stairs, towers and bridge decks
-    if (ex - sx > 14) {
-      const stepW = 1;
-      const baseX = sx + 6;
-      const up = i % 3 !== 2;
-      for (let s = 0; s < stairHeight; s++) {
-        const col = baseX + s * stepW;
-        if (col >= ex - 2) break;
-        const h = up ? s + 1 : stairHeight - s;
-        fill(col, col, SURFACE - h, SURFACE - 1, world >= 5 ? 3 : 1);
-      }
-      // Landing deck on top of the stairs with a coin payout.
-      const topX = Math.min(ex - 3, baseX + stairHeight);
-      const topY = SURFACE - stairHeight;
-      fill(topX, Math.min(ex - 1, topX + 3), topY, topY, world >= 5 ? 3 : 1);
-      coinRow(topX, Math.min(ex - 1, topX + 3), topY - 1);
-      // Tower: a stacked metal/brick column beside the deck, every other segment.
-      if (i % 2 === 0) {
-        const tx = Math.min(ex - 2, topX + 5);
-        for (let h = 1; h <= Math.min(6, 2 + Math.floor(index / 2)); h++) {
-          blocks.push({ kind: h % 3 === 0 ? "question" : "metal", x: tx, y: SURFACE - h * 2, ...(h % 3 === 0 ? { contains: "coin" as const, coins: 2 } : {}) });
-        }
-      }
-    }
-
-    const count = Math.min(6, 1 + Math.floor(rand() * (1 + enemyDensity / segments.length)));
+    const count = Math.min(4, 1 + Math.floor(rand() * (1 + enemyDensity / segments.length)));
     for (let n = 0; n < count; n++) {
       const kind = pick(theme.enemies);
       const ex0 = sx + 4 + Math.floor(rand() * Math.max(1, ex - sx - 6));
-      // Never place a threat in the drop zone or on a checkpoint respawn pad.
-      if (!safeFrom(ex0)) continue;
-      if (kind === "ogre") enemies.push({ type: "ogre", x: ex0, y: shelfY + 1, patrol: 140 + Math.floor(rand() * 60) });
-      else if (kind === "lobber")
-        enemies.push({ type: "lobber", x: ex0, y: SURFACE - 1, direction: -1, patrol: 60 + Math.floor(rand() * 40) });
+      if (kind === "flyer") enemies.push({ type: "flyer", x: ex0, y: shelfY + 1, patrol: 140 + Math.floor(rand() * 60) });
       else if (kind === "piranha") {
         pipes.push({ x: ex0, y: SURFACE - 2, target: { x: Math.min(width - 24, ex0 + 24), y: SURFACE - 1 }, label: `${theme.name} tunnel` });
         enemies.push({ type: "piranha", x: ex0, y: SURFACE - 2 });
@@ -157,17 +194,11 @@ export function buildLevel(world: number, level: number): LevelData {
         duration: 2200 + Math.floor(rand() * 1200),
       });
     }
-    // Traps: spike beds get longer and more frequent deeper into the campaign.
-    if (world >= 2 && i % 2 === 1) {
-      const trapX = sx + 8;
-      const span = 1 + Math.min(3, Math.floor(index / 3));
-      for (let t = 0; t < span; t++) if (safeFrom(trapX + t)) hazards.push({ x: trapX + t, y: SURFACE - 1 });
-    }
-    if (world >= 5 && i % 3 === 0 && safeFrom(sx + 13)) hazards.push({ x: sx + 13, y: SURFACE - 1 });
+    if (world >= 3 && i % 3 === 2) hazards.push({ x: sx + 8, y: SURFACE - 1 });
   });
 
   // --- stars: required from world 3 onward, more of them deeper in
-  const starsRequired = world >= 2 ? Math.min(8, 2 + Math.floor(world / 2)) : 0;
+  const starsRequired = world >= 3 ? Math.min(8, 3 + Math.floor(world / 2)) : world === 2 ? 5 : 0;
   for (let s = 0; s < starsRequired; s++) {
     const seg = segments[Math.floor(((s + 1) / (starsRequired + 1)) * segments.length)] ?? segments[0]!;
     items.push({ type: "star", x: Math.min(width - 4, seg[0] + 6), y: 6 + ((s * 3) % 8), id: `star-${world}-${level}-${s}` });
@@ -179,12 +210,6 @@ export function buildLevel(world: number, level: number): LevelData {
     items.push({ type: "relic", x: Math.min(width - 3, seg[0] + 10), y: 5 + r * 4, id: `relic-${world}-${level}-${r}` });
   }
 
-  // --- world boss guarding the run-up to the flag
-  const bossX = width - 16;
-  // Gunner escort so the run-up to the boss keeps pressure on.
-  if (world >= 3) enemies.push({ type: "lobber", x: bossX - 12, y: SURFACE - 1, direction: -1, patrol: 40 });
-  enemies.push({ type: "boss", x: bossX, y: SURFACE - 1, variant: theme.id, patrol: 190, direction: -1 });
-
   const mid = segments[Math.floor(segments.length / 2)]!;
   const third = segments[Math.floor(segments.length / 3)]!;
 
@@ -192,7 +217,7 @@ export function buildLevel(world: number, level: number): LevelData {
     id: `${world}-${level}`,
     world,
     level,
-    name: theme.name,
+    name: theme.places[level - 1] ?? `${theme.name} ${level}`,
     timeLimit: 300 + index * 2,
     widthTiles: width,
     heightTiles: HEIGHT,
@@ -211,9 +236,7 @@ export function buildLevel(world: number, level: number): LevelData {
     hazards,
     music: "level",
     ...(starsRequired ? { starsRequired } : {}),
-    skyColor: theme.sky,
+    skyColor: theme.skyColor,
     buildSet: theme.buildSet,
-    themeId: theme.id,
-    bossRequired: true,
   };
 }

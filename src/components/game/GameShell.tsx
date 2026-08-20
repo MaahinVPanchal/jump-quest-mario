@@ -3,11 +3,10 @@ import { ClientOnly } from "@tanstack/react-router";
 import { lazy, Suspense } from "react";
 import { emptySave, loadSlot, saveSlot } from "@/game/save-facade";
 import type { SaveData } from "@/game/types";
-import PixelSprite, { HeroSprite, type SpriteId } from "./PixelSprite";
+import PixelSprite, { type SpriteId } from "./PixelSprite";
 import { ENEMIES } from "@/game/data/enemies";
 import { CHARACTERS, ROSTER } from "@/game/data/characters";
-import { STAGE_THEMES } from "@/game/levels/themes";
-import { LEVELS, isLevelUnlocked } from "@/game/levels";
+import { LEVELS } from "@/game/levels";
 
 const PhaserMount = lazy(() => import("./PhaserMount"));
 
@@ -21,7 +20,7 @@ const CONTROLS: [string, string][] = [
   ["Enter a tunnel", "Down / S on top of a pipe"],
   ["Restart from checkpoint", "R"],
   ["Pause", "Esc"],
-  ["Debug (dev only)", "F1 hitboxes · F2 stats · F9 sanity check · F10 invincible"],
+  ["Debug (dev only)", "F1 hitboxes · F2 stats · F10 invincible"],
 ];
 
 const POWER_UPS: { id: SpriteId; name: string; text: string }[] = [
@@ -83,24 +82,14 @@ const ENEMY_CARDS: EnemyCard[] = [
     tip: "Kick a shell down a lane of Sprout Walkers for a rapid score chain — it also clears Emberjaw Blooms.",
   },
   {
-    id: "lobber",
-    key: "lobber",
-    text: "Ranged gunner. It flashes, then lobs an arcing fireshot at you.",
+    id: "flyer",
+    key: "flyer",
+    text: "Hovers in a wave pattern. Time your jump or use fire.",
     behaviour:
-      "Paces slowly over a short 72 px beat and tracks Riko within 460 px. Every 1.9 s it glows yellow for ~0.4 s (the tell), then launches an arcing shot that bounces once before burning out.",
-    counters: ["Stomp — one hit", "Fire ember — one hit", "Sliding shell — knocked away", "Your own shot cancels its shot mid-air"],
-    danger: "The arc clears low cover and lands behind ledges, so hiding does not work. Contact with the shot costs a power stage.",
-    tip: "Move on the flash: jump the first arc, then close in and stomp during its reload window.",
-  },
-  {
-    id: "ogre",
-    key: "ogre",
-    text: "Armoured club ogre. Two stomps — the first only enrages it.",
-    behaviour:
-      "Marches at 66 px/s over a 140 px beat, turning at ledges and walls. One stomp cracks its hide and it charges 60% faster; the second stomp fells it for 400 points.",
-    counters: ["Two stomps in a row", "One fire ember", "A sliding shell drops it instantly"],
-    danger: "It is bigger and heavier than a walker, so an enraged brute closes gaps fast and can corner you on narrow shelves.",
-    tip: "Stomp once, land ahead of it, then turn and stomp again on the rebound — or just save a shell for it.",
+      "Drifts at 60 px/s along a 160 px sine wave, ignoring the ground entirely, so it crosses gaps and pits.",
+    counters: ["Stomp at the top of its dip", "Fire ember — safest option"],
+    danger: "It can drift into you mid-jump, over pits where a knockback means a fall.",
+    tip: "Wait for the low point of the wave and stomp; the bounce carries you over the following gap.",
   },
   {
     id: "piranha",
@@ -136,7 +125,6 @@ export default function GameShell() {
   const [save, setSave] = useState<SaveData | null>(null);
   const [activeSave, setActiveSave] = useState<SaveData | null>(null);
   const [characterId, setCharacterId] = useState("riko");
-  const [pickedLevelId, setPickedLevelId] = useState<string | null>(null);
 
   useEffect(() => {
     setSave(loadSlot(SAVE_SLOT));
@@ -145,8 +133,6 @@ export default function GameShell() {
   const completedLevels = save?.completedLevels ?? [];
   // Campaign flows automatically: drop straight into the first unfinished stage.
   const nextLevel = LEVELS.find((l) => !completedLevels.includes(l.id)) ?? LEVELS[0]!;
-  const startLevel =
-    (pickedLevelId && LEVELS.find((l) => l.id === pickedLevelId)) || nextLevel;
 
   const play = useCallback(() => {
     const existing = loadSlot(SAVE_SLOT) ?? emptySave("Riko");
@@ -169,7 +155,7 @@ export default function GameShell() {
               slot={SAVE_SLOT}
               save={activeSave}
               characterId={characterId}
-              levelId={startLevel.id}
+              levelId={nextLevel.id}
               onExit={exit}
             />
           </Suspense>
@@ -217,38 +203,79 @@ export default function GameShell() {
 
         {screen === "roster" && (
           <section className="w-full space-y-6">
-            {/* Hero roster — compact arcade cards, one per fighter */}
+            {/* Hero roster - every hero is playable, arcade select-screen style */}
             <div className="border-4 border-nes-ink bg-nes-ink p-4 shadow-[8px_8px_0_0_var(--nes-brick-dark)]">
               <h2 className="text-center text-xs uppercase tracking-[0.3em] text-nes-coin">
                 Select your hero
               </h2>
               <p className="mt-2 text-center text-[8px] uppercase tracking-widest text-nes-paper/70">
-                {ROSTER.length} fighters · 5 classic archetypes · 4 originals
+                {ROSTER.length} original fighters · every one playable
               </p>
-              <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {ROSTER.map((c) => (
-                  <HeroCard
-                    key={c.id}
-                    hero={c}
-                    selected={characterId === c.id}
-                    onSelect={() => setCharacterId(c.id)}
-                  />
-                ))}
+              <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                {ROSTER.map((c) => {
+                  const selected = characterId === c.id;
+                  return (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => setCharacterId(c.id)}
+                      className={`flex items-start gap-3 border-4 p-3 text-left transition ${
+                        selected
+                          ? "border-nes-paper bg-nes-coin"
+                          : "border-nes-ink bg-nes-coin/80 hover:bg-nes-coin active:translate-y-[2px]"
+                      }`}
+                    >
+                      <PixelSprite
+                        id={
+                          /Princess|Doll|Dancer|Star/i.test(c.archetype ?? "")
+                            ? "princess"
+                            : c.canDoubleJump
+                              ? "mira"
+                              : "riko"
+                        }
+                        px={3}
+                        tint={c.tint}
+                      />
+                      <div className="min-w-0">
+                        <p className="text-[9px] uppercase tracking-widest text-nes-brick-dark">
+                          {c.name} · {c.archetype ?? abilityLabel(c.specialAbility)}
+                        </p>
+                        <p className="mt-1 text-[8px] leading-5">{c.blurb}</p>
+                        <p className="mt-2 text-[8px] uppercase tracking-widest text-nes-ink/70">
+                          SPD {c.speed} · JMP {c.jumpForce} · HP {c.maxHealth}
+                          {c.canDoubleJump ? " · Double jump" : ""}
+                          {c.canDash ? " · Dash" : ""}
+                        </p>
+                        <p className="mt-1 text-[8px] uppercase tracking-widest text-nes-ink/70">
+                          Throws: {c.throwable ?? "ember"} · banana → monkey · bell → cat
+                        </p>
+                        <p className="mt-2 inline-block border-2 border-nes-ink bg-nes-ink px-2 py-1 text-[8px] uppercase tracking-widest text-nes-coin">
+                          Special: {c.special ?? abilityLabel(c.specialAbility)}
+                        </p>
+                        {selected ? (
+                          <p className="mt-2 text-[8px] uppercase tracking-widest text-nes-brick-dark">
+                            ★ Selected
+                          </p>
+                        ) : null}
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
             {/* Selected hero forms */}
             <div className="border-4 border-nes-ink bg-nes-paper p-5 shadow-[6px_6px_0_0_var(--nes-ink)]">
               <h2 className="text-center text-xs uppercase tracking-widest text-nes-ink">
-                {hero.name} · {hero.role}
+                {hero.name} · power forms
               </h2>
               <div className="mt-5 flex flex-wrap items-center justify-center gap-8">
                 <PixelSprite id="star" px={4} />
-                {(["idle", "walk1", "jump", "attack1"] as const).map((pose, i) => (
-                  <div key={pose} className="flex flex-col items-center gap-2">
-                    <HeroSprite rig={hero.rig} pose={pose} px={4} />
+                {(["riko", "rikoBig", "rikoFire"] as SpriteId[]).map((id, i) => (
+                  <div key={id} className="flex flex-col items-center gap-2">
+                    <PixelSprite id={id} px={i === 0 ? 3 : 4} tint={i === 2 ? undefined : hero.tint} />
                     <p className="text-[8px] uppercase tracking-widest text-nes-brick-dark">
-                      {["Idle", "Run", "Jump", "Attack"][i]}
+                      {["Small", "Big", "Fire"][i]}
                     </p>
                   </div>
                 ))}
@@ -311,60 +338,12 @@ export default function GameShell() {
               </ul>
             </div>
 
-            {/* Ten themed worlds, each with its own art set and guardian boss */}
-            <div className="border-4 border-nes-ink bg-nes-paper p-5 shadow-[6px_6px_0_0_var(--nes-ink)]">
-              <h2 className="text-center text-xs uppercase tracking-widest text-nes-ink">
-                Ten worlds · ten bosses
-              </h2>
-              <ul className="mt-4 grid gap-2 sm:grid-cols-2">
-                {STAGE_THEMES.map((t) => {
-                  const cleared = completedLevels.includes(`${t.world}-1`);
-                  const id = `${t.world}-1`;
-                  const unlocked = isLevelUnlocked(id, completedLevels);
-                  const picked = startLevel.id === id;
-                  return (
-                    <li key={t.id}>
-                     <button
-                      type="button"
-                      disabled={!unlocked}
-                      onClick={() => setPickedLevelId(id)}
-                      className={`flex w-full items-start gap-3 border-2 p-2 text-left ${
-                        picked
-                          ? "border-nes-ink bg-nes-coin"
-                          : unlocked
-                            ? "border-nes-ink/20 bg-white/60 hover:border-nes-ink"
-                            : "border-nes-ink/10 bg-white/30 opacity-50"
-                      }`}
-                     >
-                      <span
-                        aria-hidden
-                        className="mt-[2px] h-5 w-5 shrink-0 border-2 border-nes-ink"
-                        style={{ background: `#${t.sky.toString(16).padStart(6, "0")}` }}
-                      />
-                      <div className="min-w-0">
-                        <p className="text-[9px] uppercase tracking-widest text-nes-ink">
-                          {t.world}-1 {t.name}{" "}
-                          {cleared ? "· CLEAR · REPLAY" : unlocked ? "· OPEN" : "· LOCKED"}
-                        </p>
-                        <p className="mt-1 text-[8px] leading-4 text-nes-brick-dark">{t.blurb}</p>
-                        <p className="mt-1 text-[8px] uppercase tracking-widest text-nes-brick">
-                          Boss: {t.boss.name}
-                        </p>
-                      </div>
-                     </button>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-
             <div className="flex flex-col items-center gap-3">
               <MenuButton primary onClick={play}>
-                Start {hero.name} · {startLevel.world}-{startLevel.level}
+                Start {hero.name} · {nextLevel.world}-{nextLevel.level}
               </MenuButton>
               <p className="text-center text-[9px] leading-5 text-nes-brick-dark">
-                {completedLevels.length}/{LEVELS.length} stages cleared · selected {startLevel.name}
-                {" "}· tap any unlocked stage above to replay it
+                {completedLevels.length}/{LEVELS.length} stages cleared · next up {nextLevel.name}
               </p>
               <MenuButton onClick={() => setScreen("menu")}>Back</MenuButton>
             </div>
@@ -387,90 +366,6 @@ export default function GameShell() {
         )}
       </div>
     </main>
-  );
-}
-
-/** Darkens a hero colour until it reads against the light card paper. */
-function onPaper(hex: string): string {
-  const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
-  if (!m) return hex;
-  let [r, g, b] = [0, 2, 4].map((i) => parseInt(m[1]!.slice(i, i + 2), 16)) as [number, number, number];
-  let lum = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
-  while (lum > 0.55) {
-    r = Math.round(r * 0.72);
-    g = Math.round(g * 0.72);
-    b = Math.round(b * 0.72);
-    lum = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
-  }
-  return `#${[r, g, b].map((v) => v.toString(16).padStart(2, "0")).join("")}`;
-}
-
-/** Compact pixel character card: sprite, name, role, stats, attack, special. */
-function HeroCard({
-  hero,
-  selected,
-  onSelect,
-}: {
-  hero: (typeof ROSTER)[number];
-  selected: boolean;
-  onSelect: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onSelect}
-      aria-pressed={selected}
-      className={`flex flex-col items-stretch gap-2 border-4 p-3 text-left transition ${
-        selected
-          ? "border-nes-coin bg-nes-paper shadow-[0_0_0_4px_var(--nes-brick-dark)]"
-          : "border-nes-ink bg-nes-paper/90 hover:bg-nes-paper active:translate-y-[2px]"
-      }`}
-    >
-      <div
-        className="flex h-24 items-end justify-center border-2 border-nes-ink"
-        style={{
-          background: `linear-gradient(180deg, ${hero.colors.secondary}33, ${hero.colors.primary}55)`,
-        }}
-      >
-        <HeroSprite rig={hero.rig} px={5} />
-      </div>
-      <p className="text-[11px] uppercase tracking-widest" style={{ color: onPaper(hero.colors.primary) }}>
-        {hero.name}
-      </p>
-      <p className="text-[8px] uppercase tracking-widest text-nes-brick-dark">{hero.role}</p>
-      <StatBar label="SPD" value={hero.stats.speed} color={onPaper(hero.colors.primary)} />
-      <StatBar label="JMP" value={hero.stats.jump} color={onPaper(hero.colors.secondary)} />
-      <p className="text-[8px] uppercase tracking-widest">
-        HP {"\u2665".repeat(hero.stats.health)}
-      </p>
-      <p className="text-[8px] uppercase tracking-widest">&#9876; {hero.attackName}</p>
-      <p
-        className="inline-block border-2 border-nes-ink px-2 py-1 text-[8px] uppercase tracking-widest"
-        style={{ background: hero.colors.accent, color: "#101018" }}
-      >
-        &#9733; {hero.special}
-      </p>
-      <p className="text-[8px] uppercase tracking-widest text-nes-brick-dark">
-        {selected ? "\u25B6 Selected" : "\u00A0"}
-      </p>
-    </button>
-  );
-}
-
-function StatBar({ label, value, color }: { label: string; value: number; color: string }) {
-  return (
-    <p className="flex items-center gap-2 text-[8px] uppercase tracking-widest">
-      <span className="w-7">{label}</span>
-      <span className="flex gap-[2px]">
-        {Array.from({ length: 10 }, (_, i) => (
-          <span
-            key={i}
-            className="h-2 w-2 border border-nes-ink"
-            style={{ background: i < value ? color : "transparent" }}
-          />
-        ))}
-      </span>
-    </p>
   );
 }
 
