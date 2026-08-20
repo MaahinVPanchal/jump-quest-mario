@@ -3,6 +3,7 @@ import { buildCampaign } from "./campaign";
 import { assignObjectives } from "./objectives";
 import { applyBrickDifficulty } from "./brickDifficulty";
 import { analyzeLevels } from "./validate";
+import { polishLevels } from "./polish";
 import { WORLDS, getWorld } from "./worlds";
 
 /** Four hand-designed stages per world, eight worlds, 32 stages total. */
@@ -15,7 +16,9 @@ export const WORLD_SIZES = [4, 4, 4, 4, 4, 4, 4, 4];
 function prepareCampaign(): LevelData[] {
   const raw = buildCampaign().map(applyBrickDifficulty);
   analyzeLevels(raw);
-  return raw.map(assignObjectives);
+  const polished = polishLevels(raw);
+  analyzeLevels(polished);
+  return polished.map(assignObjectives);
 }
 
 export const LEVELS: LevelData[] = prepareCampaign();
