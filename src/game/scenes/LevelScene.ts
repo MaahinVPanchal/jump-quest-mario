@@ -13,6 +13,7 @@ import { Player } from "../entities/player/Player";
 import { Enemy } from "../entities/Enemy";
 import { Block } from "../entities/Block";
 import { Collectible } from "../entities/Collectible";
+import { ObjectiveTracker } from "../systems/objectiveTracker";
 
 interface MovingPlatform {
   sprite: Phaser.Physics.Arcade.Image;
@@ -50,6 +51,7 @@ export class LevelScene extends Phaser.Scene {
   private invincible = false;
   private lastCheckpointIndex = -1;
   private goalLocked = false;
+  private objectives!: ObjectiveTracker;
   private airJumpPip?: Phaser.GameObjects.Text;
   private controlHint?: Phaser.GameObjects.Text;
 
@@ -67,6 +69,7 @@ export class LevelScene extends Phaser.Scene {
 
   create(): void {
     this.level = getLevel(gameState.levelId);
+    this.objectives = new ObjectiveTracker(this.level);
     const level = this.level;
     this.finished = false;
     this.respawning = false;
@@ -489,6 +492,7 @@ export class LevelScene extends Phaser.Scene {
   private registerCoin(x: number, y: number): void {
     audio.play("coin");
     gameState.addCoin();
+    this.objectives.coin();
     this.addScore(SCORE.coin, x, y);
     this.emitHud();
   }
@@ -607,6 +611,7 @@ export class LevelScene extends Phaser.Scene {
       if (!removed) return;
     }
     gameState.enemiesDefeated += 1;
+    this.objectives.enemyDefeated();
     const multiplier = gameState.bumpCombo(this.time.now);
     const points = enemy.stats.score * multiplier;
     this.addScore(points, enemy.x, enemy.y - 20, multiplier > 1 ? `x${multiplier}` : undefined);
@@ -691,6 +696,7 @@ export class LevelScene extends Phaser.Scene {
       relics: gameState.relicIds.length,
       stars: this.starsCollected,
       starsRequired: this.starsRequired,
+      objectives: this.objectives?.progress() ?? [],
     });
   }
 
@@ -757,6 +763,7 @@ export class LevelScene extends Phaser.Scene {
         if (this.finished || this.respawning || this.transitioning) return;
         if (this.scene.isPaused()) return;
         this.timeLeft -= 1;
+        this.objectives.setTimeLeft(this.timeLeft);
         if (this.timeLeft <= 30 && this.timeLeft > 0 && this.timeLeft % 1 === 0) audio.play("menu");
         if (this.timeLeft <= 0) {
           this.timeLeft = 0;
