@@ -21,8 +21,14 @@ export class LevelCompleteScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
 
+    const objectiveRows: [string, string][] = (result?.objectives ?? []).map((o) => [
+      `Objective - ${o.label}`,
+      o.complete ? `${o.value}  CLEAR` : `${o.value}  MISSED`,
+    ]);
+
     const rows: [string, string][] = result
       ? [
+          ...objectiveRows,
           ["Time taken", `${result.timeTaken}s`],
           ["Time bonus", `${result.timeLeft * 50}`],
           ["Coins", `${result.coins}`],
@@ -34,17 +40,18 @@ export class LevelCompleteScene extends Phaser.Scene {
         ]
       : [["Score", `${gameState.score}`]];
 
+    const step = rows.length > 8 ? Math.max(24, Math.floor(330 / rows.length)) : 42;
     rows.forEach(([label, value], i) => {
-      const y = 190 + i * 42;
+      const y = 180 + i * step;
       this.add.text(VIEW.width / 2 - 240, y, label, {
         fontFamily: "system-ui, sans-serif",
-        fontSize: "24px",
+        fontSize: step < 34 ? "18px" : "24px",
         color: "#cbd5e1",
       });
       this.add
         .text(VIEW.width / 2 + 240, y, value, {
           fontFamily: "system-ui, sans-serif",
-          fontSize: "24px",
+          fontSize: step < 34 ? "18px" : "24px",
           fontStyle: "bold",
           color: "#ffffff",
         })

@@ -1,11 +1,23 @@
 import type { LevelData } from "../types";
 import { buildCampaign } from "./campaign";
+import { assignObjectives } from "./objectives";
+import { analyzeLevels } from "./validate";
 import { WORLDS, getWorld } from "./worlds";
 
 /** Four hand-designed stages per world, eight worlds, 32 stages total. */
 export const WORLD_SIZES = [4, 4, 4, 4, 4, 4, 4, 4];
 
-export const LEVELS: LevelData[] = buildCampaign();
+/**
+ * Every stage is validated (and auto-repaired) against the movement envelope
+ * before it is handed to the game, then given data-driven objectives.
+ */
+function prepareCampaign(): LevelData[] {
+  const raw = buildCampaign();
+  analyzeLevels(raw);
+  return raw.map(assignObjectives);
+}
+
+export const LEVELS: LevelData[] = prepareCampaign();
 
 export { WORLDS, getWorld };
 

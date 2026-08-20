@@ -12,6 +12,7 @@ import type {
   Vec2,
   ZoneKind,
   ZoneSpawn,
+  SecretZone,
 } from "../types";
 import { getWorld } from "./worlds";
 
@@ -52,6 +53,8 @@ export class LevelBuilder {
   spawn: Vec2;
   goal: Vec2;
   boss?: BossDefinition;
+  /** Hidden bonus region, used by the FIND_SECRET objective. */
+  secret?: SecretZone;
   private uid = 0;
 
   constructor(width: number, height = 24) {
@@ -257,6 +260,7 @@ export class LevelBuilder {
     this.fill(x - 1, x + w, y + 2, y + 2, T.STONE);
     this.coins(x, y, w - 1);
     this.item(reward, x + Math.floor(w / 2), y - 1);
+    this.secret = { x: x - 1, y: y - 1, w: w + 2, h: 4, label: "Hidden room" };
     return this;
   }
 
@@ -294,6 +298,7 @@ export class LevelBuilder {
       music: "level",
       ...(meta.starsRequired ? { starsRequired: meta.starsRequired } : {}),
       ...(this.boss ? { boss: this.boss } : {}),
+      ...(this.secret ? { secretZone: this.secret } : {}),
       skyColor: world.skyColor,
       buildSet: world.buildSet,
     };

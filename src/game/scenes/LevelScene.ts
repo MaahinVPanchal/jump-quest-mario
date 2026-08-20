@@ -13,6 +13,7 @@ import { Player } from "../entities/player/Player";
 import { Enemy } from "../entities/Enemy";
 import { Block } from "../entities/Block";
 import { Collectible } from "../entities/Collectible";
+import { ObjectiveTracker } from "../systems/objectiveTracker";
 
 interface MovingPlatform {
   sprite: Phaser.Physics.Arcade.Image;
@@ -50,6 +51,7 @@ export class LevelScene extends Phaser.Scene {
   private invincible = false;
   private lastCheckpointIndex = -1;
   private goalLocked = false;
+  private objectives!: ObjectiveTracker;
   private airJumpPip?: Phaser.GameObjects.Text;
   private controlHint?: Phaser.GameObjects.Text;
 
@@ -67,6 +69,7 @@ export class LevelScene extends Phaser.Scene {
 
   create(): void {
     this.level = getLevel(gameState.levelId);
+    this.objectives = new ObjectiveTracker(this.level);
     const level = this.level;
     this.finished = false;
     this.respawning = false;
@@ -489,6 +492,7 @@ export class LevelScene extends Phaser.Scene {
   private registerCoin(x: number, y: number): void {
     audio.play("coin");
     gameState.addCoin();
+    this.objectives.coin();
     this.addScore(SCORE.coin, x, y);
     this.emitHud();
   }
@@ -607,6 +611,7 @@ export class LevelScene extends Phaser.Scene {
       if (!removed) return;
     }
     gameState.enemiesDefeated += 1;
+    this.objectives.enemyDefeated();
     const multiplier = gameState.bumpCombo(this.time.now);
     const points = enemy.stats.score * multiplier;
     this.addScore(points, enemy.x, enemy.y - 20, multiplier > 1 ? `x${multiplier}` : undefined);
@@ -691,6 +696,7 @@ export class LevelScene extends Phaser.Scene {
       relics: gameState.relicIds.length,
       stars: this.starsCollected,
       starsRequired: this.starsRequired,
+      objectives: this.objectives?.progress() ?? [],
     });
   }
 
@@ -757,6 +763,7 @@ export class LevelScene extends Phaser.Scene {
         if (this.finished || this.respawning || this.transitioning) return;
         if (this.scene.isPaused()) return;
         this.timeLeft -= 1;
+        this.objectives.setTimeLeft(this.timeLeft);
         if (this.timeLeft <= 30 && this.timeLeft > 0 && this.timeLeft % 1 === 0) audio.play("menu");
         if (this.timeLeft <= 0) {
           this.timeLeft = 0;
@@ -806,6 +813,15 @@ export class LevelScene extends Phaser.Scene {
       }
       return;
     }
+    const blocked = this.objectives.blockedReason();
+    if (blocked) {
+      if (!this.goalLocked) {
+        this.goalLocked = true;
+        this.toast(`Objective not met - ${blocked}`);
+        this.time.delayedCall(1400, () => (this.goalLocked = false));
+      }
+      return;
+    }
     this.finished = true;
     this.player.lockControls(true);
     const body = this.player.sprite.body as Phaser.Physics.Arcade.Body;
@@ -828,7 +844,11 @@ export class LevelScene extends Phaser.Scene {
       timeTaken: Math.round(this.elapsed / 1000),
       damageTaken: gameState.damageTaken,
       stars: this.starsCollected,
-      rank: gameState.rankFor(this.timeLeft, this.level.timeLimit),
+      objectives: this.objectives.progress(),
+      primaryComplete: this.objectives.primaryComplete(),
+      secretFound: this.objectives.state.secretFound,
+      enemiesRequired: this.level.objectives?.primary.type === "DEFEAT_ALL" ? this.level.objectives.primary.target ?? 0 : 0,
+      rank: gameState.rankFor(this.timeLeft, this.level.timeLimit, this.objectives.primaryComplete()),
     };
     gameState.lastResult = result;
     gameState.checkpoint = null;
@@ -865,7 +885,7 @@ export class LevelScene extends Phaser.Scene {
     const lines = [
       `WORLD ${world}`,
       `${this.level.world}-${this.level.level}  ${this.level.name.toUpperCase()}`,
-      (this.level.objective ?? this.level.identity ?? "").toUpperCase(),
+      (this.level.objectives?.primary.description ?? this.level.objective ?? this.level.identity ?? "").toUpperCase(),
       "GET READY",
     ];
     const panel = this.add
@@ -948,6 +968,36 @@ export class LevelScene extends Phaser.Scene {
         .rectangle(zone.x * TILE, zone.y * TILE, zone.w * TILE, zone.h * TILE, colors[zone.kind] ?? 0xffffff, alpha)
         .setOrigin(0, 0)
         .setDepth(zone.kind === "lava" ? 15 : 3);
+    }
+  }
+
+  /** Tracks NO_WATER (or "never touch the floor") and FIND_SECRET state. */
+  private checkObjectiveZones(): void {
+    if (this.finished || this.player.dead) return;
+    const sprite = this.player.sprite;
+    const tx = sprite.x / TILE;
+    const ty = sprite.y / TILE;
+    const primary = this.objectives.primary;
+
+    if (primary?.type === "NO_WATER" && !this.objectives.state.waterTouched) {
+      const zone = this.zoneAt(sprite.x, sprite.y - 8);
+      const wet = zone?.kind === "water" || zone?.kind === "current";
+      const onFloor = this.player.movement.grounded && ty >= this.level.heightTiles - 6;
+      if (wet || onFloor) {
+        this.objectives.water();
+        this.toast(wet ? "Objective failed - you touched the water" : "Objective failed - you touched the floor");
+        this.emitHud();
+      }
+    }
+
+    const secret = this.level.secretZone;
+    if (secret && !this.objectives.state.secretFound) {
+      if (tx >= secret.x && tx <= secret.x + secret.w && ty >= secret.y - 1 && ty <= secret.y + secret.h) {
+        this.objectives.secret();
+        this.addScore(SCORE.secret, sprite.x, sprite.y - 24);
+        this.toast("Secret area discovered!");
+        this.emitHud();
+      }
     }
   }
 
@@ -1100,6 +1150,7 @@ export class LevelScene extends Phaser.Scene {
     this.updateWakeRange();
     this.checkPipes();
     this.checkCheckpoints();
+    this.checkObjectiveZones();
 
     if (this.player.sprite.y > this.level.heightTiles * TILE + 80 && !this.player.dead) {
       this.player.kill();
