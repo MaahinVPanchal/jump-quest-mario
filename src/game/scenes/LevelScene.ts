@@ -1,9 +1,10 @@
 import Phaser from "phaser";
 import { CAMERA, COLORS, COMBAT, PHYSICS, SCORE, TILE, VIEW } from "../config";
-import { LEVEL_1 } from "../levels/level1";
-import { getLevel } from "../levels";
+import { LEVELS, getLevel } from "../levels";
+import { BASE_PHYSICS } from "../levels/worlds";
+import { Boss } from "../entities/Boss";
 import { CHARACTERS, DEFAULT_CHARACTER } from "../data/characters";
-import type { LevelData, LevelResult, MovingPlatformSpawn, ThrowKind } from "../types";
+import type { LevelData, LevelResult, MovingPlatformSpawn, ThrowKind, WorldPhysics, ZoneSpawn } from "../types";
 import { InputManager } from "../systems/input";
 import { audio } from "../systems/audio";
 import { gameState } from "../systems/state";
@@ -20,7 +21,11 @@ interface MovingPlatform {
 }
 
 export class LevelScene extends Phaser.Scene {
-  private level: LevelData = LEVEL_1;
+  private level: LevelData = LEVELS[0]!;
+  private profile: WorldPhysics = BASE_PHYSICS;
+  private boss?: Boss;
+  private bossShots!: Phaser.Physics.Arcade.Group;
+  private bossBar?: Phaser.GameObjects.Graphics;
   private controls!: InputManager;
   private player!: Player;
   private terrain!: Phaser.Physics.Arcade.StaticGroup;
@@ -74,7 +79,8 @@ export class LevelScene extends Phaser.Scene {
     const worldW = level.widthTiles * TILE;
     const worldH = level.heightTiles * TILE;
     this.physics.world.setBounds(0, 0, worldW, worldH + 200);
-    this.physics.world.gravity.y = PHYSICS.gravity;
+    this.profile = level.physics ?? BASE_PHYSICS;
+    this.physics.world.gravity.y = PHYSICS.gravity * this.profile.gravityScale;
     this.cameras.main.setBounds(0, 0, worldW, worldH);
     this.cameras.main.setBackgroundColor(level.skyColor ?? COLORS.sky);
 
@@ -152,8 +158,11 @@ export class LevelScene extends Phaser.Scene {
     if (start.power === "monkey") this.player.giveMonkey();
     if (start.power === "cat") this.player.giveCat();
 
+    this.buildZones();
+    this.buildBoss();
     this.setupCollisions();
     this.setupCamera();
+    this.showReadyCard();
     this.setupTimer();
     this.setupDebug();
 
@@ -170,6 +179,13 @@ export class LevelScene extends Phaser.Scene {
       );
     }
     this.buildAbilityUi();
+    // The engine loop must never stay paused because of a stale hit-stop or a
+    // window blur: guarantee physics is running whenever the scene resumes.
+    this.events.on(Phaser.Scenes.Events.RESUME, () => this.physics.world.resume());
+    this.game.events.on(Phaser.Core.Events.FOCUS, this.forceResume, this);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () =>
+      this.game.events.off(Phaser.Core.Events.FOCUS, this.forceResume, this),
+    );
     this.events.on(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.scene.stop("Hud");
       audio.stopMusic();
@@ -377,6 +393,21 @@ export class LevelScene extends Phaser.Scene {
       (f as unknown as Phaser.Physics.Arcade.Image).destroy();
       this.defeatEnemy(e as Enemy, "fire");
     });
+    if (this.boss) {
+      const boss = this.boss;
+      this.physics.add.collider(boss, this.terrain);
+      this.physics.add.overlap(sprite, boss, () => this.onBossTouch());
+      this.physics.add.overlap(this.fireballs, boss, (f) => {
+        (f as unknown as Phaser.Physics.Arcade.Image).destroy();
+        boss.hurt(this.time.now);
+        this.emitHud();
+      });
+    }
+    this.physics.add.overlap(sprite, this.bossShots, (_p, shot) => {
+      (shot as unknown as Phaser.Physics.Arcade.Image).destroy();
+      this.hurtPlayer();
+    });
+
     this.physics.add.overlap(this.enemies, this.enemies, (a, b) => {
       const ea = a as Enemy;
       const eb = b as Enemy;
@@ -544,6 +575,26 @@ export class LevelScene extends Phaser.Scene {
     if (!enemy.canHurt(this.time.now)) return;
     if (this.invincible) {
       this.defeatEnemy(enemy, "fire");
+      return;
+    }
+    this.hurtPlayer();
+  }
+
+  /** Stomping a stompable boss damages it; anything else hurts the hero. */
+  private onBossTouch(): void {
+    const boss = this.boss;
+    if (!boss || boss.defeated || this.player.dead || this.finished) return;
+    const body = this.player.sprite.body as Phaser.Physics.Arcade.Body;
+    const stomping = body.velocity.y > 40 && this.player.sprite.y < boss.y - boss.displayHeight * 0.5;
+    if (stomping && boss.profile.stompable) {
+      this.player.movement.bounce();
+      this.hitStop();
+      boss.hurt(this.time.now);
+      this.burst(boss.x, boss.y - boss.displayHeight * 0.5, 0xffffff, 12);
+      return;
+    }
+    if (this.invincible) {
+      boss.hurt(this.time.now);
       return;
     }
     this.hurtPlayer();
@@ -735,6 +786,14 @@ export class LevelScene extends Phaser.Scene {
 
   private completeLevel(): void {
     if (this.finished) return;
+    if (this.boss && !this.boss.defeated) {
+      if (!this.goalLocked) {
+        this.goalLocked = true;
+        this.toast(`${this.boss.def.name} still guards the exit`);
+        this.time.delayedCall(1400, () => (this.goalLocked = false));
+      }
+      return;
+    }
     if (this.starsRequired > 0 && this.starsCollected < this.starsRequired) {
       if (!this.goalLocked) {
         this.goalLocked = true;
@@ -800,6 +859,38 @@ export class LevelScene extends Phaser.Scene {
     });
   }
 
+  /** Loading beat: world, stage number, name and objective. Never a blank screen. */
+  private showReadyCard(): void {
+    const world = this.level.world;
+    const lines = [
+      `WORLD ${world}`,
+      `${this.level.world}-${this.level.level}  ${this.level.name.toUpperCase()}`,
+      (this.level.objective ?? this.level.identity ?? "").toUpperCase(),
+      "GET READY",
+    ];
+    const panel = this.add
+      .rectangle(this.scale.width / 2, this.scale.height / 2, this.scale.width, 220, 0x000000, 0.88)
+      .setScrollFactor(0)
+      .setDepth(200);
+    const text = this.add
+      .text(this.scale.width / 2, this.scale.height / 2, lines.join("\n\n"), {
+        fontFamily: "'Press Start 2P', monospace",
+        fontSize: "14px",
+        color: "#fcfcfc",
+        align: "center",
+        lineSpacing: 4,
+      })
+      .setOrigin(0.5)
+      .setScrollFactor(0)
+      .setDepth(201);
+    this.player.lockControls(true);
+    this.time.delayedCall(1500, () => {
+      panel.destroy();
+      text.destroy();
+      if (!this.finished && !this.respawning) this.player.lockControls(false);
+    });
+  }
+
   private setupDebug(): void {
     if (!import.meta.env.DEV) return;
     this.debugText = this.add
@@ -835,6 +926,138 @@ export class LevelScene extends Phaser.Scene {
     });
   }
 
+  /** Physics is only ever paused for a brief hit-stop; never leave it stuck. */
+  private forceResume(): void {
+    if (!this.finished && !this.respawning && this.physics.world.isPaused) this.physics.world.resume();
+  }
+
+  // ---------------------------------------------------------- environment
+
+  private buildZones(): void {
+    for (const zone of this.level.zones ?? []) {
+      const colors: Record<string, number> = {
+        water: 0x1e6fd8,
+        current: 0x2f9cd8,
+        lava: 0xff4a10,
+        ice: 0xbfe9ff,
+        wind: 0xd8e8ff,
+        lowgrav: 0x8a6cff,
+      };
+      const alpha = zone.kind === "water" || zone.kind === "current" ? 0.3 : zone.kind === "lava" ? 0.55 : 0.12;
+      this.add
+        .rectangle(zone.x * TILE, zone.y * TILE, zone.w * TILE, zone.h * TILE, colors[zone.kind] ?? 0xffffff, alpha)
+        .setOrigin(0, 0)
+        .setDepth(zone.kind === "lava" ? 15 : 3);
+    }
+  }
+
+  private zoneAt(x: number, y: number): ZoneSpawn | undefined {
+    const tx = x / TILE;
+    const ty = y / TILE;
+    return (this.level.zones ?? []).find(
+      (z) => tx >= z.x && tx < z.x + z.w && ty >= z.y && ty < z.y + z.h,
+    );
+  }
+
+  /** Applies the world profile plus any local zone override to the hero. */
+  private applyEnvironment(): void {
+    const move = this.player.movement;
+    const zone = this.zoneAt(this.player.sprite.x, this.player.sprite.y - 8);
+    const p = this.profile;
+    let gravity = PHYSICS.gravity * p.gravityScale;
+    let friction = p.frictionScale;
+    let speed = p.speedScale;
+    let jump = p.jumpScale;
+    let swim = p.swim;
+    let wind = p.wind;
+
+    switch (zone?.kind) {
+      case "water":
+        gravity = PHYSICS.gravity * 0.32;
+        friction = 1.6;
+        speed = 0.75;
+        jump = 0.7;
+        swim = true;
+        break;
+      case "current":
+        gravity = PHYSICS.gravity * 0.32;
+        speed = 0.75;
+        swim = true;
+        wind = zone.force ?? 200;
+        break;
+      case "ice":
+        friction = 0.22;
+        speed = 1.06;
+        break;
+      case "wind":
+        wind = zone.force ?? 200;
+        break;
+      case "lowgrav":
+        gravity = PHYSICS.gravity * 0.45;
+        jump = 1.12;
+        break;
+      default:
+        break;
+    }
+
+    this.physics.world.gravity.y = gravity;
+    move.frictionScale = friction;
+    move.speedScale = speed;
+    move.envJumpScale = jump;
+    move.swimming = swim && !this.player.dead;
+    move.windForce = wind;
+  }
+
+  // ---------------------------------------------------------------- boss
+
+  private buildBoss(): void {
+    this.bossShots = this.physics.add.group({ allowGravity: false });
+    const def = this.level.boss;
+    if (!def) return;
+    this.boss = new Boss(this, def, def.x * TILE, def.y * TILE, {
+      onShoot: (x, y, dir) => this.spawnBossShot(x, y, dir),
+      onPhase: (phase) => {
+        this.toast(`${def.name} — PHASE ${phase}`);
+        this.shake(CAMERA.shakeBig);
+      },
+      onDefeated: () => {
+        this.boss = undefined;
+        this.bossBar?.destroy();
+        this.bossBar = undefined;
+        this.toast(`${def.name} defeated — the goal is open!`);
+        this.unlockGoal();
+        gameState.addScore(5000);
+        this.emitHud();
+      },
+      playerX: () => this.player.sprite.x,
+      playerY: () => this.player.sprite.y,
+    });
+    this.bossBar = this.add.graphics().setScrollFactor(0).setDepth(120);
+  }
+
+  private spawnBossShot(x: number, y: number, dir: number): void {
+    const shot = this.physics.add.image(x, y, "fireball").setDepth(18).setTint(0xff9a3c);
+    this.bossShots.add(shot);
+    const body = shot.body as Phaser.Physics.Arcade.Body;
+    body.setAllowGravity(false);
+    const dy = Phaser.Math.Clamp((this.player.sprite.y - y) * 0.8, -220, 220);
+    body.setVelocity(dir * 300, dy);
+    audio.play("shoot");
+    this.time.delayedCall(3200, () => shot.active && shot.destroy());
+  }
+
+  private updateBossBar(): void {
+    const bar = this.bossBar;
+    const boss = this.boss;
+    if (!bar) return;
+    bar.clear();
+    if (!boss) return;
+    const w = 360;
+    const x = (this.scale.width - w) / 2;
+    bar.fillStyle(0x000000, 0.75).fillRect(x - 4, 56, w + 8, 20);
+    bar.fillStyle(0xff3b3b, 1).fillRect(x, 60, (w * Math.max(0, boss.health)) / boss.def.health, 12);
+  }
+
   isSolidAt(x: number, y: number): boolean {
     const tx = Math.floor(x / TILE);
     const ty = Math.floor(y / TILE);
@@ -867,7 +1090,10 @@ export class LevelScene extends Phaser.Scene {
       return;
     }
 
+    this.forceResume();
+    this.applyEnvironment();
     this.player.update(time, delta);
+    this.updateBossBar();
     this.updateParallax();
     this.updateAbilityUi();
     this.updateRiding();
