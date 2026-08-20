@@ -30,12 +30,20 @@ export interface MovementProfile {
 /** Never build required geometry at more than this share of the true envelope. */
 export const SAFETY_MARGIN = 0.72;
 
+export type ProfileInput = Pick<CharacterData, "speed" | "jumpForce" | "canDoubleJump"> &
+  Partial<Pick<CharacterData, "move">>;
+
 export function buildMovementProfile(
-  character?: Pick<CharacterData, "speed" | "jumpForce" | "canDoubleJump"> | undefined,
+  character?: ProfileInput | undefined,
   world?: WorldPhysics | undefined,
 ): MovementProfile {
-  const speedScale = (world?.speedScale ?? 1) * (character ? 0.85 + character.speed * 0.03 : 1);
-  const jumpScale = (world?.jumpScale ?? 1) * (character ? 0.9 + character.jumpForce * 0.02 : 1);
+  const move = character?.move;
+  const speedScale =
+    (world?.speedScale ?? 1) *
+    (character ? (0.85 + character.speed * 0.03) * (move?.speedMul ?? 1) : 1);
+  const jumpScale =
+    (world?.jumpScale ?? 1) *
+    (character ? (0.9 + character.jumpForce * 0.02) * (move?.jumpMul ?? 1) : 1);
   const gravity = PHYSICS.gravity * (world?.gravityScale ?? 1);
   const runSpeed = MOVE.runSpeed * speedScale;
   const jumpVelocity = (JUMP.velocity + JUMP.runBonus) * jumpScale;
@@ -46,8 +54,11 @@ export function buildMovementProfile(
   const maxJumpDistance = runSpeed * airTime;
 
   const doubleJump = character?.canDoubleJump ?? false;
+  // Optional-route capabilities: gliding stretches gaps, dashing adds reach.
+  const glideBonus = move?.glide ? 1.9 : 1;
+  const dashBonus = 1 + (move?.dashDistance ?? 0) / 900;
   const heightTiles = Math.floor((maxJumpHeight * (doubleJump ? 1.7 : 1)) / TILE);
-  const distTiles = Math.floor((maxJumpDistance * (doubleJump ? 1.25 : 1)) / TILE);
+  const distTiles = Math.floor((maxJumpDistance * (doubleJump ? 1.25 : 1) * glideBonus * dashBonus) / TILE);
 
   return {
     runSpeed,
@@ -68,7 +79,16 @@ export function buildMovementProfile(
  * Baseline envelope: the weakest hero the campaign must stay playable for.
  * Levels are validated against this so every character can clear them.
  */
+/**
+ * Baseline envelope: Titan, the slowest and lowest-jumping hero. The mandatory
+ * route of every stage is validated against him, so all ten heroes can clear it.
+ */
 export const BASELINE_PROFILE: MovementProfile = buildMovementProfile(
-  { speed: 5, jumpForce: 6, canDoubleJump: false },
+  {
+    speed: 3,
+    jumpForce: 5,
+    canDoubleJump: false,
+    move: { speedMul: 0.78, accelMul: 0.7, airControlMul: 0.8, jumpMul: 0.9 },
+  },
   undefined,
 );

@@ -9,7 +9,7 @@ import { DEFAULT_CHARACTER } from "../../data/characters";
 export type PowerState = "small" | "big" | "fire" | "monkey" | "cat";
 
 export interface PlayerHooks {
-  onFire: (x: number, y: number, dir: number, kind: ThrowKind) => void;
+  onFire: (x: number, y: number, dir: number, kind: ThrowKind, power: number) => void;
   onDeath: () => void;
   onDamage: () => void;
   onPowerChange: (state: PowerState) => void;
@@ -24,6 +24,22 @@ const JUMP_SCALE: Record<PowerState, number> = {
   fire: 1,
   monkey: 1.18,
   cat: 1.3,
+};
+
+/** Each ability has its own rhythm — heavy attacks are deliberately slow. */
+const ABILITY_COOLDOWN: Partial<Record<ThrowKind, number>> = {
+  emberBurst: 260,
+  bounceShot: 300,
+  electricArc: 340,
+  knifeThrow: 220,
+  shield: 700,
+  ninjaStar: 170,
+  fireBurst: 620,
+  frostShard: 420,
+  windBlast: 380,
+  groundSmash: 720,
+  banana: 260,
+  claw: 150,
 };
 
 const FORM_TINT: Record<PowerState, number> = {
@@ -48,6 +64,16 @@ export class Player {
   private landUntil = 0;
   private transforming = false;
   readonly character: CharacterData;
+  /** ARMOR passive: spare hits before a power stage is lost. */
+  armorHits = 0;
+  /** COMBO EDGE: kills chained without taking a hit. */
+  private killStreak = 0;
+  /** OVERCHARGE: coins banked toward the next speed surge. */
+  private coinCharge = 0;
+  private boostUntil = 0;
+  private baseSpeedMul = 1;
+  private lastFacing = 1;
+  private recoveryUntil = 0;
   private prefix: string;
 
   constructor(
@@ -82,6 +108,18 @@ export class Player {
     };
     this.movement = new MovementController(this.host, input);
     this.movement.canDoubleJump = character.canDoubleJump;
+    const m = character.move;
+    this.movement.speedMul = m.speedMul;
+    this.movement.accelMul = m.accelMul;
+    this.movement.airControlMul = m.airControlMul;
+    this.movement.charJumpMul = m.jumpMul;
+    this.movement.glideEnabled = !!m.glide || character.passive === "glide";
+    this.movement.knockbackResist = m.knockbackResist ?? (character.passive === "heavyForce" ? 1 : 0);
+    this.movement.iceGrip = !!m.iceGrip || character.passive === "iceWalk";
+    this.movement.dashDistance = character.canDash ? (m.dashDistance ?? 150) : 0;
+    this.baseSpeedMul = m.speedMul;
+    // ARMOR / heavy frames soak extra hits before the power stage is lost.
+    this.armorHits = Math.max(0, character.maxHealth - 1);
   }
 
   private applyForm(state: PowerState): void {
@@ -106,15 +144,46 @@ export class Player {
     return this.power !== "small";
   }
 
-  /** Every powered form can throw; the projectile differs per form and hero. */
+  /** The signature ability is intrinsic: every hero can use X from the start. */
   get canThrow(): boolean {
-    return this.power === "fire" || this.power === "monkey" || this.power === "cat";
+    return true;
   }
 
   get throwKind(): ThrowKind {
     if (this.power === "monkey") return "banana";
     if (this.power === "cat") return "claw";
-    return this.character.throwable ?? "ember";
+    return this.character.ability;
+  }
+
+  /** HEAT: Cinder ignores environmental fire / lava. */
+  get fireImmune(): boolean {
+    return this.character.passive === "heat";
+  }
+
+  /** HEAVY FORCE: Titan shatters reinforced and metal blocks. */
+  get breaksHeavyBlocks(): boolean {
+    return this.character.passive === "heavyForce";
+  }
+
+  /** COMBO EDGE ramps damage; other heroes use their flat attack value. */
+  get attackPower(): number {
+    const combo = this.character.passive === "comboEdge" ? Math.min(2, this.killStreak * 0.5) : 0;
+    return this.character.attackDamage + combo;
+  }
+
+  /** Scene hook: OVERCHARGE banks coins into short speed surges. */
+  onCoin(time: number): void {
+    if (this.character.passive !== "overcharge") return;
+    this.coinCharge += 1;
+    if (this.coinCharge >= 10) {
+      this.coinCharge = 0;
+      this.boostUntil = time + 4000;
+    }
+  }
+
+  /** Scene hook: COMBO EDGE counts chained kills. */
+  onKill(): void {
+    if (this.character.passive === "comboEdge") this.killStreak += 1;
   }
 
   grow(): void {
@@ -156,6 +225,16 @@ export class Player {
   takeDamage(time: number): boolean {
     if (this.dead || time < this.invulnerableUntil || this.transforming) return false;
     this.hooks.onDamage();
+    this.killStreak = 0;
+    // EMBER RESOLVE: a short adrenaline burst right after being hit.
+    if (this.character.passive === "emberResolve") this.boostUntil = time + 1200;
+    if (this.armorHits > 0) {
+      this.armorHits -= 1;
+      this.invulnerableUntil = time + COMBAT.invulnerableMs;
+      this.movement.knockback(time, -this.facing);
+      audio.play("hurt");
+      return false;
+    }
     if (this.power !== "small") {
       this.applyForm("small");
       this.invulnerableUntil = time + COMBAT.invulnerableMs;
@@ -197,17 +276,53 @@ export class Player {
     }
     this.movement.update(time, delta);
 
-    const cooldown = this.power === "cat" ? COMBAT.fireCooldownMs * 0.6 : COMBAT.fireCooldownMs;
-    if (this.canThrow && this.input.justPressed("ATTACK") && time - this.lastFire > cooldown) {
+    this.updatePassives(time);
+
+    const cooldown = ABILITY_COOLDOWN[this.throwKind] ?? COMBAT.fireCooldownMs;
+    if (this.input.justPressed("ATTACK") && time - this.lastFire > cooldown) {
       this.lastFire = time;
-      this.hooks.onFire(this.sprite.x + this.facing * 14, this.sprite.y - 26, this.facing, this.throwKind);
-      audio.play("shoot");
+      const grounded = this.movement.grounded;
+      // GROUND SMASH only works with both feet on the floor.
+      if (this.throwKind !== "groundSmash" || grounded) {
+        this.hooks.onFire(
+          this.sprite.x + this.facing * 14,
+          this.throwKind === "groundSmash" ? this.sprite.y - 6 : this.sprite.y - 26,
+          this.facing,
+          this.throwKind,
+          this.attackPower,
+        );
+        audio.play("shoot");
+        // AIR STEP: attacking in mid-air grants one small controlled nudge.
+        if (this.character.passive === "airStep" && !grounded) {
+          this.movement.bankAirStep();
+          this.movement.spendAirStep();
+        }
+      }
+    }
+
+    // Dash characters (Blade, Shin) burst forward with RUN tapped in place.
+    if (this.character.canDash && this.input.justPressed("RUN")) {
+      if (this.movement.tryDash(time)) this.dust(6);
     }
 
     this.sprite.setFlipX(this.facing < 0);
     this.sprite.setAlpha(time < this.invulnerableUntil && Math.floor(time / 70) % 2 === 0 ? 0.35 : 1);
     this.sprite.setTint(FORM_TINT[this.power]);
     this.animate(time, delta);
+  }
+
+  /** Passive upkeep: temporary boosts and air-control tweaks. */
+  private updatePassives(time: number): void {
+    const boosted = time < this.boostUntil;
+    this.movement.speedMul = this.baseSpeedMul * (boosted ? 1.28 : 1);
+
+    // QUICK RECOVERY: turning around in the air sharpens control briefly.
+    if (this.character.passive === "quickRecovery") {
+      if (this.facing !== this.lastFacing && !this.movement.grounded) this.recoveryUntil = time + 400;
+      this.movement.airControlMul =
+        this.character.move.airControlMul * (time < this.recoveryUntil ? 1.5 : 1);
+    }
+    this.lastFacing = this.facing;
   }
 
   /** NES four-frame run cycle plus dedicated jump / fall / landing poses. */

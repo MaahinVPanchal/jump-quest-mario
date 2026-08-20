@@ -106,10 +106,96 @@ const HERO_HEAD: readonly string[] = [
   "...HHRRHRRH.....",
 ];
 
+
+/** Per-rig head/crest art: this is what makes each hero's silhouette read. */
+const HERO_HEADS: Record<string, readonly string[]> = {
+  runner: HERO_HEAD,
+  tech: [
+    ".......Y........",
+    "....RRRYRRR.....",
+    "...RRRRRRRRR....",
+    "..RKKWWKKWWKKR..",
+    "..RKKWWKKWWKKR..",
+    "...RSSSSSSSSR...",
+    "....SSSKKSSS....",
+    "....HHHRRHHH....",
+  ],
+  rogue: [
+    "....RRRRRR......",
+    "...RRRRRRRRR....",
+    "..RRRRRRRRRRR...",
+    "..RRSSSSSSSRR...",
+    "..RRSKSSSKSRR...",
+    "...RKKKKKKKR....",
+    "....KKKKKKK.....",
+    "....HHRRRHH.....",
+  ],
+  armored: [
+    "...RRRRRRRRR....",
+    "..RRRRYRRRRRR...",
+    ".RRRRRYRRRRRRR..",
+    ".RRKKKKKKKKKRR..",
+    ".RRKWWKKKWWKRR..",
+    ".RRRRRRRRRRRRR..",
+    "..RRRRRRRRRRR...",
+    "...HHHRRRHHH....",
+  ],
+  ninja: [
+    "................",
+    "....RRRRRRR.....",
+    "..YRRRRRRRRRYY..",
+    "..YYRSSSSSRR.Y..",
+    "....RSKSSKSR....",
+    "....RRRRRRRR....",
+    ".....RRRRRR.....",
+    "....HHHRRHHH....",
+  ],
+  flame: [
+    "....Y..Y..Y.....",
+    "...YY.YYY.YY....",
+    "...RYRRRRRYR....",
+    "..RRRSSSSSRR....",
+    "..RRSKSSSKSR....",
+    "...RSSSSSSSR....",
+    "....SSSSSSS.....",
+    "....HHHRRHHH....",
+  ],
+  explorer: [
+    "...HHHHHHHHH....",
+    "..HRRRRRRRRRH...",
+    "..HRSSSSSSSRH...",
+    "..HRSKSSSKSRH...",
+    "..HRSSSSSSSRH...",
+    "..HHRSSSSSRHH...",
+    "...HHHHHHHHH....",
+    "....HHRRRHH.....",
+  ],
+  winged: [
+    "..W..RRRRR..W...",
+    ".WW.RRRRRRR.WW..",
+    "WWW.RSSSSSR.WWW.",
+    ".WW.RSKSKSR.WW..",
+    "..W.RSSSSSR.W...",
+    "....RSSSSSR.....",
+    ".....SSSSS......",
+    "....HHRRRHH.....",
+  ],
+  heavy: [
+    "..Y..........Y..",
+    "..YY.RRRRR..YY..",
+    "..RYRRRRRRRRYR..",
+    ".RRRRKKKKKRRRR..",
+    ".RRRKWWKWWKRRR..",
+    ".RRRRRRRRRRRRR..",
+    "..RRRRRRRRRRR...",
+    "..HHHHRRRHHHH...",
+  ],
+};
+
 export type HeroPose = "idle" | "walk0" | "walk1" | "walk2" | "walk3" | "jump" | "fall" | "land" | "hurt";
 
 /** Torso + leg variants keep the classic four-frame run cycle readable. */
-function heroPixels(pose: HeroPose): readonly string[] {
+function heroPixels(pose: HeroPose, rig = "runner"): readonly string[] {
   const torso =
     pose === "jump" || pose === "fall"
       ? [
@@ -147,7 +233,8 @@ function heroPixels(pose: HeroPose): readonly string[] {
               : pose === "hurt"
               ? ["..RRRRRRRRRR....", ".RRRR.....RRRR..", "HHHH.......HHHH.", "HHH.........HHH."]
               : ["..RRRRRRRRRRRR..", "..RRRR....RRRR..", "..HHH......HHH..", ".HHHH......HHHH."];
-  return [...HERO_HEAD, ...torso, ...legs];
+  const head = HERO_HEADS[rig] ?? HERO_HEAD;
+  return [...head, ...torso, ...legs];
 }
 
 /** All artwork is drawn procedurally here - the build ships no external art. */
@@ -247,7 +334,7 @@ export function buildTextures(scene: Phaser.Scene): void {
         `${character.spritePrefix}_${poseKey(pose)}`,
         32,
         48,
-        (ctx) => paint(ctx, heroPixels(pose), 2, 0, 16, character.tint),
+        (ctx) => paint(ctx, heroPixels(pose, character.rig), 2, 0, 16, character.tint),
         false,
       );
     }
@@ -583,18 +670,19 @@ export function buildTextures(scene: Phaser.Scene): void {
         ctx.fill();
       }
     });
+  // One projectile per hero ability - shapes and colours are never shared.
+  shot("shot_emberBurst", 0xf83800, 0xfcd83c);
+  shot("shot_bounceShot", 0x00b8f8, 0xfcfcfc);
+  shot("shot_electricArc", 0xfcfcfc, 0x00e8fc, true);
+  shot("shot_knifeThrow", 0xc0c0d0, 0xfcfcfc, true);
+  shot("shot_shield", 0x0058f8, 0xb8d8fc, true);
+  shot("shot_ninjaStar", 0xd8d8e8, 0xfcfcfc, true);
+  shot("shot_fireBurst", 0xa01000, 0xf87800);
+  shot("shot_frostShard", 0x3cbcfc, 0xd8fcfc, true);
+  shot("shot_windBlast", 0xb8f8f8, 0xfcfcfc);
+  shot("shot_groundSmash", 0x8a5a00, 0xd8a860, true);
   shot("shot_banana", 0xfcd83c, 0x8a5a00);
   shot("shot_claw", 0xfcfcfc, 0x00b8f8);
-  shot("shot_hammer", 0xa8a8a8, 0x502000, true);
-  shot("shot_egg", 0xfcfcfc, 0x00a844);
-  shot("shot_star", 0xfcfcfc, 0xfcd83c);
-  shot("shot_pellet", 0xfcd83c, 0xa44400);
-  shot("shot_beam", 0x00b8f8, 0xfcfcfc, true);
-  shot("shot_bubble", 0xb8f8f8, 0x0058f8);
-  shot("shot_shell", 0x00a844, 0x006810, true);
-  shot("shot_shadow", 0x7c3cfc, 0x181818);
-  shot("shot_vine", 0xa8f800, 0x006810, true);
-  shot("shot_ice", 0xb8f8f8, 0x3cbcfc, true);
   make(scene, "particle", 8, 8, (ctx) => {
     ctx.fillStyle = "#ffffff";
     ctx.fillRect(0, 0, 8, 8);
