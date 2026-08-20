@@ -80,14 +80,15 @@ export function buildMovementProfile(
  * Levels are validated against this so every character can clear them.
  */
 /**
- * Baseline envelope: Titan, the slowest and lowest-jumping hero. The mandatory
- * route of every stage is validated against him, so all ten heroes can clear it.
+ * Baseline envelope: Titan, the slowest and lowest-jumping hero — every hero
+ * now has the air jump, so the baseline includes it too. The mandatory route of
+ * every stage is validated against him, so all ten heroes can clear it.
  */
 export const BASELINE_PROFILE: MovementProfile = buildMovementProfile(
   {
     speed: 3,
     jumpForce: 5,
-    canDoubleJump: false,
+    canDoubleJump: true,
     move: { speedMul: 0.78, accelMul: 0.7, airControlMul: 0.8, jumpMul: 0.9 },
   },
   undefined,
