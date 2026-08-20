@@ -58,6 +58,7 @@ export class LevelScene extends Phaser.Scene {
   private analyzerLabels: Phaser.GameObjects.Text[] = [];
   private analyzerLegend?: Phaser.GameObjects.Text;
   private analyzerOn = false;
+  private hiddenSonar?: Phaser.GameObjects.Graphics;
   private airJumpPip?: Phaser.GameObjects.Text;
   private controlHint?: Phaser.GameObjects.Text;
 
