@@ -89,19 +89,30 @@ function w1_3(): LevelData {
 function w1_4(): LevelData {
   const b = new LevelBuilder(170);
   b.ground(0, 169);
-  b.ceiling(20, 150, 4, 2);
-  b.arch(24, b.surface - 1, 8, 6).arch(44, b.surface - 1, 8, 6);
+  // Fortress hall: a high ceiling that never traps the player against a wall.
+  b.ceiling(20, 150, 3, 2);
+  // Low gateways you hop through, each with a step-up brick on the approach.
+  b.arch(24, b.surface - 1, 4, 6).arch(44, b.surface - 1, 4, 6);
+  b.block("brick", 22, b.surface - 3).block("brick", 42, b.surface - 3);
   b.hazard(34, b.surface - 1, 2).hazard(56, b.surface - 1, 2);
   b.platform(64, b.surface - 5, 3, { dy: -5 }, 2000);
   b.checkpoint(70);
-  b.blockRow("metal", 80, b.surface - 5, 8);
+  b.blockRow("metal", 80, b.surface - 6, 8);
+  b.blockRow("brick", 88, b.surface - 3, 3);
   b.patrol(mix(1), 20, 110, 6);
   b.block("question", 76, b.surface - 4, "growthOrb");
-  b.fill(120, 121, b.surface - 8, b.surface - 1, T.STONE);
+  // Battlement before the arena: a climbable staircase, not a sheer wall.
+  b.stairs(118, b.surface - 1, 4, 1, T.STONE);
+  b.stairs(125, b.surface - 1, 4, -1, T.STONE);
+  b.coins(121, b.surface - 6, 3);
+  // Open arena floor for the guardian fight.
+  b.checkpoint(132);
   b.setBoss("guardian", "Meadow Guardian", 3, 146, b.surface - 3);
   b.goal = { x: 164, y: b.surface - 1 };
   return b.build({ world: 1, level: 4, name: "Emberleaf Fortress", identity: "fortress + boss", objective: "Defeat the Meadow Guardian", widthTiles: 170, timeLimit: 340 });
 }
+
+
 
 // ============================================================ WORLD 2
 // Vertical forest: climbs, hanging platforms, threats above and below.
@@ -128,7 +139,7 @@ function w2_1(): LevelData {
 function w2_2(): LevelData {
   const b = new LevelBuilder(200, 32);
   b.ground(0, 18);
-  for (let i = 0; i < 12; i++) b.ledge(24 + i * 14, b.surface - 6 - (i % 4) * 4, 5);
+  for (let i = 0; i < 18; i++) b.ledge(24 + i * 10, b.surface - 6 - (i % 4) * 3, 6);
   for (let i = 0; i < 6; i++) b.platform(30 + i * 28, b.surface - 12 - (i % 3) * 3, 3, i % 2 ? { dy: -4 } : { dx: 5 }, 2400 + i * 120);
   b.patrol(["flyer", "flyer", "spiker"], 30, 180, 8, b.surface - 10);
   b.checkpoint(70, b.surface - 12);
@@ -245,7 +256,7 @@ function w3_4(): LevelData {
 function w4_1(): LevelData {
   const b = new LevelBuilder(200, 28);
   b.ground(0, 14);
-  b.islands(20, b.surface - 2, 14, 6, 4, 0);
+  b.islands(20, b.surface - 2, 16, 4, 4, 0);
   for (let i = 0; i < 6; i++) b.platform(40 + i * 26, b.surface - 6 - (i % 3) * 3, 3, i % 2 ? { dx: 5 } : { dy: -4 }, 2200 + i * 150);
   b.patrol(["flyer", "flyer", "spiker"], 30, 180, 7, b.surface - 8);
   b.checkpoint(74, b.surface - 3);
@@ -262,7 +273,7 @@ function w4_1(): LevelData {
 function w4_2(): LevelData {
   const b = new LevelBuilder(200, 28);
   b.ground(0, 12);
-  b.islands(18, b.surface - 3, 16, 6, 3, 0);
+  b.islands(18, b.surface - 3, 18, 4, 4, 0);
   b.zone("wind", 30, 0, 40, 28, 240);
   b.zone("wind", 90, 0, 40, 28, -260);
   b.zone("wind", 150, 0, 40, 28, 300);
@@ -449,7 +460,7 @@ function w6_4(): LevelData {
 function w7_1(): LevelData {
   const b = new LevelBuilder(200, 30);
   b.ground(0, 20);
-  b.islands(28, b.surface - 4, 12, 8, 4, 0);
+  b.islands(28, b.surface - 4, 16, 4, 4, 0);
   b.zone("lowgrav", 28, 0, 172, 30);
   b.patrol(["flyer", "spiker", "shell"], 30, 190, 8, b.surface - 8);
   b.checkpoint(76, b.surface - 5);
@@ -498,7 +509,7 @@ function w7_4(): LevelData {
   const b = new LevelBuilder(180, 30);
   b.ground(0, 179);
   b.zone("lowgrav", 0, 0, 140, 30);
-  b.islands(24, b.surface - 5, 8, 6, 3, 0);
+  b.islands(24, b.surface - 5, 11, 4, 4, 0);
   b.patrol(["flyer", "spiker"], 24, 120, 8, b.surface - 8);
   b.checkpoint(108);
   b.blockRow("metal", 90, b.surface - 8, 8);
