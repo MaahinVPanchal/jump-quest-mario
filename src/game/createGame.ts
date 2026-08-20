@@ -54,11 +54,17 @@ export function createGame({ parent, slot, save, onExit, characterId, levelId }:
     // The game must only ever pause when the player asks for it: no pausing on
     // window blur, tab switch or focus loss.
     autoFocus: true,
-    autoPause: false,
     disableContextMenu: true,
-    input: { gamepad: true, keyboard: { capture: [] } as never },
+    input: { gamepad: true },
     scene: [BootScene, LevelScene, HudScene, PauseScene, LevelCompleteScene, GameOverScene],
   });
+
+  // Phaser pauses its loop on blur / tab hide by default; neutralise that so
+  // only the player's pause key ever stops the game.
+  const loop = game.loop as Phaser.Core.TimeStep & { blur: () => void; pause: () => void };
+  loop.blur = () => {};
+  (game as unknown as { onHidden: () => void }).onHidden = () => {};
+  (game as unknown as { onBlur: () => void }).onBlur = () => {};
 
   // Belt and braces: whatever the browser does with visibility/focus, resume
   // the loop and the level unless the player opened the pause menu.
