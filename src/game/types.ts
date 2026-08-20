@@ -63,9 +63,70 @@ export type ItemKind =
   | "fireCrystal"
   | "banana"
   | "catBell"
-  | "oneUp";
+  | "oneUp"
+  // World signature power-ups
+  | "aquaPearl"
+  | "wingSeed"
+  | "emberCore"
+  | "frostCrystal"
+  | "gravityOrb"
+  | "shieldCore"
+  | "rushSpark"
+  | "starFragment";
 
-export type BlockKind = "question" | "brick" | "hidden" | "metal";
+export type BlockKind =
+  | "question"
+  | "brick"
+  | "hidden"
+  | "metal"
+  | "bounce"
+  | "falling"
+  | "ice";
+
+/** Local environment override applied while the hero overlaps the zone. */
+export type ZoneKind = "water" | "wind" | "ice" | "lowgrav" | "current" | "lava";
+
+export interface ZoneSpawn {
+  kind: ZoneKind;
+  /** Tile coordinates / size. */
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  /** Strength for wind / current zones (px/s^2, signed). */
+  force?: number;
+}
+
+/** Per-world movement profile; zones can override parts of it locally. */
+export interface WorldPhysics {
+  gravityScale: number;
+  frictionScale: number;
+  speedScale: number;
+  jumpScale: number;
+  swim: boolean;
+  /** Constant horizontal push in px/s^2. */
+  wind: number;
+}
+
+export type BossKind =
+  | "guardian"
+  | "beast"
+  | "serpent"
+  | "titan"
+  | "core"
+  | "warden"
+  | "machine"
+  | "overlord";
+
+export interface BossDefinition {
+  kind: BossKind;
+  name: string;
+  health: number;
+  /** Tile position of the arena anchor. */
+  x: number;
+  y: number;
+}
+
 
 export interface Vec2 {
   x: number;
@@ -133,6 +194,16 @@ export interface LevelData {
   next?: string;
   /** Building-set label used by the level briefing UI. */
   buildSet?: string;
+  /** One-line gameplay identity, e.g. "vertical climb". */
+  identity?: string;
+  /** Optional stage objective shown on the loading card. */
+  objective?: string;
+  /** Environment override zones (water, wind, ice, lava, gravity). */
+  zones?: ZoneSpawn[];
+  /** Movement profile for the stage. */
+  physics?: WorldPhysics;
+  /** Boss encounter, present on every world's final stage. */
+  boss?: BossDefinition;
 }
 
 export interface LevelResult {

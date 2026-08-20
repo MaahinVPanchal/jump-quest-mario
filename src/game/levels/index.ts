@@ -1,33 +1,16 @@
 import type { LevelData } from "../types";
-import { LEVEL_1 } from "./level1";
-import { LEVEL_2 } from "./level2";
-import { buildLevel, WORLD_THEMES } from "./generate";
+import { buildCampaign } from "./campaign";
+import { WORLDS, getWorld } from "./worlds";
 
-/** Stage counts per world - world 8 runs long so the campaign totals 50 stages. */
-export const WORLD_SIZES = [6, 6, 6, 6, 6, 6, 6, 8];
-
-function buildCampaign(): LevelData[] {
-  const out: LevelData[] = [];
-  WORLD_SIZES.forEach((count, w) => {
-    for (let l = 1; l <= count; l++) {
-      const world = w + 1;
-      if (world === 1 && l === 1) out.push(LEVEL_1);
-      else if (world === 2 && l === 1) out.push(LEVEL_2);
-      else out.push(buildLevel(world, l));
-    }
-  });
-  // Chain each stage to the next so completing one unlocks the following one.
-  out.forEach((level, i) => {
-    const next = out[i + 1];
-    if (next) level.next = next.id;
-    else delete level.next;
-  });
-  return out;
-}
+/** Four hand-designed stages per world, eight worlds, 32 stages total. */
+export const WORLD_SIZES = [4, 4, 4, 4, 4, 4, 4, 4];
 
 export const LEVELS: LevelData[] = buildCampaign();
 
-export { WORLD_THEMES };
+export { WORLDS, getWorld };
+
+/** Legacy alias kept for the briefing UI. */
+export const WORLD_THEMES = WORLDS;
 
 export const FIRST_LEVEL_ID = LEVELS[0]!.id;
 
@@ -42,6 +25,10 @@ export function levelIndex(id: string): number {
 export function nextLevelId(id: string): string | null {
   const index = levelIndex(id);
   return LEVELS[index + 1]?.id ?? null;
+}
+
+export function levelsOfWorld(world: number): LevelData[] {
+  return LEVELS.filter((l) => l.world === world);
 }
 
 /** A stage is playable once the previous stage has been cleared. */
