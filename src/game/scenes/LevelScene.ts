@@ -197,6 +197,7 @@ export class LevelScene extends Phaser.Scene {
 
     this.buildZones();
     this.buildBoss();
+    this.buildBossGate();
     this.setupCollisions();
     this.setupCamera();
     this.showReadyCard();
