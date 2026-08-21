@@ -118,7 +118,7 @@ export class HudScene extends Phaser.Scene {
     this.lives.setText(formatLives(data.lives));
     this.world.setText(formatWorld(data.world));
     this.combo.setText(formatCombo(data.combo));
-    const showStars = data.starsRequired > 0;
+    const showStars = data.starsRequired > 0 || data.stars > 0;
     this.stars.setVisible(showStars).setText(formatStars(data.stars, data.starsRequired));
     this.starsLabel?.setVisible(showStars);
     this.renderObjectives(data.objectives ?? []);

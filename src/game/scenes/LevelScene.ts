@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { CAMERA, COLORS, COMBAT, PHYSICS, SCORE, TILE, VIEW } from "../config";
+import { CAMERA, COLORS, COMBAT, GEM, PHYSICS, SCORE, TILE, VIEW } from "../config";
 import { LEVELS, getLevel } from "../levels";
 import { BASE_PHYSICS } from "../levels/worlds";
 import { Boss } from "../entities/Boss";
@@ -59,15 +59,18 @@ export class LevelScene extends Phaser.Scene {
   private analyzerLegend?: Phaser.GameObjects.Text;
   private analyzerOn = false;
   private hiddenSonar?: Phaser.GameObjects.Graphics;
+  private starBeacon?: Phaser.GameObjects.Graphics;
+  private starArrow?: Phaser.GameObjects.Text;
   private airJumpPip?: Phaser.GameObjects.Text;
   private controlHint?: Phaser.GameObjects.Text;
 
-  private get starsRequired(): number {
-    return this.level.starsRequired ?? 0;
-  }
-
   private get starsCollected(): number {
     return gameState.starIds.length;
+  }
+
+  /** Sky Stars that exist in this stage (stars are optional bonus pickups). */
+  private get starsTotal(): number {
+    return this.level.items.filter((i) => i.type === "star").length + this.level.items.filter((i) => i.type === "relic").length;
   }
 
   constructor() {
@@ -185,13 +188,14 @@ export class LevelScene extends Phaser.Scene {
     audio.startMusic("level");
 
     this.game.events.emit(GameEvent.Toast, `World ${level.world}-${level.level}  ${level.name}`);
-    if (this.starsRequired > 0) {
+    if (this.starsTotal > 0) {
       this.time.delayedCall(2200, () =>
-        this.toast(`Collect ${this.starsRequired} Sky Stars to open the goal`),
+        this.toast(`${this.starsTotal} Sky Stars hidden here - optional bonus`),
       );
     }
     this.buildAbilityUi();
     this.buildHiddenSonar();
+    this.buildStarBeacon();
     // The engine loop must never stay paused because of a stale hit-stop or a
     // window blur: guarantee physics is running whenever the scene resumes.
     this.events.on(Phaser.Scenes.Events.RESUME, () => {
@@ -278,6 +282,69 @@ export class LevelScene extends Phaser.Scene {
       g.lineStyle(2, 0xfcd83c, pulse + near * 0.35);
       g.strokeRect(block.x - TILE / 2 + 2, block.y - TILE / 2 + 2, TILE - 4, TILE - 4);
     }
+  }
+
+  /** Highlights every uncollected Sky Star / gem and points off-screen ones out. */
+  private buildStarBeacon(): void {
+    this.starBeacon = this.add.graphics().setDepth(9);
+    this.starArrow = this.add
+      .text(0, 0, "", {
+        fontFamily: "monospace",
+        fontSize: "18px",
+        color: "#fcd83c",
+        stroke: "#000000",
+        strokeThickness: 4,
+      })
+      .setOrigin(0.5)
+      .setScrollFactor(0)
+      .setDepth(60)
+      .setVisible(false);
+  }
+
+  private updateStarBeacon(): void {
+    const g = this.starBeacon;
+    const arrow = this.starArrow;
+    if (!g || !arrow) return;
+    g.clear();
+    const cam = this.cameras.main;
+    const pulse = 0.45 + 0.35 * Math.abs(Math.sin(this.time.now / 240));
+    const px = this.player.sprite.x;
+    const py = this.player.sprite.y;
+    let nearest: { x: number; y: number; d: number } | null = null;
+
+    for (const obj of this.items.getChildren()) {
+      const item = obj as Collectible;
+      if (!item.active || (item.kind !== "star" && item.kind !== "relic")) continue;
+      const onScreen =
+        item.x > cam.scrollX - 40 &&
+        item.x < cam.scrollX + VIEW.width + 40 &&
+        item.y > cam.scrollY - 40 &&
+        item.y < cam.scrollY + VIEW.height + 40;
+      if (onScreen) {
+        g.lineStyle(3, item.kind === "star" ? 0xfcd83c : COLORS.relic, pulse);
+        g.strokeCircle(item.x, item.y, 22 + pulse * 6);
+        g.lineStyle(2, 0xffffff, pulse * 0.6);
+        g.strokeCircle(item.x, item.y, 30 + pulse * 8);
+      }
+      const d = Phaser.Math.Distance.Between(px, py, item.x, item.y);
+      if (!nearest || d < nearest.d) nearest = { x: item.x, y: item.y, d };
+    }
+
+    if (!nearest) {
+      arrow.setVisible(false);
+      return;
+    }
+    const sx = nearest.x - cam.scrollX;
+    const sy = nearest.y - cam.scrollY;
+    const inside = sx > 30 && sx < VIEW.width - 30 && sy > 90 && sy < VIEW.height - 30;
+    if (inside) {
+      arrow.setVisible(false);
+      return;
+    }
+    const cx = Phaser.Math.Clamp(sx, 40, VIEW.width - 40);
+    const cy = Phaser.Math.Clamp(sy, 110, VIEW.height - 40);
+    const dir = sx < cx ? "<< STAR" : sx > cx ? "STAR >>" : sy < cy ? "^ STAR" : "STAR v";
+    arrow.setVisible(true).setPosition(cx, cy).setText(dir).setAlpha(0.6 + pulse * 0.4);
   }
 
   private updateAbilityUi(): void {
@@ -411,7 +478,6 @@ export class LevelScene extends Phaser.Scene {
     const gy = this.level.goal.y * TILE + TILE;
     this.add.image(gx, gy, "goal_pole").setOrigin(0.5, 1).setDepth(6);
     this.goalFlag = this.add.image(gx + 22, gy - 300, "goal_flag").setOrigin(0, 0).setDepth(7);
-    if (this.starsRequired > 0 && this.starsCollected < this.starsRequired) this.goalFlag.setAlpha(0.45);
     this.goalZone = this.add.zone(gx, gy - 160, 48, 320);
     this.physics.add.existing(this.goalZone, true);
   }
@@ -570,7 +636,10 @@ export class LevelScene extends Phaser.Scene {
         audio.play("checkpoint");
         this.addScore(SCORE.secret, x, y);
         this.burst(x, y, COLORS.relic, 18);
-        this.toast("Golden Relic found!");
+        // A gem is worth a full coin bundle plus one Sky Star.
+        for (let i = 0; i < GEM.coins; i += 1) this.registerCoin(x, y);
+        gameState.collectStar(`${item.uid}:gem-star`);
+        this.toast(`Gem! +${GEM.coins} coins  +1 Sky Star`);
         break;
       case "star": {
         gameState.collectedIds.add(item.uid);
@@ -578,9 +647,7 @@ export class LevelScene extends Phaser.Scene {
         audio.play("life");
         this.addScore(SCORE.secret, x, y);
         this.burst(x, y, COLORS.coin, 22);
-        const left = Math.max(0, this.starsRequired - this.starsCollected);
-        this.toast(left > 0 ? `Sky Star!  ${left} to go` : "All Sky Stars collected — the goal is open!");
-        if (left <= 0) this.unlockGoal();
+        this.toast(`Sky Star!  ${this.starsCollected}/${this.starsTotal} collected`);
         break;
       }
       case "growthOrb":
@@ -752,7 +819,7 @@ export class LevelScene extends Phaser.Scene {
       world: `${this.level.world}-${this.level.level}`,
       relics: gameState.relicIds.length,
       stars: this.starsCollected,
-      starsRequired: this.starsRequired,
+      starsRequired: this.starsTotal,
       objectives: this.objectives?.progress() ?? [],
     });
   }
@@ -1033,18 +1100,6 @@ export class LevelScene extends Phaser.Scene {
       if (!this.goalLocked) {
         this.goalLocked = true;
         this.toast(`${this.boss.def.name} still guards the exit`);
-        this.time.delayedCall(1400, () => (this.goalLocked = false));
-      }
-      return;
-    }
-    if (this.starsRequired > 0 && this.starsCollected < this.starsRequired) {
-      if (!this.goalLocked) {
-        this.goalLocked = true;
-        this.toast(
-          `The goal is sealed — collect ${this.starsRequired - this.starsCollected} more Sky Star${
-            this.starsRequired - this.starsCollected === 1 ? "" : "s"
-          }`,
-        );
         this.time.delayedCall(1400, () => (this.goalLocked = false));
       }
       return;
@@ -1502,6 +1557,7 @@ export class LevelScene extends Phaser.Scene {
     this.updateParallax();
     this.updateAbilityUi();
     this.updateHiddenSonar();
+    this.updateStarBeacon();
     this.updateRiding();
     this.updateWakeRange();
     this.checkPipes();

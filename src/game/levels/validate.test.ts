@@ -24,7 +24,9 @@ describe("campaign geometry", () => {
       const primary = level.objectives?.primary;
       expect(primary, level.id).toBeTruthy();
       if (primary?.type === "COIN_TARGET") {
-        const coins = level.items.filter((i) => i.type === "coin").length;
+        const coins =
+          level.items.filter((i) => i.type === "coin").length +
+          level.items.filter((i) => i.type === "relic").length * 10;
         expect(primary.target ?? 0, level.id).toBeLessThanOrEqual(coins);
       }
       if (primary?.type === "DEFEAT_ALL") {

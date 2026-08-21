@@ -60,6 +60,12 @@ export const CAMERA = {
   shakeBig: 0.010,
 } as const;
 
+/** Gems (Golden Relics) are instant bundles: coins plus a Sky Star. */
+export const GEM = {
+  coins: 10,
+  stars: 1,
+} as const;
+
 export const RULES = {
   startingLives: 3,
   coinsPerLife: 100,
