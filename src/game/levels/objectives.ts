@@ -1,4 +1,5 @@
 import type { LevelData, LevelObjective } from "../types";
+import { GEM } from "../config";
 
 const countCoins = (level: LevelData): number => level.items.filter((i) => i.type === "coin").length;
 
@@ -9,8 +10,12 @@ const beatableEnemies = (level: LevelData): number[] =>
 /** Every stage asks for the same simple thing: ten coins. */
 export const COIN_GOAL = 10;
 
+/** Gems pay out a coin bundle, so they count towards what a stage can give. */
+const availableCoins = (level: LevelData): number =>
+  countCoins(level) + level.items.filter((i) => i.type === "relic").length * GEM.coins;
+
 function coinObjective(level: LevelData): LevelObjective {
-  const target = Math.max(1, Math.min(countCoins(level), COIN_GOAL));
+  const target = Math.max(1, Math.min(availableCoins(level), COIN_GOAL));
   return {
     type: "COIN_TARGET",
     target,
