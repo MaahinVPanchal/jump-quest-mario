@@ -129,24 +129,33 @@ export class LevelBuilder {
 
   /**
    * Vertical shaft with alternating wall ledges to climb.
-   * Both walls keep a doorway — the entry at the bottom, the exit at the top —
-   * so a shaft is always something you climb through, never a dead end.
+   * The shaft always stands on solid ground (never over an abyss) and both
+   * walls keep a walk-through doorway — entry at the bottom, exit at the top —
+   * so a shaft is something you climb through, never a dead end.
    */
   shaft(x: number, yTop: number, yBottom: number, wallW = 2, step = 3, w = 3): this {
-    this.fill(x - wallW, x - 1, yTop, yBottom, T.STONE);
-    this.fill(x + 8, x + 8 + wallW - 1, yTop, yBottom, T.STONE);
-    // Entry doorway at the foot of the left wall.
-    this.fill(x - wallW, x - 1, yBottom - 3, yBottom - 1, T.EMPTY);
+    const left = x - wallW;
+    const rightStart = x + 8;
+    const rightEnd = x + 8 + wallW - 1;
+    // Solid floor under the whole footprint plus a run-up on either side.
+    this.ground(left - 5, rightEnd + 5, yBottom);
+    this.fill(left, x - 1, yTop, yBottom - 1, T.STONE);
+    this.fill(rightStart, rightEnd, yTop, yBottom - 1, T.STONE);
+    // Entry doorway at the foot of the left wall (walk straight in).
+    this.fill(left, x - 1, yBottom - 3, yBottom - 1, T.EMPTY);
     // Exit doorway at the head of the right wall.
-    this.fill(x + 8, x + 8 + wallW - 1, yTop + 1, yTop + 3, T.EMPTY);
-    this.ledge(x + 8 + wallW, yTop + 4, w + 2);
+    this.fill(rightStart, rightEnd, yTop + 1, yTop + 3, T.EMPTY);
+    this.ledge(rightEnd + 1, yTop + 4, w + 2);
     let side = 0;
-    for (let y = yBottom - step; y > yTop; y -= step) {
+    for (let y = yBottom - step; y > yTop + 1; y -= step) {
       this.ledge(side % 2 === 0 ? x : x + 8 - w, y, w);
       side++;
     }
+    // A landing ledge right at the exit door so the last hop is never blind.
+    this.ledge(x + 8 - w, yTop + 3, w);
     return this;
   }
+
 
 
   /** Tower of stacked blocks with a flat roof. */
