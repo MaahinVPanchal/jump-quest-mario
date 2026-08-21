@@ -179,6 +179,9 @@ export interface BossDefinition {
   /** Tile position of the arena anchor. */
   x: number;
   y: number;
+  /** Optional horizontal arena limits in tile coordinates. */
+  arenaMinX?: number;
+  arenaMaxX?: number;
 }
 
 

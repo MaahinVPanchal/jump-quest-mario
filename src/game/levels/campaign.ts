@@ -230,7 +230,7 @@ function w3_3(): LevelData {
   b.islands(100, b.height - 20, 5, 4, 4, -3);
   b.patrol(mix(3), 20, 150, 8, b.height - 14);
   b.checkpoint(58, b.height - 3);
-  b.checkpoint(110, b.height - 22);
+  b.checkpoint(110, b.height - 3);
   b.relic(130, 8, 3, 3);
   b.goal = { x: 150, y: 8 };
   b.ledge(144, 9, 10);
@@ -282,6 +282,8 @@ function w4_2(): LevelData {
   b.ledge(80, b.surface - 3, 8);
   b.star(50, b.surface - 12, 4, 2).star(110, b.surface - 14, 4, 2).star(170, b.surface - 10, 4, 2);
   b.relic(140, b.surface - 16, 4, 2);
+  b.blockRow("brick", 78, b.surface - 8, 5).block("question", 80, b.surface - 11, "coin", 3);
+  b.coins(24, b.surface - 7, 5).coins(156, b.surface - 7, 5);
   finish(b, 188);
   return b.build({ world: 4, level: 2, name: "Gale Corridor", identity: "wind pressure", objective: "Collect 3 Sky Stars in the gale", widthTiles: 200, heightTiles: 28, starsRequired: 3 });
 }
@@ -296,9 +298,9 @@ function w4_3(): LevelData {
   for (let i = 0; i < 16; i++) b.ledge(8 + ((i * 17) % 56), 8 + i * 3, 5);
   for (let i = 0; i < 6; i++) b.platform(20 + ((i * 23) % 40), 12 + i * 8, 3, i % 2 ? { dx: 4 } : { dy: 3 }, 2100);
   b.patrol(["flyer", "spiker", "flyer"], 8, 70, 9, 30);
-  b.checkpoint(20, 20);
+  b.checkpoint(27, 40);
   b.ledge(16, 21, 6);
-  b.checkpoint(50, 40);
+  b.checkpoint(50, 56);
   b.ledge(46, 41, 6);
   b.relic(64, 30, 4, 3);
   b.ground(0, 79, 57);
@@ -435,6 +437,7 @@ function w6_3(): LevelData {
   b.patrol(mix(6), 20, 160, 8, b.height - 10);
   b.checkpoint(58, b.height - 3);
   b.checkpoint(120, b.height - 18);
+  b.ledge(116, b.height - 17, 10);
   b.relic(150, 10, 6, 3);
   b.ledge(150, 12, 12);
   b.goal = { x: 158, y: 11 };
@@ -552,7 +555,7 @@ function w8_2(): LevelData {
   b.patrol(mix(8), 20, 150, 10, b.height - 14);
   b.checkpoint(34, b.height - 22);
   b.ledge(30, b.height - 21, 6);
-  b.checkpoint(104, b.height - 30);
+  b.checkpoint(104, b.height - 3);
   b.ledge(100, b.height - 29, 6);
   b.relic(140, 10, 8, 2);
   b.ledge(140, 12, 14);

@@ -1,4 +1,5 @@
 import type { BlockKind, LevelData } from "../types";
+import { floorAt } from "../systems/analyzer";
 
 /**
  * Brick-based difficulty pass.
@@ -18,13 +19,6 @@ interface Cell {
 
 const solid = (level: LevelData, x: number, y: number): boolean =>
   y >= 0 && y < level.heightTiles && x >= 0 && x < level.widthTiles && (level.tiles[y]?.[x] ?? 0) !== 0;
-
-function floorAt(level: LevelData, x: number): number | null {
-  for (let y = level.heightTiles - 1; y >= 0; y--) {
-    if (solid(level, x, y) && !solid(level, x, y - 1)) return y;
-  }
-  return null;
-}
 
 export interface BrickTuning {
   /** Number of brick formations added. */

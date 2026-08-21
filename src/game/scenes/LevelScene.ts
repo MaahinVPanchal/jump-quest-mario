@@ -80,7 +80,19 @@ export class LevelScene extends Phaser.Scene {
 
   create(): void {
     this.level = getLevel(gameState.levelId);
+    const checkpoint = gameState.checkpoint;
+    if (checkpoint) {
+      gameState.coins = checkpoint.coins;
+      gameState.score = checkpoint.score;
+      gameState.levelCoins = checkpoint.levelCoins;
+      gameState.enemiesDefeated = checkpoint.enemiesDefeated;
+      gameState.damageTaken = checkpoint.damageTaken;
+      gameState.relicIds = [...checkpoint.relicIds];
+      gameState.starIds = [...checkpoint.starIds];
+      gameState.collectedIds = new Set(checkpoint.collectedIds);
+    }
     this.objectives = new ObjectiveTracker(this.level);
+    if (checkpoint) this.objectives.restore(checkpoint.objectives);
     const level = this.level;
     this.finished = false;
     this.respawning = false;
@@ -88,6 +100,11 @@ export class LevelScene extends Phaser.Scene {
     this.platforms = [];
     this.pipeZones = [];
     this.checkpointSprites = [];
+    this.hazardSprites = [];
+    this.bossColliders = [];
+    this.boss = undefined;
+    this.bossBar = undefined;
+    this.lastCheckpointIndex = gameState.checkpoint?.index ?? -1;
     this.elapsed = 0;
 
     const worldW = level.widthTiles * TILE;
@@ -115,10 +132,15 @@ export class LevelScene extends Phaser.Scene {
 
     this.items = this.physics.add.group({ allowGravity: false });
     // Saved Sky Stars come back with the level so refreshing never loses progress.
-    const restored = gameState.restoreStars(
-      level.items.filter((i) => i.type === "star").map((i) => i.id ?? `${i.type}:${i.x}:${i.y}`),
-    );
-    for (const id of restored) gameState.collectedIds.add(id);
+    const stageStarIds = level.items.flatMap((item) => {
+      const uid = item.id ?? `${item.type}:${item.x}:${item.y}`;
+      return item.type === "star" ? [uid] : item.type === "relic" ? [`${uid}:gem-star`] : [];
+    });
+    const restored = gameState.restoreStars(stageStarIds);
+    for (const id of restored) {
+      gameState.collectedIds.add(id);
+      if (id.endsWith(":gem-star")) gameState.collectedIds.add(id.slice(0, -":gem-star".length));
+    }
     for (const spawn of level.items) {
       const item = new Collectible(this, spawn);
       if (gameState.collectedIds.has(item.uid)) {
@@ -547,6 +569,16 @@ export class LevelScene extends Phaser.Scene {
 
   private onBlockCollide(block: Block): void {
     const body = this.player.sprite.body as Phaser.Physics.Arcade.Body;
+    if ((body.blocked.down || body.touching.down) && block.kind === "falling") {
+      block.fall();
+      return;
+    }
+    if ((body.blocked.down || body.touching.down) && block.kind === "bounce") {
+      body.setVelocityY(-760);
+      block.bumpAnimation();
+      audio.play("jump");
+      return;
+    }
     if (!body.blocked.up && !body.touching.up) return;
     if (!block.revealed) block.reveal();
     if (block.used) return;
@@ -592,6 +624,8 @@ export class LevelScene extends Phaser.Scene {
   }
 
   private breakBlock(block: Block): void {
+    if (!block.active || block.used) return;
+    block.used = true;
     audio.play("break");
     this.shake(CAMERA.shakeBig);
     this.burst(block.x, block.y, COLORS.brick, 10);
@@ -924,20 +958,22 @@ export class LevelScene extends Phaser.Scene {
     const body = shield.body as Phaser.Physics.Arcade.Body;
     body.setAllowGravity(false);
     body.setSize(26, 44);
-    this.physics.add.overlap(shield, this.bossShots, (_s, shot) => {
+    const shotCollider = this.physics.add.overlap(shield, this.bossShots, (_s, shot) => {
       const projectile = shot as unknown as Phaser.Physics.Arcade.Image;
       if (!projectile.active) return;
       this.burst(projectile.x, projectile.y, 0x9fd8ff, 8);
       projectile.destroy();
       audio.play("block");
     });
-    this.physics.add.overlap(shield, this.enemies, (_s, e) => {
+    const enemyCollider = this.physics.add.overlap(shield, this.enemies, (_s, e) => {
       const enemy = e as Enemy;
       const body2 = enemy.body as Phaser.Physics.Arcade.Body | null;
       if (body2) body2.velocity.x = Math.sign(enemy.x - this.player.sprite.x) * 180;
     });
     audio.play("block");
     this.time.delayedCall(1100, () => {
+      this.physics.world.removeCollider(shotCollider);
+      this.physics.world.removeCollider(enemyCollider);
       shield.destroy();
       if (this.shieldSprite === shield) this.shieldSprite = null;
     });
@@ -1016,6 +1052,7 @@ export class LevelScene extends Phaser.Scene {
 
   /** Abilities interact with blockwork in their own way. */
   private onAbilityHitBlock(ball: Phaser.Physics.Arcade.Image, block: Block): void {
+    if (!ball.active || !block.active) return;
     const kind = ball.getData("kind") as ThrowKind;
     const breaksBrick = kind === "emberBurst" || kind === "fireBurst" || kind === "knifeThrow" || kind === "groundSmash";
     const breaksMetal = kind === "groundSmash";
@@ -1651,16 +1688,25 @@ export class LevelScene extends Phaser.Scene {
   private checkCheckpoints(): void {
     this.checkpointSprites.forEach((img, index) => {
       if (img.texture.key === "checkpoint_on") return;
+      if (index <= this.lastCheckpointIndex) return;
       if (Math.abs(img.x - this.player.sprite.x) < 40 && Math.abs(img.y - this.player.sprite.y) < 90) {
         img.setTexture("checkpoint_on");
         this.lastCheckpointIndex = index;
         gameState.checkpoint = {
+          index,
           x: this.player.sprite.x,
           y: this.player.sprite.y,
           power: this.player.power,
           coins: gameState.coins,
           score: gameState.score,
           timeLeft: this.timeLeft,
+          levelCoins: gameState.levelCoins,
+          enemiesDefeated: gameState.enemiesDefeated,
+          damageTaken: gameState.damageTaken,
+          relicIds: [...gameState.relicIds],
+          starIds: [...gameState.starIds],
+          collectedIds: [...gameState.collectedIds],
+          objectives: this.objectives.snapshot(),
         };
         gameState.persist();
         audio.play("checkpoint");

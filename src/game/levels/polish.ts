@@ -119,7 +119,10 @@ export function polishLevel(
       const near = level.pipes
         .slice()
         .sort((a, b) => Math.abs(a.x - e.x) - Math.abs(b.x - e.x))[0];
-      return near ? [{ ...e, x: near.x, y: near.y }] : [];
+      if (near) return [{ ...e, x: near.x, y: near.y }];
+      const nx = floorAt(level, e.x) !== null ? e.x : nearestGroundedX(level, e.x);
+      if (nx === null) return [];
+      return [{ ...e, x: nx, y: (floorAt(level, nx) ?? e.y) - 1 }];
     }
     if (floorAt(level, e.x) !== null) return [e];
     const nx = nearestGroundedX(level, e.x);

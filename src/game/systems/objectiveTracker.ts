@@ -1,6 +1,6 @@
 import type { LevelData, LevelObjective, ObjectiveProgress } from "../types";
 
-interface TrackerState {
+export interface TrackerState {
   coins: number;
   enemies: number;
   secretFound: boolean;
@@ -39,6 +39,18 @@ export class ObjectiveTracker {
     const o = level.objectives;
     this.list = o ? [o.primary, ...(o.secondary ?? [])] : [];
     this.state.timeLeft = level.timeLimit;
+  }
+
+  restore(snapshot: Partial<TrackerState>): void {
+    this.state.coins = snapshot.coins ?? this.state.coins;
+    this.state.enemies = snapshot.enemies ?? this.state.enemies;
+    this.state.secretFound = snapshot.secretFound ?? this.state.secretFound;
+    this.state.waterTouched = snapshot.waterTouched ?? this.state.waterTouched;
+    this.state.timeLeft = snapshot.timeLeft ?? this.state.timeLeft;
+  }
+
+  snapshot(): TrackerState {
+    return { ...this.state };
   }
 
   get primary(): LevelObjective | undefined {
