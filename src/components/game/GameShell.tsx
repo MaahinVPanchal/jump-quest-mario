@@ -95,15 +95,13 @@ export default function GameShell() {
   }, []);
 
   const completedLevels = useMemo(() => save?.completedLevels ?? [], [save]);
-  // Continue in campaign order: the stage right after the furthest one cleared,
-  // so out-of-order clears never make Play skip ahead (e.g. straight to 2-2).
-  const autoLevel = useMemo(() => {
-    let furthest = -1;
-    LEVELS.forEach((l, i) => {
-      if (completedLevels.includes(l.id)) furthest = i;
-    });
-    return LEVELS[furthest + 1] ?? LEVELS[LEVELS.length - 1]!;
-  }, [completedLevels]);
+  // Play resumes at the first stage of the campaign you have not cleared yet,
+  // scanning in campaign order so it never jumps past an unfinished stage.
+  const autoLevel = useMemo(
+    () => LEVELS.find((l) => !completedLevels.includes(l.id)) ?? LEVELS[0]!,
+    [completedLevels],
+  );
+
 
   const nextLevel = (pickedLevelId && LEVELS.find((l) => l.id === pickedLevelId)) || autoLevel;
   const hero = CHARACTERS[characterId] ?? ROSTER[0]!;
