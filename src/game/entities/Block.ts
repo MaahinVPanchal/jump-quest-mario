@@ -90,6 +90,13 @@ export class Block extends Phaser.Physics.Arcade.Sprite {
     });
   }
 
+  /** Refresh the static body only while the block is still alive in a scene. */
+  private syncBody(): void {
+    if (!this.scene || !this.active) return;
+    const body = this.body as Phaser.Physics.Arcade.StaticBody | undefined;
+    body?.updateFromGameObject();
+  }
+
   bumpAnimation(): void {
     const startY = this.y;
     this.scene.tweens.add({
@@ -97,10 +104,10 @@ export class Block extends Phaser.Physics.Arcade.Sprite {
       y: startY - 9,
       duration: 80,
       yoyo: true,
-      onUpdate: () => (this.body as Phaser.Physics.Arcade.StaticBody).updateFromGameObject(),
+      onUpdate: () => this.syncBody(),
       onComplete: () => {
         this.y = startY;
-        (this.body as Phaser.Physics.Arcade.StaticBody).updateFromGameObject();
+        this.syncBody();
       },
     });
   }
