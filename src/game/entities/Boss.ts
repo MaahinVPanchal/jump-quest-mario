@@ -22,7 +22,7 @@ interface BossProfile {
 }
 
 const PROFILES: Record<BossKind, BossProfile> = {
-  guardian: { color: 0x3cbc3c, accent: 0xfcd83c, w: 56, h: 56, speed: 70, hopMs: 1600, shootMs: 0, stompable: true, floats: false },
+  guardian: { color: 0x3cbc3c, accent: 0xfcd83c, w: 56, h: 56, speed: 140, hopMs: 1600, shootMs: 2100, stompable: true, floats: false },
   beast: { color: 0x0f7a35, accent: 0xff6b3d, w: 64, h: 56, speed: 110, hopMs: 1100, shootMs: 2400, stompable: true, floats: false },
   serpent: { color: 0x2f9cd8, accent: 0x9ce8ff, w: 72, h: 44, speed: 90, hopMs: 0, shootMs: 1700, stompable: false, floats: true },
   titan: { color: 0xd8d8f0, accent: 0x6888fc, w: 68, h: 60, speed: 120, hopMs: 0, shootMs: 1500, stompable: false, floats: true },
@@ -70,6 +70,7 @@ export interface BossHooks {
 export class Boss extends Phaser.Physics.Arcade.Sprite {
   readonly def: BossDefinition;
   readonly profile: BossProfile;
+  readonly maxHealth = 10;
   health: number;
   phase = 1;
   defeated = false;
@@ -82,10 +83,22 @@ export class Boss extends Phaser.Physics.Arcade.Sprite {
 
   constructor(scene: Phaser.Scene, def: BossDefinition, x: number, y: number, private hooks: BossHooks) {
     ensureTexture(scene, def.kind);
-    super(scene, x, y, textureKey(def.kind));
+    super(scene, x + TILE / 2, y + TILE, textureKey(def.kind));
     this.def = def;
     this.profile = PROFILES[def.kind];
-    this.health = def.health;
+    this.health = this.maxHealth;
+    console.log(
+      "[BOSS CONSTRUCTOR]",
+      this.constructor.name,
+      "health=",
+      this.health,
+      "maxHealth=",
+      this.maxHealth,
+      "active=",
+      this.active,
+      "visible=",
+      this.visible,
+    );
     this.baseY = y;
     this.arenaMinX = (def.arenaMinX ?? def.x - 12) * TILE;
     this.arenaMaxX = (def.arenaMaxX ?? def.x + 10) * TILE;
@@ -93,6 +106,7 @@ export class Boss extends Phaser.Physics.Arcade.Sprite {
     scene.physics.add.existing(this);
     this.setDepth(19);
     this.setOrigin(0.5, 1);
+    this.setActive(true).setVisible(true).setAlpha(1);
     const body = this.body as Phaser.Physics.Arcade.Body;
     body.setSize(this.profile.w * 0.8, this.profile.h * 0.85);
     body.setOffset(this.profile.w * 0.1, this.profile.h * 0.15);
@@ -105,28 +119,50 @@ export class Boss extends Phaser.Physics.Arcade.Sprite {
     return 3;
   }
 
-  /** Damage window guard so a single stomp cannot drain several hit points. */
   /** True only while the sprite is still alive and attached to a running scene. */
   get alive(): boolean {
     return !this.defeated && this.active && !!this.scene && !!this.body;
   }
 
   canBeHurt(time: number): boolean {
-    return this.alive && time > this.invulnUntil;
+    return this.alive && time >= this.invulnUntil;
   }
 
-  /**
-   * Bosses are damage sponges now: ranged chip damage is 1, a risky stomp is
-   * worth 2, and each hit buys the boss a short guard window so the fight has
-   * a real rhythm instead of dying to a single fireball burst.
-   */
-  hurt(time: number, amount = 1): boolean {
+  /** Every successful boss hit removes exactly one health segment. */
+  hurt(time: number): boolean {
+    console.log("[BOSS HURT CALLED]", {
+      healthBefore: this.health,
+      maxHealth: this.maxHealth,
+      defeated: this.defeated,
+      active: this.active,
+      visible: this.visible,
+      time,
+    });
     if (!this.canBeHurt(time)) return false;
-    this.invulnUntil = time + (amount >= 2 ? 500 : 650);
-    this.health -= Math.max(1, amount);
+    this.invulnUntil = time + 150;
+    const previousHealth = this.health;
+    this.health = Math.max(0, this.health - 1);
+    console.log("[BOSS HEALTH CHANGED]", {
+      previousHealth,
+      healthAfter: this.health,
+      maxHealth: this.maxHealth,
+      defeated: this.defeated,
+      active: this.active,
+      visible: this.visible,
+    });
+    console.log("[BOSS HIT]", {
+      boss: this.def.name,
+      previousHealth,
+      health: this.health,
+      maxHealth: this.maxHealth,
+      alive: this.alive,
+    });
     audio.play("stomp");
-    this.scene.tweens.add({ targets: this, alpha: 0.25, yoyo: true, repeat: 4, duration: 70 });
-    const nextPhase = Math.min(3, 1 + Math.floor((this.def.health - Math.max(0, this.health)) / Math.max(1, this.def.health / 3)));
+    this.setTint(0xffffff);
+    this.scene.time.delayedCall(80, () => {
+      if (this.alive) this.clearTint();
+    });
+    const nextPhase = Math.min(3, 1 + Math.floor((this.maxHealth - Math.max(0, this.health)) / 3.34));
     if (nextPhase > this.phase) {
       this.phase = nextPhase;
       this.hooks.onPhase(this.phase);
@@ -136,6 +172,13 @@ export class Boss extends Phaser.Physics.Arcade.Sprite {
   }
 
   private die(): void {
+    console.log("[BOSS DIE CALLED]", {
+      health: this.health,
+      maxHealth: this.maxHealth,
+      defeated: this.defeated,
+      active: this.active,
+      visible: this.visible,
+    });
     if (this.defeated) return;
     this.defeated = true;
     const body = this.body as Phaser.Physics.Arcade.Body | null;
@@ -163,6 +206,7 @@ export class Boss extends Phaser.Physics.Arcade.Sprite {
   override preUpdate(time: number, delta: number): void {
     super.preUpdate(time, delta);
     if (!this.alive) return;
+    this.setVisible(true).setAlpha(1);
     const body = this.body as Phaser.Physics.Arcade.Body;
     const px = this.hooks.playerX();
     const dir = px < this.x ? -1 : 1;

@@ -30,8 +30,6 @@ export class LevelScene extends Phaser.Scene {
   private bossShots!: Phaser.Physics.Arcade.Group;
   private bossBar: Phaser.GameObjects.Graphics | undefined;
   private bossColliders: Phaser.Physics.Arcade.Collider[] = [];
-  private bossGate: Phaser.GameObjects.Rectangle | undefined;
-  private bossGateCollider: Phaser.Physics.Arcade.Collider | undefined;
   private bossArrow: Phaser.GameObjects.Graphics | undefined;
   private controls!: InputManager;
   private player!: Player;
@@ -57,6 +55,7 @@ export class LevelScene extends Phaser.Scene {
   private invincible = false;
   private lastCheckpointIndex = -1;
   private goalLocked = false;
+  private bossDefeated = false;
   private objectives!: ObjectiveTracker;
   private analyzerLayer?: Phaser.GameObjects.Graphics;
   private analyzerLabels: Phaser.GameObjects.Text[] = [];
@@ -107,9 +106,8 @@ export class LevelScene extends Phaser.Scene {
     this.bossColliders = [];
     this.boss = undefined;
     this.bossBar = undefined;
-    this.bossGate = undefined;
-    this.bossGateCollider = undefined;
     this.bossArrow = undefined;
+    this.bossDefeated = false;
     this.lastCheckpointIndex = gameState.checkpoint?.index ?? -1;
     this.elapsed = 0;
 
@@ -203,7 +201,6 @@ export class LevelScene extends Phaser.Scene {
 
     this.buildZones();
     this.buildBoss();
-    this.buildBossGate();
     this.setupCollisions();
     this.setupCamera();
     this.showReadyCard();
@@ -551,10 +548,32 @@ export class LevelScene extends Phaser.Scene {
       this.bossColliders.push(
         this.physics.add.overlap(this.fireballs, boss, (f) => {
           const ball = f as unknown as Phaser.Physics.Arcade.Image;
-          if (ball.active) ball.destroy();
+          if (!ball.active || ball.getData("bossHit")) return;
+          console.log("[PROJECTILE -> BOSS]", {
+            projectileKind: ball.getData("kind"),
+            bossHealthBefore: boss.health,
+            bossMaxHealth: boss.maxHealth,
+            bossActive: boss.active,
+            bossVisible: boss.visible,
+            bossDefeated: boss.defeated,
+          });
+          // Phaser can dispatch every overlap pair in the same step before the
+          // destroyed object is removed. Latch the hit first so one projectile
+          // can never spend more than one boss HP.
+          ball.setData("bossHit", true);
+          ball.setActive(false).setVisible(false);
+          ball.destroy();
           // A defeated / destroyed boss must never be touched again.
           if (!boss.alive) return;
           boss.hurt(this.time.now);
+          console.log("[PROJECTILE -> BOSS AFTER]", {
+            bossHealthAfter: boss.health,
+            bossMaxHealth: boss.maxHealth,
+            bossActive: boss.active,
+            bossVisible: boss.visible,
+            bossDefeated: boss.defeated,
+          });
+          this.burst(boss.x, boss.y - boss.displayHeight * 0.5, 0xffd166, 10);
           this.emitHud();
         }),
       );
@@ -769,12 +788,10 @@ export class LevelScene extends Phaser.Scene {
     if (stomping && boss.profile.stompable) {
       this.player.movement.bounce();
       this.hitStop();
-      boss.hurt(this.time.now, 2);
       this.burst(boss.x, boss.y - boss.displayHeight * 0.5, 0xffffff, 12);
       return;
     }
     if (this.invincible) {
-      boss.hurt(this.time.now);
       return;
     }
     this.hurtPlayer();
@@ -873,12 +890,6 @@ export class LevelScene extends Phaser.Scene {
       starsRequired: this.starsTotal,
       objectives: this.objectives?.progress() ?? [],
     });
-  }
-
-  /** Visual cue that the sealed goal is now usable. */
-  private unlockGoal(): void {
-    this.goalFlag.setAlpha(1);
-    this.tweens.add({ targets: this.goalFlag, scale: 1.3, yoyo: true, duration: 220, repeat: 2 });
   }
 
   // ------------------------------------------------------------ fireball
@@ -1151,10 +1162,11 @@ export class LevelScene extends Phaser.Scene {
 
   private completeLevel(): void {
     if (this.finished) return;
-    if (this.boss && !this.boss.defeated) {
+    const boss = this.boss;
+    if (this.level.boss && !this.bossDefeated) {
       if (!this.goalLocked) {
         this.goalLocked = true;
-        this.toast(`${this.boss.def.name} still has ${Math.max(0, this.boss.health)} HP - beat it first`);
+        this.toast(`${boss?.def.name ?? this.level.boss.name} still has ${Math.max(0, boss?.health ?? 10)} HP - beat it first`);
         this.time.delayedCall(1400, () => (this.goalLocked = false));
       }
       return;
@@ -1517,71 +1529,63 @@ export class LevelScene extends Phaser.Scene {
 
   // ---------------------------------------------------------------- boss
 
-  /**
-   * A boss stage must actually be a boss stage: seal the corridor between the
-   * arena and the flag so the hero cannot stroll past a living boss and get a
-   * confusing "still guards the exit" refusal at the pole.
-   */
-  private buildBossGate(): void {
-    const def = this.level.boss;
-    if (!def || !this.boss) return;
-    const gateTile = Math.min(this.level.goal.x - 3, def.x + 10);
-    const x = gateTile * TILE + TILE / 2;
-    const gy = (this.level.goal.y + 1) * TILE;
-    const h = TILE * 12;
-    const gate = this.add.rectangle(x, gy, TILE * 0.75, h, 0xff8a3c, 0.35).setOrigin(0.5, 1).setDepth(8);
-    gate.setStrokeStyle(2, 0xffd166, 0.9);
-    this.physics.add.existing(gate, true);
-    this.tweens.add({ targets: gate, alpha: 0.7, yoyo: true, repeat: -1, duration: 520 });
-    this.bossGate = gate;
-    this.bossGateCollider = this.physics.add.collider(this.player.sprite, gate);
-  }
-
-  private openBossGate(): void {
-    const gate = this.bossGate;
-    if (!gate) return;
-    this.bossGate = undefined;
-    if (this.bossGateCollider) {
-      this.physics.world.removeCollider(this.bossGateCollider);
-      this.bossGateCollider = undefined;
-    }
-    const body = gate.body as Phaser.Physics.Arcade.StaticBody | null;
-    if (body) body.enable = false;
-    this.tweens.add({ targets: gate, alpha: 0, scaleY: 0, duration: 500, onComplete: () => gate.destroy() });
-  }
-
   private buildBoss(): void {
     this.bossShots = this.physics.add.group({ allowGravity: false });
     const def = this.level.boss;
     if (!def) return;
-    this.boss = new Boss(this, def, def.x * TILE, def.y * TILE, {
+    const boss = new Boss(this, def, def.x * TILE, def.y * TILE, {
       onShoot: (x, y, dir) => this.spawnBossShot(x, y, dir),
       onPhase: (phase) => {
         this.toast(`${def.name} — PHASE ${phase}`);
         this.shake(CAMERA.shakeBig);
       },
       onDefeated: () => {
+        console.log("[BOSS ON DEFEATED]", {
+          bossHealth: boss.health,
+          bossMaxHealth: boss.maxHealth,
+          bossDefeated: boss.defeated,
+          bossActive: boss.active,
+          bossVisible: boss.visible,
+        });
         // Drop every collider first: a destroyed boss can still be visited by a
         // queued physics pair on the same step, which used to crash the loop.
+        this.bossDefeated = true;
         for (const collider of this.bossColliders) this.physics.world.removeCollider(collider);
         this.bossColliders = [];
         this.boss = undefined;
         this.bossBar?.destroy();
         this.bossBar = undefined;
-        this.toast(`${def.name} defeated — the goal is open!`);
-        this.openBossGate();
-        this.unlockGoal();
+        this.bossArrow?.destroy();
+        this.bossArrow = undefined;
+        const reward = new Collectible(
+          this,
+          { type: "coin", x: boss.x, y: boss.y - 52, id: `boss-reward:${this.level.id}` },
+          true,
+        );
+        this.items.add(reward);
+        this.toast(`${def.name} defeated! Reach the flag!`);
         gameState.addScore(5000);
         this.emitHud();
       },
       playerX: () => this.player.sprite.x,
       playerY: () => this.player.sprite.y,
     });
-    this.bossBar = this.add.graphics().setScrollFactor(0).setDepth(120);
+    this.boss = boss;
+    console.log("[BOSS]", {
+      level: this.level.id,
+      boss: this.level.boss,
+      bossPosition: { x: boss.x, y: boss.y },
+      health: boss.health,
+      maxHealth: boss.maxHealth,
+    });
+    this.bossBar = this.add.graphics().setScrollFactor(1).setDepth(30);
   }
 
   private spawnBossShot(x: number, y: number, dir: number): void {
-    const shot = this.physics.add.image(x, y, "fireball").setDepth(18).setTint(0xff9a3c);
+    const isGuardian = this.boss?.def.kind === "guardian";
+    const shot = this.physics.add.image(x, y, isGuardian ? "boss_arrow" : "fireball").setDepth(18);
+    if (!isGuardian) shot.setTint(0xff9a3c);
+    shot.setFlipX(dir < 0);
     this.bossShots.add(shot);
     const body = shot.body as Phaser.Physics.Arcade.Body;
     body.setAllowGravity(false);
@@ -1597,26 +1601,18 @@ export class LevelScene extends Phaser.Scene {
     if (!bar) return;
     bar.clear();
     if (!boss) return;
-    const w = 360;
-    const x = (this.scale.width - w) / 2;
-    bar.fillStyle(0x000000, 0.75).fillRect(x - 4, 56, w + 8, 20);
-    bar.fillStyle(0xff3b3b, 1).fillRect(x, 60, (w * Math.max(0, boss.health)) / boss.def.health, 12);
-    // Segment ticks so a long health bar reads as "many hits", not one blob.
-    bar.fillStyle(0x000000, 0.6);
-    for (let i = 1; i < boss.def.health; i += 1) bar.fillRect(x + (w * i) / boss.def.health, 60, 1, 12);
-
-    // Pointer towards an off-screen boss.
-    if (!this.bossArrow) this.bossArrow = this.add.graphics().setScrollFactor(0).setDepth(120);
-    const arrow = this.bossArrow;
-    arrow.clear();
-    const cam = this.cameras.main;
-    const onScreen = boss.x > cam.scrollX && boss.x < cam.scrollX + cam.width / cam.zoom;
-    if (onScreen) return;
-    const right = boss.x > cam.scrollX;
-    const ax = right ? this.scale.width - 26 : 26;
-    const ay = 110;
-    arrow.fillStyle(0xffd166, 1);
-    arrow.fillTriangle(ax + (right ? 12 : -12), ay, ax - (right ? 10 : -10), ay - 12, ax - (right ? 10 : -10), ay + 12);
+    const segmentWidth = 12;
+    const segmentGap = 2;
+    const width = boss.maxHealth * segmentWidth + (boss.maxHealth - 1) * segmentGap;
+    const x = boss.x - width / 2;
+    const y = boss.y - boss.displayHeight - 18;
+    for (let index = 0; index < boss.maxHealth; index += 1) {
+      const segmentX = x + index * (segmentWidth + segmentGap);
+      bar.fillStyle(0x111111, 1).fillRect(segmentX, y, segmentWidth, 7);
+      if (index < boss.health) {
+        bar.fillStyle(0xff3b3b, 1).fillRect(segmentX + 1, y + 1, segmentWidth - 2, 5);
+      }
+    }
   }
 
   isSolidAt(x: number, y: number): boolean {

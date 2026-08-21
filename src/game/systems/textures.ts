@@ -683,6 +683,18 @@ export function buildTextures(scene: Phaser.Scene): void {
   shot("shot_groundSmash", 0x8a5a00, 0xd8a860, true);
   shot("shot_banana", 0xfcd83c, 0x8a5a00);
   shot("shot_claw", 0xfcfcfc, 0x00b8f8);
+  make(scene, "boss_arrow", 24, 10, (ctx) => {
+    ctx.fillStyle = hex(0x5a2e18);
+    ctx.fillRect(0, 3, 18, 4);
+    ctx.fillStyle = hex(0xffd166);
+    ctx.beginPath();
+    ctx.moveTo(23, 5);
+    ctx.lineTo(15, 0);
+    ctx.lineTo(15, 10);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillRect(3, 1, 3, 8);
+  });
   make(scene, "particle", 8, 8, (ctx) => {
     ctx.fillStyle = "#ffffff";
     ctx.fillRect(0, 0, 8, 8);
