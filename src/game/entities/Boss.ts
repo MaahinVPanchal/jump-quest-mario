@@ -135,8 +135,11 @@ export class Boss extends Phaser.Physics.Arcade.Sprite {
     this.defeated = true;
     const body = this.body as Phaser.Physics.Arcade.Body | null;
     if (body) body.enable = false;
+    // Open the arena immediately when health reaches zero. Waiting for the
+    // defeat tween left a short window where the flag still claimed the boss
+    // was guarding it despite the health bar being empty.
+    this.hooks.onDefeated();
     if (!this.scene) {
-      this.hooks.onDefeated();
       return;
     }
     audio.play("goal");
@@ -147,7 +150,6 @@ export class Boss extends Phaser.Physics.Arcade.Sprite {
       alpha: 0,
       duration: 1100,
       onComplete: () => {
-        this.hooks.onDefeated();
         this.destroy();
       },
     });
