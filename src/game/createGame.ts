@@ -89,7 +89,11 @@ export function createGame({ parent, slot, save, onExit, characterId, levelId }:
   window.addEventListener("focus", keepRunning);
   window.addEventListener("pageshow", keepRunning);
 
+  // Debug handle so automated checks can inspect the live scenes.
+  (window as unknown as { __game?: Phaser.Game }).__game = game;
+
   game.events.on("game:exit", () => {
+
     audio.stopMusic();
     onExit();
   });
