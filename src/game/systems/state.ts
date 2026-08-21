@@ -37,6 +37,8 @@ export class GameState {
   starIds: string[] = [];
   collectedIds = new Set<string>();
   checkpoint: CheckpointState | null = null;
+  /** Remaining boss HP survives a player death/restart within the level. */
+  bossHealthByLevel: Record<string, number> = {};
   comboCount = 0;
   comboExpires = 0;
   lastResult: LevelResult | null = null;
@@ -55,6 +57,7 @@ export class GameState {
     this.relicIds = [];
     this.starIds = [];
     this.comboCount = 0;
+    if (hard) this.bossHealthByLevel = {};
     if (hard) {
       this.checkpoint = null;
       this.collectedIds.clear();

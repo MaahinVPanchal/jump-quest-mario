@@ -56,6 +56,7 @@ export class LevelScene extends Phaser.Scene {
   private lastCheckpointIndex = -1;
   private goalLocked = false;
   private bossDefeated = false;
+  private bossShieldHits = 0;
   private objectives!: ObjectiveTracker;
   private analyzerLayer?: Phaser.GameObjects.Graphics;
   private analyzerLabels: Phaser.GameObjects.Text[] = [];
@@ -108,6 +109,7 @@ export class LevelScene extends Phaser.Scene {
     this.bossBar = undefined;
     this.bossArrow = undefined;
     this.bossDefeated = false;
+    this.bossShieldHits = 0;
     this.lastCheckpointIndex = gameState.checkpoint?.index ?? -1;
     this.elapsed = 0;
 
@@ -546,8 +548,23 @@ export class LevelScene extends Phaser.Scene {
         this.physics.add.overlap(sprite, boss, () => this.onBossTouch()),
       );
       this.bossColliders.push(
-        this.physics.add.overlap(this.fireballs, boss, (f) => {
-          const ball = f as unknown as Phaser.Physics.Arcade.Image;
+        this.physics.add.overlap(this.fireballs, boss, (a, b) => {
+          // Phaser may pass the static target first for group/object overlap.
+          // Never treat the boss itself as the projectile.
+          console.log("[BOSS OVERLAP RAW]", {
+            firstName: (a as Phaser.GameObjects.GameObject).constructor.name,
+            secondName: (b as Phaser.GameObjects.GameObject).constructor.name,
+            firstIsBoss: a === boss,
+            secondIsBoss: b === boss,
+            firstActive: (a as Phaser.GameObjects.GameObject).active,
+            secondActive: (b as Phaser.GameObjects.GameObject).active,
+            bossHealth: boss.health,
+            bossActive: boss.active,
+            bossVisible: boss.visible,
+          });
+          const projectile = a === boss ? b : a;
+          const ball = projectile as unknown as Phaser.Physics.Arcade.Image;
+          if (ball === boss) return;
           if (!ball.active || ball.getData("bossHit")) return;
           console.log("[PROJECTILE -> BOSS]", {
             projectileKind: ball.getData("kind"),
@@ -561,11 +578,24 @@ export class LevelScene extends Phaser.Scene {
           // destroyed object is removed. Latch the hit first so one projectile
           // can never spend more than one boss HP.
           ball.setData("bossHit", true);
+          console.log("[BOSS PROJECTILE SELECTED]", {
+            kind: ball.getData("kind"),
+            active: ball.active,
+            visible: ball.visible,
+            x: ball.x,
+            y: ball.y,
+            bossActiveBeforeDestroy: boss.active,
+            bossVisibleBeforeDestroy: boss.visible,
+          });
           ball.setActive(false).setVisible(false);
           ball.destroy();
-          // A defeated / destroyed boss must never be touched again.
-          if (!boss.alive) return;
+          console.log("[BOSS PROJECTILE DESTROYED]", {
+            bossActiveAfterDestroy: boss.active,
+            bossVisibleAfterDestroy: boss.visible,
+            bossHealthBeforeHurt: boss.health,
+          });
           boss.hurt(this.time.now);
+          gameState.bossHealthByLevel[this.level.id] = boss.health;
           console.log("[PROJECTILE -> BOSS AFTER]", {
             bossHealthAfter: boss.health,
             bossMaxHealth: boss.maxHealth,
@@ -582,6 +612,13 @@ export class LevelScene extends Phaser.Scene {
       const projectile = shot as unknown as Phaser.Physics.Arcade.Image;
       if (!projectile.active) return;
       projectile.destroy();
+      if (this.bossShieldHits > 0) {
+        this.bossShieldHits -= 1;
+        this.burst(projectile.x, projectile.y, 0xffe066, 10);
+        audio.play("block");
+        this.toast(`Shield blocked boss attack (${this.bossShieldHits} left)`);
+        return;
+      }
       this.hurtPlayer();
     });
 
@@ -739,6 +776,11 @@ export class LevelScene extends Phaser.Scene {
         this.player.giveCat();
         this.addScore(SCORE.powerUp, x, y);
         this.toast("Cat Bell! Claw form - air jump and rapid claw slashes");
+        break;
+      case "shieldCore":
+        this.bossShieldHits = 5;
+        audio.play("powerup");
+        this.toast("Guardian Shield! Blocks 5 boss projectiles");
         break;
       case "oneUp":
         gameState.lives += 1;
@@ -1550,6 +1592,7 @@ export class LevelScene extends Phaser.Scene {
         // Drop every collider first: a destroyed boss can still be visited by a
         // queued physics pair on the same step, which used to crash the loop.
         this.bossDefeated = true;
+        delete gameState.bossHealthByLevel[this.level.id];
         for (const collider of this.bossColliders) this.physics.world.removeCollider(collider);
         this.bossColliders = [];
         this.boss = undefined;
@@ -1569,7 +1612,7 @@ export class LevelScene extends Phaser.Scene {
       },
       playerX: () => this.player.sprite.x,
       playerY: () => this.player.sprite.y,
-    });
+    }, gameState.bossHealthByLevel[this.level.id] ?? 10);
     this.boss = boss;
     console.log("[BOSS]", {
       level: this.level.id,

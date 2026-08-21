@@ -22,7 +22,7 @@ interface BossProfile {
 }
 
 const PROFILES: Record<BossKind, BossProfile> = {
-  guardian: { color: 0x3cbc3c, accent: 0xfcd83c, w: 56, h: 56, speed: 140, hopMs: 1600, shootMs: 2100, stompable: true, floats: false },
+  guardian: { color: 0x3cbc3c, accent: 0xfcd83c, w: 80, h: 80, speed: 140, hopMs: 1600, shootMs: 2100, stompable: true, floats: false },
   beast: { color: 0x0f7a35, accent: 0xff6b3d, w: 64, h: 56, speed: 110, hopMs: 1100, shootMs: 2400, stompable: true, floats: false },
   serpent: { color: 0x2f9cd8, accent: 0x9ce8ff, w: 72, h: 44, speed: 90, hopMs: 0, shootMs: 1700, stompable: false, floats: true },
   titan: { color: 0xd8d8f0, accent: 0x6888fc, w: 68, h: 60, speed: 120, hopMs: 0, shootMs: 1500, stompable: false, floats: true },
@@ -42,6 +42,22 @@ function ensureTexture(scene: Phaser.Scene, kind: BossKind): void {
   if (scene.textures.exists(key)) return;
   const p = PROFILES[kind];
   const g = scene.make.graphics({ x: 0, y: 0 }, false);
+  if (kind === "guardian") {
+    g.fillStyle(0x11151a, 1);
+    g.fillRect(16, 4, 48, 8).fillRect(8, 12, 64, 48).fillRect(16, 60, 48, 16);
+    g.fillStyle(p.color, 1);
+    g.fillRect(20, 16, 40, 42).fillRect(12, 28, 56, 28).fillRect(20, 58, 14, 18).fillRect(46, 58, 14, 18);
+    g.fillStyle(p.accent, 1);
+    g.fillRect(24, 8, 10, 12).fillRect(46, 8, 10, 12);
+    g.fillRect(18, 22, 44, 8).fillRect(8, 34, 10, 18).fillRect(62, 34, 10, 18);
+    g.fillStyle(0xfff3a8, 1).fillRect(24, 34, 12, 10).fillRect(44, 34, 12, 10);
+    g.fillStyle(0x182018, 1).fillRect(28, 37, 5, 6).fillRect(47, 37, 5, 6);
+    g.fillStyle(0xd83232, 1).fillRect(30, 50, 20, 6);
+    g.fillStyle(0xff6b3d, 1).fillRect(34, 51, 4, 4).fillRect(42, 51, 4, 4);
+    g.generateTexture(key, p.w, p.h);
+    g.destroy();
+    return;
+  }
   g.fillStyle(0x000000, 1).fillRect(0, 0, p.w, p.h);
   g.fillStyle(p.color, 1).fillRect(4, 4, p.w - 8, p.h - 8);
   g.fillStyle(p.accent, 1).fillRect(10, 10, p.w - 20, 10);
@@ -80,13 +96,14 @@ export class Boss extends Phaser.Physics.Arcade.Sprite {
   private baseY: number;
   private readonly arenaMinX: number;
   private readonly arenaMaxX: number;
+  private lastDebugLog = -Infinity;
 
-  constructor(scene: Phaser.Scene, def: BossDefinition, x: number, y: number, private hooks: BossHooks) {
+  constructor(scene: Phaser.Scene, def: BossDefinition, x: number, y: number, private hooks: BossHooks, startingHealth = 10) {
     ensureTexture(scene, def.kind);
     super(scene, x + TILE / 2, y + TILE, textureKey(def.kind));
     this.def = def;
     this.profile = PROFILES[def.kind];
-    this.health = this.maxHealth;
+    this.health = Phaser.Math.Clamp(startingHealth, 0, this.maxHealth);
     console.log(
       "[BOSS CONSTRUCTOR]",
       this.constructor.name,
@@ -113,6 +130,18 @@ export class Boss extends Phaser.Physics.Arcade.Sprite {
     body.setAllowGravity(!this.profile.floats);
     body.setCollideWorldBounds(false);
     body.setBounce(0, 0);
+    console.log("[BOSS READY]", {
+      name: this.def.name,
+      kind: this.def.kind,
+      x: this.x,
+      y: this.y,
+      active: this.active,
+      visible: this.visible,
+      bodyEnabled: body.enable,
+      bodyActive: body.gameObject.active,
+      bodyAllowGravity: body.allowGravity,
+      health: this.health,
+    });
   }
 
   get phaseCount(): number {
@@ -121,7 +150,7 @@ export class Boss extends Phaser.Physics.Arcade.Sprite {
 
   /** True only while the sprite is still alive and attached to a running scene. */
   get alive(): boolean {
-    return !this.defeated && this.active && !!this.scene && !!this.body;
+    return !this.defeated && this.active && this.visible && !!this.scene;
   }
 
   canBeHurt(time: number): boolean {
@@ -205,6 +234,23 @@ export class Boss extends Phaser.Physics.Arcade.Sprite {
 
   override preUpdate(time: number, delta: number): void {
     super.preUpdate(time, delta);
+    if (time - this.lastDebugLog >= 500) {
+      const body = this.body as Phaser.Physics.Arcade.Body | undefined;
+      console.log("[BOSS HEARTBEAT]", {
+        time,
+        x: Math.round(this.x),
+        y: Math.round(this.y),
+        health: this.health,
+        defeated: this.defeated,
+        active: this.active,
+        visible: this.visible,
+        alpha: this.alpha,
+        sceneAttached: !!this.scene,
+        bodyEnabled: body?.enable ?? false,
+        bodyActive: body?.gameObject.active ?? false,
+      });
+      this.lastDebugLog = time;
+    }
     if (!this.alive) return;
     this.setVisible(true).setAlpha(1);
     const body = this.body as Phaser.Physics.Arcade.Body;

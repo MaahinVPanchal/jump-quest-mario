@@ -145,14 +145,11 @@ export class LevelBuilder {
     this.fill(left, x - 1, yBottom - 3, yBottom - 1, T.EMPTY);
     // Exit doorway at the head of the right wall.
     this.fill(rightStart, rightEnd, yTop + 1, yTop + 3, T.EMPTY);
-    this.ledge(rightEnd + 1, yTop + 4, w + 2);
     let side = 0;
     for (let y = yBottom - step; y > yTop + 1; y -= step) {
       this.ledge(side % 2 === 0 ? x : x + 8 - w, y, w);
       side++;
     }
-    // A landing ledge right at the exit door so the last hop is never blind.
-    this.ledge(x + 8 - w, yTop + 3, w);
     return this;
   }
 

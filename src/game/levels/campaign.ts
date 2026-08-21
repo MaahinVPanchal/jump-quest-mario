@@ -107,6 +107,7 @@ function w1_4(): LevelData {
   b.coins(121, b.surface - 6, 3);
   // Open arena floor for the guardian fight.
   b.checkpoint(132);
+  b.block("question", 100, b.surface - 4, "shieldCore").block("question", 138, b.surface - 4, "shieldCore");
   b.setBoss("guardian", "Meadow Guardian", 8, 146, b.surface - 3);
   b.goal = { x: 164, y: b.surface - 1 };
   return b.build({ world: 1, level: 4, name: "Emberleaf Fortress", identity: "fortress + boss", objective: "Defeat the Meadow Guardian", widthTiles: 170, timeLimit: 340 });
@@ -118,14 +119,15 @@ function w1_4(): LevelData {
 // Vertical forest: climbs, hanging platforms, threats above and below.
 
 function w2_1(): LevelData {
-  const b = new LevelBuilder(180, 34);
+  const b = new LevelBuilder(180, 40);
   b.ground(0, 24);
-  b.shaft(30, 6, b.surface, 2, 4, 4);
+  b.shaft(30, 6, b.surface, 1, 3, 4);
+  b.fill(30, 33, b.surface - 3, b.surface - 3, T.EMPTY);
   b.checkpoint(26);
   b.ground(44, 70);
   b.islands(46, b.surface - 8, 4, 4, 3, -2);
   b.patrol(mix(2), 44, 70, 4);
-  b.shaft(80, 4, b.surface, 2, 3, 3);
+  b.shaft(80, 8, b.surface, 1, 3, 4);
   b.relic(86, 8, 2, 1);
   b.ground(96, 130);
   b.checkpoint(100);
@@ -133,7 +135,7 @@ function w2_1(): LevelData {
   b.patrol(mix(2), 100, 130, 4);
   b.zigzag(136, b.surface - 3, 6, 5, 4, 3);
   finish(b, 150);
-  return b.build({ world: 2, level: 1, name: "Vine Ascent", identity: "vines and shafts", objective: "Climb the canopy shafts", widthTiles: 180, heightTiles: 34 });
+  return b.build({ world: 2, level: 1, name: "Vine Ascent", identity: "vines and shafts", objective: "Climb the canopy shafts", widthTiles: 180, heightTiles: 40 });
 }
 
 function w2_2(): LevelData {
@@ -175,6 +177,7 @@ function w2_4(): LevelData {
   b.checkpoint(56);
   b.patrol(mix(2), 20, 120, 7);
   b.blockRow("brick", 90, b.surface - 6, 6).block("question", 93, b.surface - 10, "catBell");
+  b.block("question", 100, b.surface - 4, "shieldCore").block("question", 138, b.surface - 4, "shieldCore");
   b.setBoss("beast", "Canopy Beast", 10, 146, b.surface - 3);
   b.goal = { x: 164, y: b.surface - 1 };
   return b.build({ world: 2, level: 4, name: "Forest Guardian", identity: "boss arena", objective: "Defeat the Canopy Beast", widthTiles: 170, heightTiles: 30 });
@@ -245,6 +248,7 @@ function w3_4(): LevelData {
   for (let i = 0; i < 8; i++) b.fill(20 + i * 16, 21 + i * 16, b.surface - 4, b.surface + 2, T.STONE);
   b.patrol(["piranha", "flyer"], 20, 120, 6, b.surface - 4);
   b.checkpoint(80, b.surface + 2);
+  b.block("question", 100, b.surface - 4, "shieldCore").block("question", 138, b.surface - 4, "shieldCore");
   b.setBoss("serpent", "Tide Serpent", 12, 146, b.surface - 4);
   b.goal = { x: 164, y: b.surface + 2 };
   return b.build({ world: 3, level: 4, name: "Serpent Trench", identity: "underwater boss", objective: "Defeat the Tide Serpent", widthTiles: 170, heightTiles: 30 });
@@ -317,6 +321,7 @@ function w4_4(): LevelData {
   b.checkpoint(60, b.surface - 4);
   b.ledge(56, b.surface - 3, 8);
   b.ground(120, 169);
+  b.block("question", 100, b.surface - 4, "shieldCore").block("question", 138, b.surface - 4, "shieldCore");
   b.setBoss("titan", "Sky Titan", 12, 146, b.surface - 3);
   b.goal = { x: 164, y: b.surface - 1 };
   return b.build({ world: 4, level: 4, name: "Sky Fortress", identity: "aerial boss", objective: "Defeat the Sky Titan", widthTiles: 170, heightTiles: 28 });
@@ -389,6 +394,7 @@ function w5_4(): LevelData {
   b.platform(70, b.surface - 4, 3, { dx: 4 }, 2000);
   b.patrol(mix(5), 20, 110, 6);
   b.checkpoint(96);
+  b.block("question", 100, b.surface - 4, "shieldCore").block("question", 138, b.surface - 4, "shieldCore");
   b.setBoss("core", "Magma Core", 14, 146, b.surface - 3);
   b.goal = { x: 164, y: b.surface - 1 };
   return b.build({ world: 5, level: 4, name: "Caldera Heart", identity: "lava boss", objective: "Defeat the Magma Core", widthTiles: 170, heightTiles: 28 });
@@ -452,6 +458,7 @@ function w6_4(): LevelData {
   b.hazard(60, b.surface - 1, 3).hazard(90, b.surface - 1, 3);
   b.patrol(mix(6), 20, 110, 7);
   b.checkpoint(100);
+  b.block("question", 100, b.surface - 4, "shieldCore").block("question", 138, b.surface - 4, "shieldCore");
   b.setBoss("warden", "Frost Warden", 14, 146, b.surface - 3);
   b.goal = { x: 164, y: b.surface - 1 };
   return b.build({ world: 6, level: 4, name: "Warden's Hollow", identity: "ice boss", objective: "Defeat the Frost Warden", widthTiles: 170, heightTiles: 28 });
@@ -516,6 +523,7 @@ function w7_4(): LevelData {
   b.patrol(["flyer", "spiker"], 24, 120, 8, b.surface - 8);
   b.checkpoint(108);
   b.blockRow("metal", 90, b.surface - 8, 8);
+  b.block("question", 100, b.surface - 4, "shieldCore").block("question", 146, b.surface - 4, "shieldCore");
   b.setBoss("machine", "Void Machine", 16, 154, b.surface - 3);
   b.goal = { x: 174, y: b.surface - 1 };
   return b.build({ world: 7, level: 4, name: "Void Core", identity: "zero-g boss", objective: "Defeat the Void Machine", widthTiles: 180, heightTiles: 30 });
@@ -589,7 +597,7 @@ function w8_4(): LevelData {
   b.blockRow("metal", 100, b.surface - 6, 10);
   b.patrol(mix(8), 20, 130, 9);
   b.checkpoint(126);
-  b.block("question", 120, b.surface - 6, "shieldCore");
+  b.block("question", 100, b.surface - 6, "shieldCore").block("question", 120, b.surface - 6, "shieldCore");
   b.setBoss("overlord", "Forge Overlord", 20, 170, b.surface - 3);
   b.goal = { x: 194, y: b.surface - 1 };
   return b.build({ world: 8, level: 4, name: "Final Forge", identity: "multi-phase final boss", objective: "Defeat the Forge Overlord", widthTiles: 200, heightTiles: 30, timeLimit: 400 });

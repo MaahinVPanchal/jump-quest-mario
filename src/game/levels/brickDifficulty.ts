@@ -74,6 +74,9 @@ export function applyBrickDifficulty(level: LevelData): LevelData {
   }
 
   spots.forEach((spot, i) => {
+    // Keep the first World 2-1 shaft entrance clear; its climb already has
+    // deliberate ledges and an auto-added formation blocks the approach.
+    if (level.id === "2-1" && ((spot.x >= 38 && spot.x <= 48) || (spot.x >= 72 && spot.x <= 88))) return;
     const ground = spot.y;
     const pattern = (level.world + i) % 4;
     const hazardous = i % tuning.hazardEvery === 0 && level.world >= 3;
