@@ -230,7 +230,7 @@ function w3_3(): LevelData {
   b.islands(100, b.height - 20, 5, 4, 4, -3);
   b.patrol(mix(3), 20, 150, 8, b.height - 14);
   b.checkpoint(58, b.height - 3);
-  b.checkpoint(110, 12);
+  b.checkpoint(110, b.height - 3);
   b.relic(130, 8, 3, 3);
   b.goal = { x: 150, y: 8 };
   b.ledge(144, 9, 10);
@@ -298,9 +298,9 @@ function w4_3(): LevelData {
   for (let i = 0; i < 16; i++) b.ledge(8 + ((i * 17) % 56), 8 + i * 3, 5);
   for (let i = 0; i < 6; i++) b.platform(20 + ((i * 23) % 40), 12 + i * 8, 3, i % 2 ? { dx: 4 } : { dy: 3 }, 2100);
   b.patrol(["flyer", "spiker", "flyer"], 8, 70, 9, 30);
-  b.checkpoint(20, 19);
+  b.checkpoint(27, 40);
   b.ledge(16, 21, 6);
-  b.checkpoint(50, 40);
+  b.checkpoint(50, 56);
   b.ledge(46, 41, 6);
   b.relic(64, 30, 4, 3);
   b.ground(0, 79, 57);
