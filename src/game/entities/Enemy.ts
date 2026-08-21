@@ -173,7 +173,8 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
   override preUpdate(time: number, delta: number): void {
     super.preUpdate(time, delta);
     if (this.mode === "dead" || !this.awake) return;
-    const body = this.body as Phaser.Physics.Arcade.Body;
+    const body = this.body as Phaser.Physics.Arcade.Body | undefined;
+    if (!body) return;
 
     if (this.kind === "piranha") {
       this.updatePiranha(delta);
