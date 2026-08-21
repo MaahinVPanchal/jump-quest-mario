@@ -217,6 +217,11 @@ export class LevelScene extends Phaser.Scene {
     audio.startMusic("level");
 
     this.game.events.emit(GameEvent.Toast, `World ${level.world}-${level.level}  ${level.name}`);
+    if (level.world === 3 && level.level === 1) {
+      this.time.delayedCall(500, () =>
+        this.toast("WATER: HOLD UP ARROW AND PRESS IT CONTINUOUSLY TO BOOST HIGHER - KEEP HOLDING TO RISE"),
+      );
+    }
     if (this.starsTotal > 0) {
       this.time.delayedCall(2200, () =>
         this.toast(`${this.starsTotal} Sky Stars hidden here - optional bonus`),

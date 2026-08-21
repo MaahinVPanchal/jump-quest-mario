@@ -272,6 +272,11 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     else t = 1 - (this.cycle - upEnd) / PIRANHA.sinkMs;
     t = Math.min(1, Math.max(0, t));
 
+    const body = this.body as Phaser.Physics.Arcade.Body;
+    // The plant is intangible in its pipe, then becomes a real hazard as its
+    // head clears the rim. Its damage window matches the visible emergence.
+    body.checkCollision.none = t < 0.35;
+
     // Bite animation only while fully out.
     if (t >= 1) {
       const bite = Math.floor(this.scene.time.now / PIRANHA.biteMs) % 2;

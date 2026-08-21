@@ -118,8 +118,10 @@ export class MovementController {
 
     // Water: JUMP is a repeatable swim stroke, capped so ascent stays gentle.
     if (this.swimming) {
-      if (this.buffer > 0 && !this.controlsLocked) {
-        body.velocity.y = Math.max(-260, body.velocity.y - 230);
+      if ((this.buffer > 0 || this.input.isDown("JUMP")) && !this.controlsLocked) {
+        const airJump = this.canDoubleJump && !this.grounded && !this.airJumpUsed;
+        body.velocity.y = Math.max(airJump ? -380 : -320, body.velocity.y - (airJump ? 330 : 280));
+        if (airJump) this.airJumpUsed = true;
         this.buffer = 0;
         this.host.onJump();
       }
