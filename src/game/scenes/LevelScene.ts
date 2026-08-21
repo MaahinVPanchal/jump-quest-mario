@@ -80,8 +80,19 @@ export class LevelScene extends Phaser.Scene {
 
   create(): void {
     this.level = getLevel(gameState.levelId);
+    const checkpoint = gameState.checkpoint;
+    if (checkpoint) {
+      gameState.coins = checkpoint.coins;
+      gameState.score = checkpoint.score;
+      gameState.levelCoins = checkpoint.levelCoins;
+      gameState.enemiesDefeated = checkpoint.enemiesDefeated;
+      gameState.damageTaken = checkpoint.damageTaken;
+      gameState.relicIds = [...checkpoint.relicIds];
+      gameState.starIds = [...checkpoint.starIds];
+      gameState.collectedIds = new Set(checkpoint.collectedIds);
+    }
     this.objectives = new ObjectiveTracker(this.level);
-    if (gameState.checkpoint) this.objectives.restore(gameState.checkpoint.objectives);
+    if (checkpoint) this.objectives.restore(checkpoint.objectives);
     const level = this.level;
     this.finished = false;
     this.respawning = false;
