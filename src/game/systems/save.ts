@@ -1,6 +1,7 @@
 import type { LevelResult, SaveData } from "../types";
 import { RULES } from "../config";
 import { CHARACTERS } from "../data/characters";
+import { FIRST_LEVEL_ID } from "../levels";
 
 const KEY_PREFIX = "emberleaf.save.slot";
 export const SAVE_VERSION = 1;
@@ -16,6 +17,7 @@ export function emptySave(name = "Player"): SaveData {
     coins: 0,
     lives: RULES.startingLives,
     completedLevels: [],
+    currentLevelId: FIRST_LEVEL_ID,
     bestScores: {},
     bestTimes: {},
     levelStars: {},
@@ -35,6 +37,7 @@ function migrate(raw: Partial<SaveData> & { save_version?: number }): SaveData {
     settings: { ...base.settings, ...(raw.settings ?? {}) },
     levelStars: { ...base.levelStars, ...(raw.levelStars ?? {}) },
     starIds: raw.starIds ?? [],
+    currentLevelId: raw.currentLevelId ?? FIRST_LEVEL_ID,
     save_version: SAVE_VERSION,
   };
 }

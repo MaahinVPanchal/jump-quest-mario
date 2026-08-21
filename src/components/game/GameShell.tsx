@@ -97,10 +97,14 @@ export default function GameShell() {
   const completedLevels = useMemo(() => save?.completedLevels ?? [], [save]);
   // Play resumes at the first stage of the campaign you have not cleared yet,
   // scanning in campaign order so it never jumps past an unfinished stage.
-  const autoLevel = useMemo(
-    () => LEVELS.find((l) => !completedLevels.includes(l.id)) ?? LEVELS[0]!,
-    [completedLevels],
-  );
+  const autoLevel = useMemo(() => {
+    const firstUncleared = LEVELS.find((l) => !completedLevels.includes(l.id)) ?? LEVELS[0]!;
+    const savedResume = LEVELS.find((l) => l.id === save?.currentLevelId);
+    if (!savedResume) return firstUncleared;
+    const index = LEVELS.findIndex((l) => l.id === savedResume.id);
+    const unlocked = index <= 0 || completedLevels.includes(LEVELS[index - 1]!.id);
+    return unlocked && !completedLevels.includes(savedResume.id) ? savedResume : firstUncleared;
+  }, [completedLevels, save?.currentLevelId]);
 
 
   const nextLevel = (pickedLevelId && LEVELS.find((l) => l.id === pickedLevelId)) || autoLevel;

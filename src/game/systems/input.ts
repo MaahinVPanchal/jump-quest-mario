@@ -69,6 +69,12 @@ export class InputManager {
     }
   }
 
+  /** Absorb currently held controls so reopening a scene cannot create a fresh press. */
+  syncHeld(): void {
+    this.update();
+    this.prev = new Set(this.down);
+  }
+
   isDown(action: GameAction): boolean {
     return this.down.has(action);
   }

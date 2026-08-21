@@ -73,6 +73,8 @@ export class LevelCompleteScene extends Phaser.Scene {
       const nextLevel = getLevel(next);
       this.button(VIEW.width / 2 - 300, 630, `Next: ${nextLevel.world}-${nextLevel.level}`, () => {
         gameState.levelId = next;
+        gameState.save = { ...gameState.save, currentLevelId: next };
+        gameState.persist();
         gameState.resetLevel(true);
         this.scene.start("Level");
       });

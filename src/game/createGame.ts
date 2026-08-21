@@ -25,6 +25,8 @@ export function createGame({ parent, slot, save, onExit, characterId, levelId }:
   gameState.bindSave(slot, save);
   gameState.characterId = characterId ?? "riko";
   gameState.levelId = getLevel(levelId ?? FIRST_LEVEL_ID).id;
+  gameState.save = { ...gameState.save, currentLevelId: gameState.levelId };
+  gameState.persist();
   gameState.resetLevel(true);
   audio.settings.music = save.settings.music;
   audio.settings.sfx = save.settings.sfx;

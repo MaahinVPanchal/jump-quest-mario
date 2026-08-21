@@ -350,6 +350,8 @@ export interface SaveData {
   coins: number;
   lives: number;
   completedLevels: string[];
+  /** Stage to resume after refresh; advanced immediately when a stage is cleared. */
+  currentLevelId: string;
   bestScores: Record<string, number>;
   bestTimes: Record<string, number>;
   /** Sky Stars collected per level id. */
