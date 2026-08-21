@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import type { BossDefinition, BossKind } from "../types";
 import { audio } from "../systems/audio";
+import { TILE } from "../config";
 
 interface BossProfile {
   color: number;
@@ -86,8 +87,8 @@ export class Boss extends Phaser.Physics.Arcade.Sprite {
     this.profile = PROFILES[def.kind];
     this.health = def.health;
     this.baseY = y;
-    this.arenaMinX = (def.arenaMinX ?? def.x - 12) * 32;
-    this.arenaMaxX = (def.arenaMaxX ?? def.x + 10) * 32;
+    this.arenaMinX = (def.arenaMinX ?? def.x - 12) * TILE;
+    this.arenaMaxX = (def.arenaMaxX ?? def.x + 10) * TILE;
     scene.add.existing(this);
     scene.physics.add.existing(this);
     this.setDepth(19);
