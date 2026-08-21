@@ -115,13 +115,18 @@ export class Boss extends Phaser.Physics.Arcade.Sprite {
     return this.alive && time > this.invulnUntil;
   }
 
-  hurt(time: number): boolean {
+  /**
+   * Bosses are damage sponges now: ranged chip damage is 1, a risky stomp is
+   * worth 2, and each hit buys the boss a short guard window so the fight has
+   * a real rhythm instead of dying to a single fireball burst.
+   */
+  hurt(time: number, amount = 1): boolean {
     if (!this.canBeHurt(time)) return false;
-    this.invulnUntil = time + 700;
-    this.health -= 1;
+    this.invulnUntil = time + (amount >= 2 ? 500 : 650);
+    this.health -= Math.max(1, amount);
     audio.play("stomp");
     this.scene.tweens.add({ targets: this, alpha: 0.25, yoyo: true, repeat: 4, duration: 70 });
-    const nextPhase = Math.min(3, 1 + Math.floor((this.def.health - this.health) / Math.max(1, this.def.health / 3)));
+    const nextPhase = Math.min(3, 1 + Math.floor((this.def.health - Math.max(0, this.health)) / Math.max(1, this.def.health / 3)));
     if (nextPhase > this.phase) {
       this.phase = nextPhase;
       this.hooks.onPhase(this.phase);

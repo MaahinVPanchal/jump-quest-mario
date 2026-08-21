@@ -42,7 +42,7 @@ export const WORLDS: WorldDef[] = [
     enemies: ["walker", "walker", "shell"],
     signaturePowerUp: "growthOrb",
     difficulty: 1,
-    boss: { kind: "guardian", name: "Meadow Guardian", health: 3 },
+    boss: { kind: "guardian", name: "Meadow Guardian", health: 8 },
     teaches: ["Run and jump", "Break bricks from below", "Checkpoints"],
   },
   {
@@ -55,7 +55,7 @@ export const WORLDS: WorldDef[] = [
     enemies: ["flyer", "walker", "spiker", "shell"],
     signaturePowerUp: "banana",
     difficulty: 2,
-    boss: { kind: "beast", name: "Canopy Beast", health: 4 },
+    boss: { kind: "beast", name: "Canopy Beast", health: 10 },
     teaches: ["Vertical climbs", "Falling branches", "Enemies above you"],
   },
   {
@@ -68,7 +68,7 @@ export const WORLDS: WorldDef[] = [
     enemies: ["piranha", "flyer", "walker", "shell"],
     signaturePowerUp: "aquaPearl",
     difficulty: 3,
-    boss: { kind: "serpent", name: "Tide Serpent", health: 5 },
+    boss: { kind: "serpent", name: "Tide Serpent", health: 12 },
     teaches: ["Swim with JUMP", "Currents", "Surface for air"],
   },
   {
@@ -81,7 +81,7 @@ export const WORLDS: WorldDef[] = [
     enemies: ["flyer", "flyer", "spiker", "walker"],
     signaturePowerUp: "wingSeed",
     difficulty: 4,
-    boss: { kind: "titan", name: "Sky Titan", health: 5 },
+    boss: { kind: "titan", name: "Sky Titan", health: 12 },
     teaches: ["Wind drift", "Cloud bounce", "Momentum control"],
   },
   {
@@ -94,7 +94,7 @@ export const WORLDS: WorldDef[] = [
     enemies: ["spiker", "shell", "piranha", "walker"],
     signaturePowerUp: "emberCore",
     difficulty: 5,
-    boss: { kind: "core", name: "Magma Core", health: 6 },
+    boss: { kind: "core", name: "Magma Core", health: 14 },
     teaches: ["Lava is lethal", "Heat vents launch you", "Timed platforms"],
   },
   {
@@ -107,7 +107,7 @@ export const WORLDS: WorldDef[] = [
     enemies: ["shell", "walker", "flyer", "spiker"],
     signaturePowerUp: "frostCrystal",
     difficulty: 6,
-    boss: { kind: "warden", name: "Frost Warden", health: 6 },
+    boss: { kind: "warden", name: "Frost Warden", health: 14 },
     teaches: ["Slippery stops", "Breaking ice", "Precision braking"],
   },
   {
@@ -120,7 +120,7 @@ export const WORLDS: WorldDef[] = [
     enemies: ["flyer", "spiker", "shell", "walker"],
     signaturePowerUp: "gravityOrb",
     difficulty: 7,
-    boss: { kind: "machine", name: "Void Machine", health: 7 },
+    boss: { kind: "machine", name: "Void Machine", health: 16 },
     teaches: ["Floaty jumps", "Gravity fields", "Long air control"],
   },
   {
@@ -133,7 +133,7 @@ export const WORLDS: WorldDef[] = [
     enemies: ["spiker", "shell", "flyer", "piranha", "walker"],
     signaturePowerUp: "shieldCore",
     difficulty: 8,
-    boss: { kind: "overlord", name: "Forge Overlord", health: 9 },
+    boss: { kind: "overlord", name: "Forge Overlord", health: 20 },
     teaches: ["Everything you have learned", "No safe ground", "Multi-phase boss"],
   },
 ];
