@@ -1,4 +1,4 @@
-import type { LevelData, LevelObjective, LevelObjectives } from "../types";
+import type { LevelData, LevelObjective } from "../types";
 
 const countCoins = (level: LevelData): number => level.items.filter((i) => i.type === "coin").length;
 
@@ -19,27 +19,6 @@ function coinObjective(level: LevelData): LevelObjective {
   };
 }
 
-function defeatObjective(level: LevelData): LevelObjective {
-  const target = Math.max(1, Math.round(beatableEnemies(level).length * 0.8));
-  return {
-    type: "DEFEAT_ALL",
-    target,
-    description: `Defeat ${target} enemies`,
-    mandatory: false,
-  };
-}
-
-function timeObjective(level: LevelData, share = 0.6): LevelObjective {
-  const limit = Math.round(level.timeLimit * share);
-  return {
-    type: "TIME_LIMIT",
-    timeLimit: limit,
-    target: limit,
-    description: `Reach the goal with ${limit}s left`,
-    mandatory: false,
-  };
-}
-
 const secretObjective: LevelObjective = {
   type: "FIND_SECRET",
   target: 1,
@@ -53,7 +32,6 @@ const secretObjective: LevelObjective = {
  */
 export function assignObjectives(level: LevelData): LevelData {
   if (level.objectives) return level;
-  const coinsAvailable = countCoins(level);
   // Stars are optional bonuses now - the one required goal is always coins.
   const coinPrimary = coinObjective(level);
   const extras: LevelObjective[] = [];
