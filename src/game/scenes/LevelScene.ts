@@ -762,7 +762,7 @@ export class LevelScene extends Phaser.Scene {
     if (stomping && boss.profile.stompable) {
       this.player.movement.bounce();
       this.hitStop();
-      boss.hurt(this.time.now);
+      boss.hurt(this.time.now, 2);
       this.burst(boss.x, boss.y - boss.displayHeight * 0.5, 0xffffff, 12);
       return;
     }
