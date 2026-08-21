@@ -101,8 +101,13 @@ export class Boss extends Phaser.Physics.Arcade.Sprite {
   }
 
   /** Damage window guard so a single stomp cannot drain several hit points. */
+  /** True only while the sprite is still alive and attached to a running scene. */
+  get alive(): boolean {
+    return !this.defeated && this.active && !!this.scene && !!this.body;
+  }
+
   canBeHurt(time: number): boolean {
-    return !this.defeated && time > this.invulnUntil;
+    return this.alive && time > this.invulnUntil;
   }
 
   hurt(time: number): boolean {
@@ -121,9 +126,14 @@ export class Boss extends Phaser.Physics.Arcade.Sprite {
   }
 
   private die(): void {
+    if (this.defeated) return;
     this.defeated = true;
-    const body = this.body as Phaser.Physics.Arcade.Body;
-    body.enable = false;
+    const body = this.body as Phaser.Physics.Arcade.Body | null;
+    if (body) body.enable = false;
+    if (!this.scene) {
+      this.hooks.onDefeated();
+      return;
+    }
     audio.play("goal");
     this.scene.tweens.add({
       targets: this,
@@ -140,7 +150,7 @@ export class Boss extends Phaser.Physics.Arcade.Sprite {
 
   override preUpdate(time: number, delta: number): void {
     super.preUpdate(time, delta);
-    if (this.defeated) return;
+    if (!this.alive) return;
     const body = this.body as Phaser.Physics.Arcade.Body;
     const px = this.hooks.playerX();
     const dir = px < this.x ? -1 : 1;
@@ -165,7 +175,7 @@ export class Boss extends Phaser.Physics.Arcade.Sprite {
       // Telegraph, then fire.
       this.scene.tweens.add({ targets: this, scaleX: 1.12, scaleY: 0.9, yoyo: true, duration: 140 });
       this.scene.time.delayedCall(280, () => {
-        if (!this.defeated && this.active) this.hooks.onShoot(this.x + dir * 20, this.y - this.profile.h * 0.5, dir);
+        if (this.alive) this.hooks.onShoot(this.x + dir * 20, this.y - this.profile.h * 0.5, dir);
       });
     }
   }

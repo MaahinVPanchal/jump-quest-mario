@@ -29,6 +29,7 @@ export class LevelScene extends Phaser.Scene {
   private boss: Boss | undefined;
   private bossShots!: Phaser.Physics.Arcade.Group;
   private bossBar: Phaser.GameObjects.Graphics | undefined;
+  private bossColliders: Phaser.Physics.Arcade.Collider[] = [];
   private controls!: InputManager;
   private player!: Player;
   private terrain!: Phaser.Physics.Arcade.StaticGroup;
@@ -514,16 +515,25 @@ export class LevelScene extends Phaser.Scene {
     );
     if (this.boss) {
       const boss = this.boss;
-      this.physics.add.collider(boss, this.terrain);
-      this.physics.add.overlap(sprite, boss, () => this.onBossTouch());
-      this.physics.add.overlap(this.fireballs, boss, (f) => {
-        (f as unknown as Phaser.Physics.Arcade.Image).destroy();
-        boss.hurt(this.time.now);
-        this.emitHud();
-      });
+      this.bossColliders.push(this.physics.add.collider(boss, this.terrain));
+      this.bossColliders.push(
+        this.physics.add.overlap(sprite, boss, () => this.onBossTouch()),
+      );
+      this.bossColliders.push(
+        this.physics.add.overlap(this.fireballs, boss, (f) => {
+          const ball = f as unknown as Phaser.Physics.Arcade.Image;
+          if (ball.active) ball.destroy();
+          // A defeated / destroyed boss must never be touched again.
+          if (!boss.alive) return;
+          boss.hurt(this.time.now);
+          this.emitHud();
+        }),
+      );
     }
     this.physics.add.overlap(sprite, this.bossShots, (_p, shot) => {
-      (shot as unknown as Phaser.Physics.Arcade.Image).destroy();
+      const projectile = shot as unknown as Phaser.Physics.Arcade.Image;
+      if (!projectile.active) return;
+      projectile.destroy();
       this.hurtPlayer();
     });
 
@@ -712,7 +722,7 @@ export class LevelScene extends Phaser.Scene {
   /** Stomping a stompable boss damages it; anything else hurts the hero. */
   private onBossTouch(): void {
     const boss = this.boss;
-    if (!boss || boss.defeated || this.player.dead || this.finished) return;
+    if (!boss || !boss.alive || this.player.dead || this.finished) return;
     const body = this.player.sprite.body as Phaser.Physics.Arcade.Body;
     const stomping = body.velocity.y > 40 && this.player.sprite.y < boss.y - boss.displayHeight * 0.5;
     if (stomping && boss.profile.stompable) {
@@ -916,6 +926,7 @@ export class LevelScene extends Phaser.Scene {
     body.setSize(26, 44);
     this.physics.add.overlap(shield, this.bossShots, (_s, shot) => {
       const projectile = shot as unknown as Phaser.Physics.Arcade.Image;
+      if (!projectile.active) return;
       this.burst(projectile.x, projectile.y, 0x9fd8ff, 8);
       projectile.destroy();
       audio.play("block");
@@ -1473,6 +1484,10 @@ export class LevelScene extends Phaser.Scene {
         this.shake(CAMERA.shakeBig);
       },
       onDefeated: () => {
+        // Drop every collider first: a destroyed boss can still be visited by a
+        // queued physics pair on the same step, which used to crash the loop.
+        for (const collider of this.bossColliders) this.physics.world.removeCollider(collider);
+        this.bossColliders = [];
         this.boss = undefined;
         this.bossBar?.destroy();
         this.bossBar = undefined;
