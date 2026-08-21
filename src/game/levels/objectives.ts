@@ -12,15 +12,17 @@ export const COIN_GOAL = 10;
 
 /** Gems pay out a coin bundle, so they count towards what a stage can give. */
 const availableCoins = (level: LevelData): number =>
-  countCoins(level) + level.items.filter((i) => i.type === "relic").length * GEM.coins;
+  countCoins(level) +
+  level.items.filter((i) => i.type === "relic").length * GEM.coins +
+  level.blocks.reduce((sum, block) => sum + (block.coins ?? (block.contains === "coin" ? 1 : 0)), 0);
 
 function coinObjective(level: LevelData): LevelObjective {
-  const target = Math.max(1, Math.min(availableCoins(level), COIN_GOAL));
+  const target = COIN_GOAL;
   return {
     type: "COIN_TARGET",
     target,
     description: `Collect ${target} coins`,
-    mandatory: false,
+    mandatory: true,
   };
 }
 
@@ -37,6 +39,13 @@ const secretObjective: LevelObjective = {
  */
 export function assignObjectives(level: LevelData): LevelData {
   if (level.objectives) return level;
+  const missing = Math.max(0, COIN_GOAL - availableCoins(level));
+  if (missing > 0) {
+    const baseX = Math.max(level.spawn.x + 3, 4);
+    for (let i = 0; i < missing; i++) {
+      level.items.push({ type: "coin", x: baseX + i, y: Math.max(2, level.spawn.y - 2) });
+    }
+  }
   // Stars are optional bonuses now - the one required goal is always coins.
   const coinPrimary = coinObjective(level);
   const extras: LevelObjective[] = [];
@@ -53,7 +62,7 @@ export function assignObjectives(level: LevelData): LevelData {
   if (level.secretZone) extras.push(secretObjective);
   return {
     ...level,
-    starsRequired: 0,
+    starsRequired: level.starsRequired ?? 0,
     objectives: { primary: coinPrimary, ...(extras.length ? { secondary: extras } : {}) },
     requiredEnemies: beatableEnemies(level),
   };

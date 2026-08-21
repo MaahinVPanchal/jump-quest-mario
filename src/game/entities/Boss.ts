@@ -76,6 +76,8 @@ export class Boss extends Phaser.Physics.Arcade.Sprite {
   private nextShot = 0;
   private invulnUntil = 0;
   private baseY: number;
+  private readonly arenaMinX: number;
+  private readonly arenaMaxX: number;
 
   constructor(scene: Phaser.Scene, def: BossDefinition, x: number, y: number, private hooks: BossHooks) {
     ensureTexture(scene, def.kind);
@@ -84,6 +86,8 @@ export class Boss extends Phaser.Physics.Arcade.Sprite {
     this.profile = PROFILES[def.kind];
     this.health = def.health;
     this.baseY = y;
+    this.arenaMinX = (def.arenaMinX ?? def.x - 12) * 32;
+    this.arenaMaxX = (def.arenaMaxX ?? def.x + 10) * 32;
     scene.add.existing(this);
     scene.physics.add.existing(this);
     this.setDepth(19);
@@ -159,11 +163,20 @@ export class Boss extends Phaser.Physics.Arcade.Sprite {
 
     this.setFlipX(dir < 0);
 
+    if (this.x <= this.arenaMinX && dir < 0) this.x = this.arenaMinX;
+    if (this.x >= this.arenaMaxX && dir > 0) this.x = this.arenaMaxX;
+
     if (this.profile.floats) {
-      body.setVelocityX(dir * this.profile.speed * speedUp);
+      body.setVelocityX(
+        this.x <= this.arenaMinX ? Math.abs(this.profile.speed * speedUp) :
+          this.x >= this.arenaMaxX ? -Math.abs(this.profile.speed * speedUp) : dir * this.profile.speed * speedUp,
+      );
       this.y = this.baseY + Math.sin(time / (420 * rateUp)) * 60;
     } else {
-      body.setVelocityX(dir * this.profile.speed * speedUp * 0.8);
+      body.setVelocityX(
+        this.x <= this.arenaMinX ? Math.abs(this.profile.speed * speedUp * 0.8) :
+          this.x >= this.arenaMaxX ? -Math.abs(this.profile.speed * speedUp * 0.8) : dir * this.profile.speed * speedUp * 0.8,
+      );
       if (this.profile.hopMs && time > this.nextHop && body.blocked.down) {
         this.nextHop = time + this.profile.hopMs * rateUp;
         body.setVelocityY(-620);

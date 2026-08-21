@@ -2,14 +2,23 @@ import { RULES, SCORE } from "../config";
 import type { LevelResult, SaveData } from "../types";
 import { applyResult, emptySave, saveSlot } from "./save";
 import { FIRST_LEVEL_ID } from "../levels";
+import type { TrackerState } from "./objectiveTracker";
 
 export interface CheckpointState {
+  index: number;
   x: number;
   y: number;
   power: "small" | "big" | "fire" | "monkey" | "cat";
   coins: number;
   score: number;
   timeLeft: number;
+  levelCoins: number;
+  enemiesDefeated: number;
+  damageTaken: number;
+  relicIds: string[];
+  starIds: string[];
+  collectedIds: string[];
+  objectives: TrackerState;
 }
 
 /** Single source of truth for the active run. */

@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ClientOnly } from "@tanstack/react-router";
 import { emptySave, loadSlot, saveSlot } from "@/game/save-facade";
 import type { SaveData } from "@/game/types";
@@ -69,6 +69,7 @@ export default function GameShell() {
   const [pickedLevelId, setPickedLevelId] = useState<string | null>(null);
   const [settings, setSettings] = useState<UiSettings>(DEFAULT_SETTINGS);
   const [touchVisible, setTouchVisible] = useState(false);
+  const playTimer = useRef<number | null>(null);
 
   // Restore persisted progress, hero pick and preferences on mount.
   useEffect(() => {
@@ -78,6 +79,10 @@ export default function GameShell() {
     applySettings(s);
     const hero = window.localStorage.getItem(HERO_KEY);
     if (hero && CHARACTERS[hero]) setCharacterId(hero);
+  }, []);
+
+  useEffect(() => () => {
+    if (playTimer.current !== null) window.clearTimeout(playTimer.current);
   }, []);
 
   // Refresh progress whenever we come back to a menu screen.
@@ -128,10 +133,18 @@ export default function GameShell() {
     setScreen("loading");
     const coarse = window.matchMedia?.("(pointer: coarse)").matches ?? false;
     setTouchVisible(settings.touchControls === "on" || (settings.touchControls === "auto" && coarse));
-    window.setTimeout(() => setScreen("playing"), 1100);
+    if (playTimer.current !== null) window.clearTimeout(playTimer.current);
+    playTimer.current = window.setTimeout(() => {
+      playTimer.current = null;
+      setScreen("playing");
+    }, 1100);
   }, [settings.touchControls]);
 
   const exit = useCallback(() => {
+    if (playTimer.current !== null) {
+      window.clearTimeout(playTimer.current);
+      playTimer.current = null;
+    }
     setActiveSave(null);
     setPickedLevelId(null);
     setScreen("menu");

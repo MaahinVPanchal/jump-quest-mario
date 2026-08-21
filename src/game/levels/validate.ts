@@ -1,6 +1,7 @@
 import { TILE } from "../config";
 import type { LevelData } from "../types";
 import { BASELINE_PROFILE, type MovementProfile } from "../systems/movementProfile";
+import { floorAt } from "../systems/analyzer";
 import { T } from "./builder";
 
 export interface LevelIssue {
@@ -33,14 +34,6 @@ export interface LevelReport {
 
 const solid = (level: LevelData, x: number, y: number): boolean =>
   y >= 0 && y < level.heightTiles && x >= 0 && x < level.widthTiles && (level.tiles[y]?.[x] ?? 0) !== 0;
-
-/** Lowest standable tile in a column (the floor); null when the column is a pit. */
-function floorAt(level: LevelData, x: number): number | null {
-  for (let y = level.heightTiles - 1; y >= 0; y--) {
-    if (solid(level, x, y) && !solid(level, x, y - 1)) return y;
-  }
-  return null;
-}
 
 /** Highest standable tile in a column — used for climbs and ledges. */
 function highestSurface(level: LevelData, x: number): number | null {
@@ -83,7 +76,7 @@ function reachableSurface(
 
 function coveredByPlatform(level: LevelData, x0: number, x1: number): boolean {
   return level.platforms.some((p) => {
-    const dx = Math.abs(p.dx ?? 0) / TILE;
+    const dx = Math.abs(p.dx ?? 0);
     const left = p.x - dx;
     const right = p.x + p.widthTiles - 1 + dx;
     return right >= x0 - 1 && left <= x1 + 1;

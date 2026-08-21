@@ -1,4 +1,3 @@
-import { TILE } from "../config";
 import type { LevelData } from "../types";
 import { BASELINE_PROFILE, type MovementProfile } from "./movementProfile";
 
@@ -62,7 +61,9 @@ export const solid = (level: LevelData, x: number, y: number): boolean =>
 
 export function floorAt(level: LevelData, x: number): number | null {
   for (let y = level.heightTiles - 1; y >= 0; y--) {
-    if (solid(level, x, y) && !solid(level, x, y - 1)) return y;
+    // Rows at the very top are ceiling bands, not floor. Treating their upper
+    // face as ground hid bottomless pits in ceiling-heavy stages such as 8-3.
+    if (y >= 3 && solid(level, x, y) && !solid(level, x, y - 1) && !solid(level, x, y - 2)) return y;
   }
   return null;
 }
@@ -96,7 +97,7 @@ export function heightAboveSupport(level: LevelData, x: number, y: number, maxSp
 
 function bridgedByPlatform(level: LevelData, x0: number, x1: number): boolean {
   return level.platforms.some((p) => {
-    const dx = Math.abs(p.dx ?? 0) / TILE;
+    const dx = Math.abs(p.dx ?? 0);
     return p.x + p.widthTiles - 1 + dx >= x0 - 1 && p.x - dx <= x1 + 1;
   });
 }

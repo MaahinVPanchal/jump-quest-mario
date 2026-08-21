@@ -282,6 +282,8 @@ function w4_2(): LevelData {
   b.ledge(80, b.surface - 3, 8);
   b.star(50, b.surface - 12, 4, 2).star(110, b.surface - 14, 4, 2).star(170, b.surface - 10, 4, 2);
   b.relic(140, b.surface - 16, 4, 2);
+  b.blockRow("brick", 78, b.surface - 8, 5).block("question", 80, b.surface - 11, "coin", 3);
+  b.coins(24, b.surface - 7, 5).coins(156, b.surface - 7, 5);
   finish(b, 188);
   return b.build({ world: 4, level: 2, name: "Gale Corridor", identity: "wind pressure", objective: "Collect 3 Sky Stars in the gale", widthTiles: 200, heightTiles: 28, starsRequired: 3 });
 }
@@ -435,6 +437,7 @@ function w6_3(): LevelData {
   b.patrol(mix(6), 20, 160, 8, b.height - 10);
   b.checkpoint(58, b.height - 3);
   b.checkpoint(120, b.height - 18);
+  b.ledge(116, b.height - 17, 10);
   b.relic(150, 10, 6, 3);
   b.ledge(150, 12, 12);
   b.goal = { x: 158, y: 11 };
