@@ -1,3 +1,5 @@
+import { audio } from "./audio";
+
 /**
  * Player-facing settings that outlive a single run. Stored on their own key so
  * they survive save-slot resets, and applied to <html> so the CSS accessibility
@@ -39,6 +41,10 @@ export function loadSettings(): UiSettings {
 }
 
 export function saveSettings(next: UiSettings): void {
+  audio.unlock();
+  audio.settings.music = next.music;
+  audio.settings.sfx = next.sfx;
+  audio.applyVolumes();
   if (typeof window === "undefined") return;
   try {
     window.localStorage.setItem(KEY, JSON.stringify(next));

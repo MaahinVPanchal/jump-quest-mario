@@ -31,6 +31,7 @@ export class LevelScene extends Phaser.Scene {
   private bossBar: Phaser.GameObjects.Graphics | undefined;
   private bossColliders: Phaser.Physics.Arcade.Collider[] = [];
   private bossGate: Phaser.GameObjects.Rectangle | undefined;
+  private bossGateCollider: Phaser.Physics.Arcade.Collider | undefined;
   private bossArrow: Phaser.GameObjects.Graphics | undefined;
   private controls!: InputManager;
   private player!: Player;
@@ -107,6 +108,7 @@ export class LevelScene extends Phaser.Scene {
     this.boss = undefined;
     this.bossBar = undefined;
     this.bossGate = undefined;
+    this.bossGateCollider = undefined;
     this.bossArrow = undefined;
     this.lastCheckpointIndex = gameState.checkpoint?.index ?? -1;
     this.elapsed = 0;
@@ -540,7 +542,6 @@ export class LevelScene extends Phaser.Scene {
     this.physics.add.overlap(this.fireballs, this.enemies, (f, e) =>
       this.onAbilityHitEnemy(f as unknown as Phaser.Physics.Arcade.Image, e as Enemy),
     );
-    if (this.bossGate) this.physics.add.collider(sprite, this.bossGate);
     if (this.boss) {
       const boss = this.boss;
       this.bossColliders.push(this.physics.add.collider(boss, this.terrain));
@@ -1533,12 +1534,17 @@ export class LevelScene extends Phaser.Scene {
     this.physics.add.existing(gate, true);
     this.tweens.add({ targets: gate, alpha: 0.7, yoyo: true, repeat: -1, duration: 520 });
     this.bossGate = gate;
+    this.bossGateCollider = this.physics.add.collider(this.player.sprite, gate);
   }
 
   private openBossGate(): void {
     const gate = this.bossGate;
     if (!gate) return;
     this.bossGate = undefined;
+    if (this.bossGateCollider) {
+      this.physics.world.removeCollider(this.bossGateCollider);
+      this.bossGateCollider = undefined;
+    }
     const body = gate.body as Phaser.Physics.Arcade.StaticBody | null;
     if (body) body.enable = false;
     this.tweens.add({ targets: gate, alpha: 0, scaleY: 0, duration: 500, onComplete: () => gate.destroy() });

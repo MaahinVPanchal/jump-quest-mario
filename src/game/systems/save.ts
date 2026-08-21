@@ -4,8 +4,25 @@ import { CHARACTERS } from "../data/characters";
 import { FIRST_LEVEL_ID } from "../levels";
 
 const KEY_PREFIX = "emberleaf.save.slot";
+const GUEST_ID_KEY = "emberleaf.guest.id";
 export const SAVE_VERSION = 1;
 export const SLOT_COUNT = 3;
+
+export function getGuestId(): string {
+  if (typeof window === "undefined") return "guest";
+  let guestId = window.localStorage.getItem(GUEST_ID_KEY);
+  if (!guestId) {
+    guestId = (globalThis.crypto && "randomUUID" in globalThis.crypto)
+      ? `guest-${crypto.randomUUID()}`
+      : `guest-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    window.localStorage.setItem(GUEST_ID_KEY, guestId);
+  }
+  return guestId;
+}
+
+function guestSlotKey(slot: number): string {
+  return `${KEY_PREFIX}.${getGuestId()}.${slot}`;
+}
 
 export function emptySave(name = "Player"): SaveData {
   return {
@@ -45,7 +62,7 @@ function migrate(raw: Partial<SaveData> & { save_version?: number }): SaveData {
 export function loadSlot(slot: number): SaveData | null {
   if (typeof window === "undefined") return null;
   try {
-    const raw = window.localStorage.getItem(`${KEY_PREFIX}${slot}`);
+    const raw = window.localStorage.getItem(guestSlotKey(slot));
     if (!raw) return null;
     return migrate(JSON.parse(raw) as SaveData);
   } catch {
@@ -56,8 +73,10 @@ export function loadSlot(slot: number): SaveData | null {
 export function saveSlot(slot: number, data: SaveData): void {
   if (typeof window === "undefined") return;
   try {
+    const guestId = getGuestId();
+    window.localStorage.setItem(GUEST_ID_KEY, guestId);
     window.localStorage.setItem(
-      `${KEY_PREFIX}${slot}`,
+      guestSlotKey(slot),
       JSON.stringify({ ...data, lastPlayed: Date.now() }),
     );
   } catch {
@@ -67,7 +86,7 @@ export function saveSlot(slot: number, data: SaveData): void {
 
 export function deleteSlot(slot: number): void {
   if (typeof window === "undefined") return;
-  window.localStorage.removeItem(`${KEY_PREFIX}${slot}`);
+  window.localStorage.removeItem(guestSlotKey(slot));
 }
 
 export function listSlots(): (SaveData | null)[] {
