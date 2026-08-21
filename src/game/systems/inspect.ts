@@ -5,6 +5,7 @@ import { analyzeLevelFor } from "./analyzer";
 import { buildMovementProfile } from "./movementProfile";
 import { CHARACTERS } from "../data/characters";
 import type { CharacterData } from "../types";
+import { COIN_GOAL } from "../levels/objectives";
 
 /**
  * Stage inspector data.
@@ -75,6 +76,13 @@ export interface StageInspection {
   heroes: HeroReach[];
   /** Heroes who cannot walk the stage end to end. */
   blockedHeroes: string[];
+  audit: StageAuditFinding[];
+}
+
+export interface StageAuditFinding {
+  severity: "ok" | "warning" | "error";
+  label: string;
+  detail: string;
 }
 
 const BLOCK_LABELS: Record<BlockKind, string> = {
@@ -193,6 +201,38 @@ export function heroReach(level: LevelData, hero: CharacterData): HeroReach {
 
 export function inspectStage(level: LevelData, heroes = Object.values(CHARACTERS)): StageInspection {
   const reach = heroes.map((h) => heroReach(level, h));
+  const coinValue =
+    level.items.filter((i) => i.type === "coin").length +
+    level.items.filter((i) => i.type === "relic").length * 10 +
+    level.blocks.reduce((sum, block) => sum + (block.coins ?? (block.contains === "coin" ? 1 : 0)), 0);
+  const audit: StageAuditFinding[] = [
+    {
+      severity: reach.every((hero) => hero.routeClear) ? "ok" : "error",
+      label: "Hero routes",
+      detail: reach.every((hero) => hero.routeClear)
+        ? "All 10 heroes reach the goal"
+        : `Blocked: ${reach.filter((hero) => !hero.routeClear).map((hero) => hero.heroName).join(", ")}`,
+    },
+    {
+      severity: reach.every((hero) => hero.checkpoints.unreachable === 0) ? "ok" : "error",
+      label: "Checkpoints",
+      detail: reach.every((hero) => hero.checkpoints.unreachable === 0)
+        ? "Every checkpoint is reachable"
+        : "One or more heroes cannot reach a checkpoint",
+    },
+    {
+      severity: coinValue >= COIN_GOAL ? "ok" : "error",
+      label: "Coin supply",
+      detail: `${coinValue} available value / ${COIN_GOAL} required`,
+    },
+    {
+      severity: level.enemies.some((enemy) => enemy.type === "piranha") && level.pipes.length === 0 ? "warning" : "ok",
+      label: "Enemy anchors",
+      detail: level.enemies.some((enemy) => enemy.type === "piranha") && level.pipes.length === 0
+        ? "Freestanding piranhas use grounded placement"
+        : "Enemy anchor requirements satisfied",
+    },
+  ];
   return {
     levelId: level.id,
     world: level.world,
@@ -202,5 +242,6 @@ export function inspectStage(level: LevelData, heroes = Object.values(CHARACTERS
     composition: stageComposition(level),
     heroes: reach,
     blockedHeroes: reach.filter((r) => !r.routeClear || !r.goalReachable).map((r) => r.heroName),
+    audit,
   };
 }

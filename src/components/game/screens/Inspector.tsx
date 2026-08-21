@@ -194,6 +194,25 @@ export default function Inspector({ onBack }: { onBack: () => void }) {
           )}
         </p>
 
+        <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+          {report.audit.map((finding) => (
+            <div
+              key={finding.label}
+              className={cx(
+                "border-4 border-nes-ink p-3",
+                finding.severity === "error"
+                  ? "bg-nes-danger text-nes-paper"
+                  : finding.severity === "warning"
+                    ? "bg-nes-coin"
+                    : "bg-nes-success",
+              )}
+            >
+              <p className="text-[8px] uppercase tracking-[0.2em]">{finding.label}</p>
+              <p className="mt-2 text-[7px] uppercase leading-4 tracking-[0.15em]">{finding.detail}</p>
+            </div>
+          ))}
+        </div>
+
         <ul className="mt-3 space-y-3">
           {report.heroes.map((h) => (
             <HeroRow key={h.heroId} h={h} />
