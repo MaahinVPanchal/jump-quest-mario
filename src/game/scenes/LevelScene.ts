@@ -194,7 +194,10 @@ export class LevelScene extends Phaser.Scene {
     this.buildHiddenSonar();
     // The engine loop must never stay paused because of a stale hit-stop or a
     // window blur: guarantee physics is running whenever the scene resumes.
-    this.events.on(Phaser.Scenes.Events.RESUME, () => this.physics.world.resume());
+    this.events.on(Phaser.Scenes.Events.RESUME, () => {
+      this.physics.world.resume();
+      this.controls.syncHeld();
+    });
     this.game.events.on(Phaser.Core.Events.FOCUS, this.forceResume, this);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () =>
       this.game.events.off(Phaser.Core.Events.FOCUS, this.forceResume, this),
@@ -724,11 +727,9 @@ export class LevelScene extends Phaser.Scene {
   }
 
   private hitStop(): void {
-    if (this.physics.world.isPaused) return;
-    this.physics.world.pause();
-    this.time.delayedCall(COMBAT.hitStopMs, () => {
-      if (!this.finished && !this.respawning) this.physics.world.resume();
-    });
+    // Never stop the world automatically. A short camera kick preserves impact
+    // without making moving platforms, enemies, or timers appear frozen.
+    this.cameras.main.shake(COMBAT.hitStopMs, CAMERA.shakeSmall);
   }
 
   private shake(intensity: number): void {
@@ -1087,6 +1088,7 @@ export class LevelScene extends Phaser.Scene {
     };
     gameState.lastResult = result;
     gameState.checkpoint = null;
+    gameState.save = { ...gameState.save, currentLevelId: this.level.next ?? this.level.id };
     gameState.persist(result);
 
     this.time.delayedCall(1600, () => {
