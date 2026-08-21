@@ -75,6 +75,7 @@ export function listSlots(): (SaveData | null)[] {
 }
 
 export function applyResult(save: SaveData, result: LevelResult): SaveData {
+  const firstClear = !save.completedLevels.includes(result.levelId);
   const completed = save.completedLevels.includes(result.levelId)
     ? save.completedLevels
     : [...save.completedLevels, result.levelId];
@@ -84,7 +85,7 @@ export function applyResult(save: SaveData, result: LevelResult): SaveData {
   }
   const next: SaveData = {
     ...save,
-    coins: save.coins + result.coins,
+    coins: save.coins + (firstClear ? result.coins : 0),
     completedLevels: completed,
     unlockedCharacters: Array.from(unlocked),
     bestScores: {
