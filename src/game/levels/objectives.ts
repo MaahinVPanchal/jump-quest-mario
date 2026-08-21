@@ -6,9 +6,11 @@ const countCoins = (level: LevelData): number => level.items.filter((i) => i.typ
 const beatableEnemies = (level: LevelData): number[] =>
   level.enemies.map((e, i) => ({ e, i })).filter(({ e }) => e.type !== "piranha").map(({ i }) => i);
 
+/** Every stage asks for the same simple thing: ten coins. */
+export const COIN_GOAL = 10;
+
 function coinObjective(level: LevelData): LevelObjective {
-  // 60% of what the stage actually contains, so the target is always fair.
-  const target = Math.max(1, Math.min(countCoins(level), Math.round(countCoins(level) * 0.6)));
+  const target = Math.max(1, Math.min(countCoins(level), COIN_GOAL));
   return {
     type: "COIN_TARGET",
     target,
@@ -52,6 +54,27 @@ const secretObjective: LevelObjective = {
 export function assignObjectives(level: LevelData): LevelData {
   if (level.objectives) return level;
   const coinsAvailable = countCoins(level);
+  // Stars are optional bonuses now - the one required goal is always coins.
+  const coinPrimary = coinObjective(level);
+  const extras: LevelObjective[] = [];
+  if (level.boss) {
+    const spare = Math.round(level.timeLimit * 0.3);
+    extras.push({
+      type: "TIME_LIMIT",
+      timeLimit: spare,
+      target: spare,
+      description: `Defeat ${level.boss.name} with ${spare}s left`,
+      mandatory: false,
+    });
+  }
+  if (level.secretZone) extras.push(secretObjective);
+  return {
+    ...level,
+    starsRequired: 0,
+    objectives: { primary: coinPrimary, ...(extras.length ? { secondary: extras } : {}) },
+    requiredEnemies: beatableEnemies(level),
+  };
+  // eslint-disable-next-line no-unreachable
   const identity = (level.identity ?? "").toLowerCase();
   const hasWater = (level.zones ?? []).some((z) => z.kind === "water" || z.kind === "current");
   const secondary: LevelObjective[] = [];

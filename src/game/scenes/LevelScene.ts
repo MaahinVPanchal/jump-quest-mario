@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { CAMERA, COLORS, COMBAT, PHYSICS, SCORE, TILE, VIEW } from "../config";
+import { CAMERA, COLORS, COMBAT, GEM, PHYSICS, SCORE, TILE, VIEW } from "../config";
 import { LEVELS, getLevel } from "../levels";
 import { BASE_PHYSICS } from "../levels/worlds";
 import { Boss } from "../entities/Boss";
@@ -63,10 +63,6 @@ export class LevelScene extends Phaser.Scene {
   private starArrow?: Phaser.GameObjects.Text;
   private airJumpPip?: Phaser.GameObjects.Text;
   private controlHint?: Phaser.GameObjects.Text;
-
-  private get starsRequired(): number {
-    return this.level.starsRequired ?? 0;
-  }
 
   private get starsCollected(): number {
     return gameState.starIds.length;
