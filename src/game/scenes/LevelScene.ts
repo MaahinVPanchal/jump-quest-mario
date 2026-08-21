@@ -30,6 +30,8 @@ export class LevelScene extends Phaser.Scene {
   private bossShots!: Phaser.Physics.Arcade.Group;
   private bossBar: Phaser.GameObjects.Graphics | undefined;
   private bossColliders: Phaser.Physics.Arcade.Collider[] = [];
+  private bossGate: Phaser.GameObjects.Rectangle | undefined;
+  private bossArrow: Phaser.GameObjects.Graphics | undefined;
   private controls!: InputManager;
   private player!: Player;
   private terrain!: Phaser.Physics.Arcade.StaticGroup;
@@ -104,6 +106,8 @@ export class LevelScene extends Phaser.Scene {
     this.bossColliders = [];
     this.boss = undefined;
     this.bossBar = undefined;
+    this.bossGate = undefined;
+    this.bossArrow = undefined;
     this.lastCheckpointIndex = gameState.checkpoint?.index ?? -1;
     this.elapsed = 0;
 
@@ -536,6 +540,7 @@ export class LevelScene extends Phaser.Scene {
     this.physics.add.overlap(this.fireballs, this.enemies, (f, e) =>
       this.onAbilityHitEnemy(f as unknown as Phaser.Physics.Arcade.Image, e as Enemy),
     );
+    if (this.bossGate) this.physics.add.collider(sprite, this.bossGate);
     if (this.boss) {
       const boss = this.boss;
       this.bossColliders.push(this.physics.add.collider(boss, this.terrain));
@@ -1148,7 +1153,7 @@ export class LevelScene extends Phaser.Scene {
     if (this.boss && !this.boss.defeated) {
       if (!this.goalLocked) {
         this.goalLocked = true;
-        this.toast(`${this.boss.def.name} still guards the exit`);
+        this.toast(`${this.boss.def.name} still has ${Math.max(0, this.boss.health)} HP - beat it first`);
         this.time.delayedCall(1400, () => (this.goalLocked = false));
       }
       return;
@@ -1511,6 +1516,34 @@ export class LevelScene extends Phaser.Scene {
 
   // ---------------------------------------------------------------- boss
 
+  /**
+   * A boss stage must actually be a boss stage: seal the corridor between the
+   * arena and the flag so the hero cannot stroll past a living boss and get a
+   * confusing "still guards the exit" refusal at the pole.
+   */
+  private buildBossGate(): void {
+    const def = this.level.boss;
+    if (!def || !this.boss) return;
+    const gateTile = Math.min(this.level.goal.x - 3, def.x + 10);
+    const x = gateTile * TILE + TILE / 2;
+    const gy = (this.level.goal.y + 1) * TILE;
+    const h = TILE * 12;
+    const gate = this.add.rectangle(x, gy, TILE * 0.75, h, 0xff8a3c, 0.35).setOrigin(0.5, 1).setDepth(8);
+    gate.setStrokeStyle(2, 0xffd166, 0.9);
+    this.physics.add.existing(gate, true);
+    this.tweens.add({ targets: gate, alpha: 0.7, yoyo: true, repeat: -1, duration: 520 });
+    this.bossGate = gate;
+  }
+
+  private openBossGate(): void {
+    const gate = this.bossGate;
+    if (!gate) return;
+    this.bossGate = undefined;
+    const body = gate.body as Phaser.Physics.Arcade.StaticBody | null;
+    if (body) body.enable = false;
+    this.tweens.add({ targets: gate, alpha: 0, scaleY: 0, duration: 500, onComplete: () => gate.destroy() });
+  }
+
   private buildBoss(): void {
     this.bossShots = this.physics.add.group({ allowGravity: false });
     const def = this.level.boss;
@@ -1530,6 +1563,7 @@ export class LevelScene extends Phaser.Scene {
         this.bossBar?.destroy();
         this.bossBar = undefined;
         this.toast(`${def.name} defeated — the goal is open!`);
+        this.openBossGate();
         this.unlockGoal();
         gameState.addScore(5000);
         this.emitHud();
@@ -1561,6 +1595,22 @@ export class LevelScene extends Phaser.Scene {
     const x = (this.scale.width - w) / 2;
     bar.fillStyle(0x000000, 0.75).fillRect(x - 4, 56, w + 8, 20);
     bar.fillStyle(0xff3b3b, 1).fillRect(x, 60, (w * Math.max(0, boss.health)) / boss.def.health, 12);
+    // Segment ticks so a long health bar reads as "many hits", not one blob.
+    bar.fillStyle(0x000000, 0.6);
+    for (let i = 1; i < boss.def.health; i += 1) bar.fillRect(x + (w * i) / boss.def.health, 60, 1, 12);
+
+    // Pointer towards an off-screen boss.
+    if (!this.bossArrow) this.bossArrow = this.add.graphics().setScrollFactor(0).setDepth(120);
+    const arrow = this.bossArrow;
+    arrow.clear();
+    const cam = this.cameras.main;
+    const onScreen = boss.x > cam.scrollX && boss.x < cam.scrollX + cam.width / cam.zoom;
+    if (onScreen) return;
+    const right = boss.x > cam.scrollX;
+    const ax = right ? this.scale.width - 26 : 26;
+    const ay = 110;
+    arrow.fillStyle(0xffd166, 1);
+    arrow.fillTriangle(ax + (right ? 12 : -12), ay, ax - (right ? 10 : -10), ay - 12, ax - (right ? 10 : -10), ay + 12);
   }
 
   isSolidAt(x: number, y: number): boolean {
